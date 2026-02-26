@@ -1,0 +1,47 @@
+[tool.poetry]
+name = "dualify"
+version = "0.1.0"
+description = "Bidirectional code verification with LLM + SMT"
+authors = ["Dualify Team"]
+readme = "README.md"
+packages = [{ include = "dualify", from = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+requests = "^2.32.5"
+z3-solver = "^4.16.0.0"
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.13.1"
+pytest = "^8.4.2"
+mypy = "^1.18.2"
+pre-commit = "^4.3.0"
+types-requests = "^2.32.4.20260107"
+
+[tool.poetry.scripts]
+dualify-run = "dualify.runner:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_optional = true
+ignore_missing_imports = true
+files = ["src", "tests"]
+
+[build-system]
+requires = ["poetry-core>=1.9.0"]
+build-backend = "poetry.core.masonry.api"
+
