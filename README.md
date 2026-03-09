@@ -9,23 +9,19 @@ Dualify is a research framework for bidirectional verification:
 
 ## Quick start
 
-1. Ensure Ollama is running:
-
-   `ollama serve`
-
-2. Pull a lightweight model:
-
-   `ollama pull qwen2.5:3b-instruct`
-
-3. Install all dependencies and checks:
+1. Install all dependencies and checks (includes Ollama install/start check and model pull):
 
    `./setup.sh`
 
-4. Run full experiment:
+   Optional model override:
+
+   `DUALIFY_MODEL=qwen2.5:3b-instruct ./setup.sh`
+
+2. Run full experiment:
 
    `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic`
 
-5. Run mismatch demo benchmark (intentionally inconsistent specs):
+3. Run mismatch demo benchmark (intentionally inconsistent specs):
 
    `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch`
 
