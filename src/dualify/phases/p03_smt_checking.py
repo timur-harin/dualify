@@ -182,19 +182,57 @@ def check_equivalence(
             counterexample=None,
         )
 
-    solver = z3.Solver()
-    for c in spec_constraints:
-        solver.add(c)
-    for c in code_constraints:
-        solver.add(c)
-    solver.add(z3.Xor(spec_post, code_post))
+    spec_assumptions = z3.And(*spec_constraints) if spec_constraints else z3.BoolVal(True)
+    code_assumptions = z3.And(*code_constraints) if code_constraints else z3.BoolVal(True)
+    spec_ok = z3.And(spec_assumptions, spec_post)
+    code_ok = z3.And(code_assumptions, code_post)
 
-    result = solver.check()
+    def model_to_counterexample(model: z3.ModelRef) -> dict[str, int | bool]:
+        counterexample: dict[str, int | bool] = {}
+        for arg_name in case_spec.arg_types:
+            value = model.eval(scope[arg_name], model_completion=True)
+            if z3.is_bool(value):
+                counterexample[arg_name] = z3.is_true(value)
+            else:
+                counterexample[arg_name] = value.as_long()
+        ret_value = model.eval(scope["ret"], model_completion=True)
+        if z3.is_bool(ret_value):
+            counterexample["ret"] = z3.is_true(ret_value)
+        else:
+            counterexample["ret"] = ret_value.as_long()
+        return counterexample
+
+    # Phase 1: detect domain mismatch between spec and code constraints.
+    domain_solver = z3.Solver()
+    domain_solver.add(z3.Xor(spec_assumptions, code_assumptions))
+    domain_result = domain_solver.check()
+    if domain_result == z3.sat:
+        return SmtResult(
+            benchmark_id=case_spec.benchmark_id,
+            equivalent=False,
+            reason="constraints_mismatch_counterexample_found",
+            counterexample=model_to_counterexample(domain_solver.model()),
+        )
+    if domain_result != z3.unsat:
+        return SmtResult(
+            benchmark_id=case_spec.benchmark_id,
+            equivalent=False,
+            reason=f"solver_result_{domain_result}",
+            counterexample=None,
+        )
+
+    # Phase 2: compare postconditions only on the common valid domain C ∧ C'.
+    post_solver = z3.Solver()
+    post_solver.add(spec_assumptions)
+    post_solver.add(code_assumptions)
+    post_solver.add(z3.Xor(spec_post, code_post))
+    result = post_solver.check()
+
     if result == z3.unsat:
         return SmtResult(
             benchmark_id=case_spec.benchmark_id,
             equivalent=True,
-            reason="formulas_equivalent_under_constraints",
+            reason="contracts_equivalent_under_common_domain",
             counterexample=None,
         )
 
@@ -206,25 +244,11 @@ def check_equivalence(
             counterexample=None,
         )
 
-    model = solver.model()
-    counterexample: dict[str, int | bool] = {}
-    for arg_name in case_spec.arg_types:
-        value = model.eval(scope[arg_name], model_completion=True)
-        if z3.is_bool(value):
-            counterexample[arg_name] = z3.is_true(value)
-        else:
-            counterexample[arg_name] = value.as_long()
-    ret_value = model.eval(scope["ret"], model_completion=True)
-    if z3.is_bool(ret_value):
-        counterexample["ret"] = z3.is_true(ret_value)
-    else:
-        counterexample["ret"] = ret_value.as_long()
-
     return SmtResult(
         benchmark_id=case_spec.benchmark_id,
         equivalent=False,
-        reason="counterexample_found",
-        counterexample=counterexample,
+        reason="postconditions_mismatch_counterexample_found",
+        counterexample=model_to_counterexample(post_solver.model()),
     )
 
 

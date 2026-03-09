@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 YaBrowser/25.12.0.0 Safari/537.36" version="29.6.1">
+  <diagram id="dualify-fsm-v4" name="Dualify FSM (shared actions)">
+    <mxGraphModel dx="929" dy="1782" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="2200" pageHeight="1300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Variables&#xa;spec_pre_conditions = And(c1, c2, ..., cn)&#xa;code_pre_conditions = And(c1&#39;, c2&#39;, ..., cm&#39;)&#xa;spec_post_conditions = P&#xa;code_post_conditions = P&#39;" vertex="1">
+          <mxGeometry height="130" width="420" x="30" y="180" as="geometry" />
+        </mxCell>
+        <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Start iteration&#xa;Extract formulas from current spec and code" vertex="1">
+          <mxGeometry height="110" width="180" x="40" y="512.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 1: precondition mismatch?&#xa;Xor(spec_pre_conditions, code_pre_conditions)" vertex="1">
+          <mxGeometry height="130" width="300" x="320" y="502.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d1a" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Step 1a: implication direction&#xa;spec_pre_conditions =&gt; code_pre_conditions ?" vertex="1">
+          <mxGeometry height="140" width="320" x="610" y="212.5" as="geometry" />
+        </mxCell>
+        <mxCell id="case_pre_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE-A&#xa;code has more requirements&#xa;(spec_pre_conditions =&gt; code_pre_conditions = false)" vertex="1">
+          <mxGeometry height="140" width="430" x="1050" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="case_pre_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE-B&#xa;spec is stricter than code&#xa;(spec_pre_conditions =&gt; code_pre_conditions = true, while XOR = true)" vertex="1">
+          <mxGeometry height="140" width="430" x="1050" y="332.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Step 2: postcondition mismatch on spec domain?&#xa;Implies(spec_pre_conditions, Xor(spec_post_conditions, code_post_conditions))" vertex="1">
+          <mxGeometry height="170" width="360" x="470" y="667.5" as="geometry" />
+        </mxCell>
+        <mxCell id="ok" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Equivalent on current iteration&#xa;No mismatch found" vertex="1">
+          <mxGeometry height="110" width="300" x="890" y="522.5" as="geometry" />
+        </mxCell>
+        <mxCell id="d3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 3: post implication direction&#xa;Implies(spec_post_conditions, code_post_conditions) ?" vertex="1">
+          <mxGeometry height="150" width="320" x="730" y="857.5" as="geometry" />
+        </mxCell>
+        <mxCell id="4oo_-LUb493s87qgRU2F-10" edge="1" parent="1" source="case_post_a" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;" target="action_extend_or_feature">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="case_post_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST-A&#xa;implementation has stricter postconditions&#xa;(Implies(spec_post_conditions, code_post_conditions) = false)" vertex="1">
+          <mxGeometry height="150" width="430" x="1050" y="687.5" as="geometry" />
+        </mxCell>
+        <mxCell id="case_post_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST-B&#xa;spec has stricter postconditions&#xa;(Implies(spec_post_conditions, code_post_conditions) = true, while mismatch = true)" vertex="1">
+          <mxGeometry height="150" width="430" x="1050" y="1007.5" as="geometry" />
+        </mxCell>
+        <mxCell id="action_refine_spec" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Refine spec" vertex="1">
+          <mxGeometry height="55" width="320" x="1850" y="100" as="geometry" />
+        </mxCell>
+        <mxCell id="action_ignore" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="Add property to ignore list" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="892.5" as="geometry" />
+        </mxCell>
+        <mxCell id="action_relax_impl_constraints" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" value="Action: Relax constraints in implementation" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="412.5" as="geometry" />
+        </mxCell>
+        <mxCell id="action_fix_implementation" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" value="Action: Fix implementation (add check/fix logic)" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="572.5" as="geometry" />
+        </mxCell>
+        <mxCell id="action_extend_or_feature" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b1ddf0;strokeColor=#10739e;" value="Action: Extend implementation / feature request" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="732.5" as="geometry" />
+        </mxCell>
+        <mxCell id="action_add_test_case" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontColor=#333333;" value="Add test case" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="1052.5" as="geometry" />
+        </mxCell>
+        <mxCell id="e_start_d1" edge="1" parent="1" source="start" style="endArrow=block;html=1;" target="d1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d1_true" edge="1" parent="1" source="d1" style="endArrow=block;html=1;" target="d1a" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d1_false" edge="1" parent="1" source="d1" style="endArrow=block;html=1;" target="d2" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d1a_false" edge="1" parent="1" source="d1a" style="endArrow=block;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="case_pre_a" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d1a_true" edge="1" parent="1" source="d1a" style="endArrow=block;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="case_pre_b" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d2_false" edge="1" parent="1" source="d2" style="endArrow=block;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0;exitDx=0;exitDy=0;" target="ok" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d2_true" edge="1" parent="1" source="d2" style="endArrow=block;html=1;exitX=1;exitY=1;exitDx=0;exitDy=0;entryX=0;entryY=0;entryDx=0;entryDy=0;" target="d3" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d3_false" edge="1" parent="1" source="d3" style="endArrow=block;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0;exitDx=0;exitDy=0;" target="case_post_a" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_d3_true" edge="1" parent="1" source="d3" style="endArrow=block;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=1;exitDx=0;exitDy=0;" target="case_post_b" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_prea_refine" edge="1" parent="1" source="case_pre_a" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_refine_spec" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_prea_ignore" edge="1" parent="1" source="case_pre_a" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_ignore" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_prea_relax_impl" edge="1" parent="1" source="case_pre_a" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_relax_impl_constraints" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_preb_fix_impl" edge="1" parent="1" source="case_pre_b" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_fix_implementation" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_preb_refine" edge="1" parent="1" source="case_pre_b" style="endArrow=block;html=1;rounded=0;curved=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="action_refine_spec" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_preb_test" edge="1" parent="1" source="case_pre_b" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_add_test_case" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_posta_refine" edge="1" parent="1" source="case_post_a" style="endArrow=block;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;rounded=0;curved=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_refine_spec" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1349.9953992395435" y="752.5" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_posta_ignore" edge="1" parent="1" source="case_post_a" style="endArrow=block;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;rounded=0;curved=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_ignore" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1356.1033990147785" y="752.5" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_postb_relax_spec" edge="1" parent="1" source="case_post_b" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_relax_spec" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_postb_fix_impl" edge="1" parent="1" source="case_post_b" style="endArrow=block;html=1;rounded=0;curved=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="action_fix_implementation" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_postb_test" edge="1" parent="1" source="case_post_b" style="endArrow=block;html=1;rounded=0;curved=1;" target="action_add_test_case" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4oo_-LUb493s87qgRU2F-8" edge="1" parent="1" source="case_pre_a" style="endArrow=block;html=1;rounded=0;curved=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="action_relax_spec" value="">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="1480" y="170.5" as="sourcePoint" />
+            <mxPoint x="1993" y="1052.5" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="action_relax_spec" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Relax spec (maybe ignore)" vertex="1">
+          <mxGeometry height="60" width="320" x="1850" y="252.5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
