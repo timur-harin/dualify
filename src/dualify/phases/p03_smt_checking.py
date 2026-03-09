@@ -184,8 +184,6 @@ def check_equivalence(
 
     spec_assumptions = z3.And(*spec_constraints) if spec_constraints else z3.BoolVal(True)
     code_assumptions = z3.And(*code_constraints) if code_constraints else z3.BoolVal(True)
-    spec_ok = z3.And(spec_assumptions, spec_post)
-    code_ok = z3.And(code_assumptions, code_post)
 
     def model_to_counterexample(model: z3.ModelRef) -> dict[str, int | bool]:
         counterexample: dict[str, int | bool] = {}
