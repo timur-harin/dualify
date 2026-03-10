@@ -52,7 +52,10 @@ class _BoolOpTransformer(ast.NodeTransformer):
 
 def _rewrite_expression(expr: str, benchmark_id: str) -> str:
     rewritten = expr
-    if re.fullmatch(r"\s*[A-Za-z_][A-Za-z0-9_]*\s+is\s+an?\s+integer\s*", rewritten):
+    if re.fullmatch(
+        r"\s*[A-Za-z_][A-Za-z0-9_]*\s+is\s+an?\s+(?:integer|int)\s*",
+        rewritten,
+    ):
         return "True"
 
     rewritten = re.sub(
@@ -64,10 +67,12 @@ def _rewrite_expression(expr: str, benchmark_id: str) -> str:
     rewritten = rewritten.replace("/\\", " and ")
     rewritten = rewritten.replace("\\/", " or ")
     rewritten = rewritten.replace("==>", " >> ")
+    rewritten = rewritten.replace("=>", " >> ")
     rewritten = rewritten.replace("<->", " == ")
     rewritten = rewritten.replace("&&", " and ")
     rewritten = rewritten.replace("||", " or ")
     rewritten = rewritten.replace("->", " >> ")
+    rewritten = rewritten.replace(";", " and ")
     rewritten = rewritten.replace("//", "/")
     rewritten = re.sub(r"\bAnd\b(?!\()", " and ", rewritten)
     rewritten = re.sub(r"\bOr\b(?!\()", " or ", rewritten)
@@ -155,6 +160,30 @@ def _validate_formula_safety(extraction: ExtractionResult) -> list[str]:
     return issues
 
 
+def _strip_exhaustive_zero_split_constraints(constraints: list[str]) -> list[str]:
+    pattern = re.compile(r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s*(>=|>|<=|<)\s*0\s*$")
+    index_by_key: dict[tuple[str, str], set[int]] = {}
+    for i, expr in enumerate(constraints):
+        match = pattern.fullmatch(expr)
+        if not match:
+            continue
+        var_name, op = match.group(1), match.group(2)
+        index_by_key.setdefault((var_name, op), set()).add(i)
+
+    complementary_pairs = [(">=", "<"), (">", "<="), ("<=", ">"), ("<", ">=")]
+    drop_indexes: set[int] = set()
+    variables = {var for (var, _op) in index_by_key}
+    for var in variables:
+        for lhs, rhs in complementary_pairs:
+            lhs_indexes = index_by_key.get((var, lhs), set())
+            rhs_indexes = index_by_key.get((var, rhs), set())
+            if lhs_indexes and rhs_indexes:
+                drop_indexes.update(lhs_indexes)
+                drop_indexes.update(rhs_indexes)
+
+    return [expr for idx, expr in enumerate(constraints) if idx not in drop_indexes]
+
+
 def check_equivalence(
     case_spec: CaseSpec,
     spec_logic: ExtractionResult,
@@ -166,11 +195,17 @@ def check_equivalence(
     scope["ret"] = _make_var("ret", case_spec.return_type)
 
     try:
+        clean_spec_constraints = _strip_exhaustive_zero_split_constraints(
+            spec_logic.domain_constraints
+        )
+        clean_code_constraints = _strip_exhaustive_zero_split_constraints(
+            code_logic.domain_constraints
+        )
         spec_constraints = [
-            _safe_eval(c, scope, case_spec.benchmark_id) for c in spec_logic.domain_constraints
+            _safe_eval(c, scope, case_spec.benchmark_id) for c in clean_spec_constraints
         ]
         code_constraints = [
-            _safe_eval(c, scope, case_spec.benchmark_id) for c in code_logic.domain_constraints
+            _safe_eval(c, scope, case_spec.benchmark_id) for c in clean_code_constraints
         ]
         spec_post = _safe_eval(spec_logic.postcondition, scope, case_spec.benchmark_id)
         code_post = _safe_eval(code_logic.postcondition, scope, case_spec.benchmark_id)
@@ -200,53 +235,95 @@ def check_equivalence(
             counterexample["ret"] = ret_value.as_long()
         return counterexample
 
-    # Phase 1: detect domain mismatch between spec and code constraints.
-    domain_solver = z3.Solver()
-    domain_solver.add(z3.Xor(spec_assumptions, code_assumptions))
-    domain_result = domain_solver.check()
-    if domain_result == z3.sat:
+    # Step 1 from scheme: precondition mismatch check.
+    pre_xor_solver = z3.Solver()
+    pre_xor_solver.add(z3.Xor(spec_assumptions, code_assumptions))
+    pre_xor_result = pre_xor_solver.check()
+    preconditions_mismatch = pre_xor_result == z3.sat
+    preconditions_counterexample = (
+        model_to_counterexample(pre_xor_solver.model()) if preconditions_mismatch else None
+    )
+
+    spec_implies_code_solver = z3.Solver()
+    spec_implies_code_solver.add(spec_assumptions)
+    spec_implies_code_solver.add(z3.Not(code_assumptions))
+    spec_implies_code = spec_implies_code_solver.check() == z3.unsat
+
+    code_implies_spec_solver = z3.Solver()
+    code_implies_spec_solver.add(code_assumptions)
+    code_implies_spec_solver.add(z3.Not(spec_assumptions))
+    code_implies_spec = code_implies_spec_solver.check() == z3.unsat
+
+    diagnostics: dict[str, object] = {
+        "pre_mismatch": preconditions_mismatch,
+        "pre_spec_implies_pre_code": spec_implies_code,
+        "pre_code_implies_pre_spec": code_implies_spec,
+        "pre_counterexample": preconditions_counterexample,
+    }
+
+    common_domain = z3.And(spec_assumptions, code_assumptions)
+
+    # Step 1a from scheme:
+    # if pre mismatch, classify PRE_CODE vs PRE_SPEC and finish early.
+    if preconditions_mismatch:
+        if not spec_implies_code:
+            return SmtResult(
+                benchmark_id=case_spec.benchmark_id,
+                equivalent=False,
+                reason="case_pre_code",
+                counterexample=preconditions_counterexample,
+                diagnostics=diagnostics,
+            )
         return SmtResult(
             benchmark_id=case_spec.benchmark_id,
             equivalent=False,
-            reason="constraints_mismatch_counterexample_found",
-            counterexample=model_to_counterexample(domain_solver.model()),
-        )
-    if domain_result != z3.unsat:
-        return SmtResult(
-            benchmark_id=case_spec.benchmark_id,
-            equivalent=False,
-            reason=f"solver_result_{domain_result}",
-            counterexample=None,
+            reason="case_pre_spec",
+            counterexample=preconditions_counterexample,
+            diagnostics=diagnostics,
         )
 
-    # Phase 2: compare postconditions only on the common valid domain C ∧ C'.
-    post_solver = z3.Solver()
-    post_solver.add(spec_assumptions)
-    post_solver.add(code_assumptions)
-    post_solver.add(z3.Xor(spec_post, code_post))
-    result = post_solver.check()
+    # Step 2 from scheme (evaluated only after pre checks are common):
+    # post mismatch on common domain?
+    post_mismatch_solver = z3.Solver()
+    post_mismatch_solver.add(common_domain, z3.Xor(spec_post, code_post))
+    post_mismatch_result = post_mismatch_solver.check()
+    post_mismatch = post_mismatch_result == z3.sat
+    post_mismatch_counterexample = (
+        model_to_counterexample(post_mismatch_solver.model()) if post_mismatch else None
+    )
 
-    if result == z3.unsat:
+    diagnostics["post_mismatch_on_common_pre"] = post_mismatch
+    diagnostics["post_mismatch_counterexample"] = post_mismatch_counterexample
+
+    if not post_mismatch:
         return SmtResult(
             benchmark_id=case_spec.benchmark_id,
             equivalent=True,
-            reason="contracts_equivalent_under_common_domain",
+            reason="equivalent_no_mismatch",
             counterexample=None,
+            diagnostics=diagnostics,
         )
 
-    if result != z3.sat:
-        return SmtResult(
-            benchmark_id=case_spec.benchmark_id,
-            equivalent=False,
-            reason=f"solver_result_{result}",
-            counterexample=None,
-        )
+    # Step 3 from scheme (only after mismatch from step 2):
+    # Implies(And(common_pre, post_spec), post_code) ?
+    spec_post_implies_code_solver = z3.Solver()
+    spec_post_implies_code_solver.add(common_domain, spec_post, z3.Not(code_post))
+    spec_post_implies_code = spec_post_implies_code_solver.check() == z3.unsat
 
+    code_post_implies_spec_solver = z3.Solver()
+    code_post_implies_spec_solver.add(common_domain, code_post, z3.Not(spec_post))
+    code_post_implies_spec = code_post_implies_spec_solver.check() == z3.unsat
+
+    diagnostics["post_spec_implies_post_code_on_common_pre"] = spec_post_implies_code
+    diagnostics["post_code_implies_post_spec_on_common_pre"] = code_post_implies_spec
+
+    reason = "case_post_code" if not spec_post_implies_code else "case_post_spec"
     return SmtResult(
         benchmark_id=case_spec.benchmark_id,
         equivalent=False,
-        reason="postconditions_mismatch_counterexample_found",
-        counterexample=model_to_counterexample(post_solver.model()),
+        reason=reason,
+        counterexample=post_mismatch_counterexample,
+        diagnostics=diagnostics,
     )
 
 
