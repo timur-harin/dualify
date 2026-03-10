@@ -24,7 +24,7 @@ def _normalize_extraction(case_spec: CaseSpec, post: str, extraction: dict) -> d
 
 
 def _utc_timestamp_for_filename() -> str:
-    return datetime.now().strftime("%d_%m_%y_%H:%M")
+    return datetime.now(UTC).strftime("%Y_%m_%d_%H_%M_%S")
 
 
 def run_experiment(model: str, base_url: str, benchmark_name: str = "synthetic") -> dict:
