@@ -41,7 +41,7 @@ Example:
 ## Output artifacts
 
 - single run report per launch:
-- `results/<benchmark>_<dd_mm_yy_hh:mm>.json`
+- `results/<benchmark>_<yyyy_mm_dd_hh_mm_ss>.json`
 
 ## Development quality checks
 
