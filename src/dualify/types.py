@@ -30,4 +30,5 @@ class SmtResult:
     equivalent: bool
     reason: str
     counterexample: dict[str, int | bool] | None
+    diagnostics: dict[str, object] | None = None
 

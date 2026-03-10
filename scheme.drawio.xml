@@ -5,40 +5,40 @@
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Variables&#xa;spec_pre_conditions = And(c1, c2, ..., cn)&#xa;code_pre_conditions = And(c1&#39;, c2&#39;, ..., cm&#39;)&#xa;spec_post_conditions = P&#xa;code_post_conditions = P&#39;" vertex="1">
+        <mxCell id="legend" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;" value="Variables&#xa;pre_spec = And(c1, c2, ..., cn)&#xa;pre_code = And(c1&#39;, c2&#39;, ..., cm&#39;)&#xa;common_pre = And(pre_spec, pre_code)&#xa;post_spec = P&#xa;post_code = P&#39;" vertex="1">
           <mxGeometry height="130" width="420" x="30" y="180" as="geometry" />
         </mxCell>
         <mxCell id="start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" value="Start iteration&#xa;Extract formulas from current spec and code" vertex="1">
           <mxGeometry height="110" width="180" x="40" y="512.5" as="geometry" />
         </mxCell>
-        <mxCell id="d1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 1: precondition mismatch?&#xa;Xor(spec_pre_conditions, code_pre_conditions)" vertex="1">
+        <mxCell id="d1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 1: precondition mismatch?&#xa;Xor(pre_spec, pre_code)" vertex="1">
           <mxGeometry height="130" width="300" x="320" y="502.5" as="geometry" />
         </mxCell>
-        <mxCell id="d1a" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Step 1a: implication direction&#xa;spec_pre_conditions =&gt; code_pre_conditions ?" vertex="1">
+        <mxCell id="d1a" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Step 1a: implication direction&#xa;pre_spec =&gt; pre_code ?" vertex="1">
           <mxGeometry height="140" width="320" x="610" y="212.5" as="geometry" />
         </mxCell>
-        <mxCell id="case_pre_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE-A&#xa;code has more requirements&#xa;(spec_pre_conditions =&gt; code_pre_conditions = false)" vertex="1">
+        <mxCell id="case_pre_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE_CODE&#xa;code has more requirements&#xa;(pre_spec =&gt; pre_code = false)" vertex="1">
           <mxGeometry height="140" width="430" x="1050" y="100" as="geometry" />
         </mxCell>
-        <mxCell id="case_pre_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE-B&#xa;spec is stricter than code&#xa;(spec_pre_conditions =&gt; code_pre_conditions = true, while XOR = true)" vertex="1">
+        <mxCell id="case_pre_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" value="Case PRE_SPEC&#xa;spec is stricter than code&#xa;(pre_spec =&gt; pre_code = true, while XOR = true)" vertex="1">
           <mxGeometry height="140" width="430" x="1050" y="332.5" as="geometry" />
         </mxCell>
-        <mxCell id="d2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Step 2: postcondition mismatch on spec domain?&#xa;Implies(spec_pre_conditions, Xor(spec_post_conditions, code_post_conditions))" vertex="1">
+        <mxCell id="d2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Step 2: postcondition mismatch on common domain?&#xa;Implies(common_pre, Xor(post_spec, post_code))" vertex="1">
           <mxGeometry height="170" width="360" x="470" y="667.5" as="geometry" />
         </mxCell>
         <mxCell id="ok" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" value="Equivalent on current iteration&#xa;No mismatch found" vertex="1">
           <mxGeometry height="110" width="300" x="890" y="522.5" as="geometry" />
         </mxCell>
-        <mxCell id="d3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 3: post implication direction&#xa;Implies(spec_post_conditions, code_post_conditions) ?" vertex="1">
+        <mxCell id="d3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" value="Step 3: post implication direction on common_pre&#xa;Implies(And(common_pre, post_spec), post_code) ?" vertex="1">
           <mxGeometry height="150" width="320" x="730" y="857.5" as="geometry" />
         </mxCell>
         <mxCell id="4oo_-LUb493s87qgRU2F-10" edge="1" parent="1" source="case_post_a" style="rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=default;" target="action_extend_or_feature">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="case_post_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST-A&#xa;implementation has stricter postconditions&#xa;(Implies(spec_post_conditions, code_post_conditions) = false)" vertex="1">
+        <mxCell id="case_post_a" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST_CODE&#xa;implementation has stricter postconditions&#xa;(Implies(And(common_pre, post_spec), post_code) = false)" vertex="1">
           <mxGeometry height="150" width="430" x="1050" y="687.5" as="geometry" />
         </mxCell>
-        <mxCell id="case_post_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST-B&#xa;spec has stricter postconditions&#xa;(Implies(spec_post_conditions, code_post_conditions) = true, while mismatch = true)" vertex="1">
+        <mxCell id="case_post_b" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;" value="Case POST_SPEC&#xa;spec has stricter postconditions&#xa;(Implies(And(common_pre, post_spec), post_code) = true, while mismatch = true)" vertex="1">
           <mxGeometry height="150" width="430" x="1050" y="1007.5" as="geometry" />
         </mxCell>
         <mxCell id="action_refine_spec" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" value="Refine spec" vertex="1">
