@@ -245,13 +245,13 @@ def check_equivalence(
     )
 
     spec_implies_code_solver = z3.Solver()
-    spec_implies_code_solver.add(spec_assumptions)
-    spec_implies_code_solver.add(z3.Not(code_assumptions))
+    pre_spec_to_pre_code_implication = z3.Implies(spec_assumptions, code_assumptions)
+    spec_implies_code_solver.add(z3.Not(pre_spec_to_pre_code_implication))
     spec_implies_code = spec_implies_code_solver.check() == z3.unsat
 
     code_implies_spec_solver = z3.Solver()
-    code_implies_spec_solver.add(code_assumptions)
-    code_implies_spec_solver.add(z3.Not(spec_assumptions))
+    pre_code_to_pre_spec_implication = z3.Implies(code_assumptions, spec_assumptions)
+    code_implies_spec_solver.add(z3.Not(pre_code_to_pre_spec_implication))
     code_implies_spec = code_implies_spec_solver.check() == z3.unsat
 
     diagnostics: dict[str, object] = {
@@ -285,7 +285,9 @@ def check_equivalence(
     # Step 2 from scheme (evaluated only after pre checks are common):
     # post mismatch on common domain?
     post_mismatch_solver = z3.Solver()
-    post_mismatch_solver.add(common_domain, z3.Xor(spec_post, code_post))
+    post_disagreement_implication = z3.Implies(common_domain, z3.Xor(spec_post, code_post))
+    post_mismatch_solver.add(common_domain)
+    post_mismatch_solver.add(post_disagreement_implication)
     post_mismatch_result = post_mismatch_solver.check()
     post_mismatch = post_mismatch_result == z3.sat
     post_mismatch_counterexample = (
@@ -307,11 +309,13 @@ def check_equivalence(
     # Step 3 from scheme (only after mismatch from step 2):
     # Implies(And(common_pre, post_spec), post_code) ?
     spec_post_implies_code_solver = z3.Solver()
-    spec_post_implies_code_solver.add(common_domain, spec_post, z3.Not(code_post))
+    spec_to_code_implication = z3.Implies(z3.And(common_domain, spec_post), code_post)
+    spec_post_implies_code_solver.add(z3.Not(spec_to_code_implication))
     spec_post_implies_code = spec_post_implies_code_solver.check() == z3.unsat
 
     code_post_implies_spec_solver = z3.Solver()
-    code_post_implies_spec_solver.add(common_domain, code_post, z3.Not(spec_post))
+    code_to_spec_implication = z3.Implies(z3.And(common_domain, code_post), spec_post)
+    code_post_implies_spec_solver.add(z3.Not(code_to_spec_implication))
     code_post_implies_spec = code_post_implies_spec_solver.check() == z3.unsat
 
     diagnostics["post_spec_implies_post_code_on_common_pre"] = spec_post_implies_code
