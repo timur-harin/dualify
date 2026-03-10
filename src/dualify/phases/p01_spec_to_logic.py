@@ -41,8 +41,21 @@ Rules:
 - For gcd-like specs, make edge cases explicit (e.g., `a == 0`
   or `b == 0`) and avoid undefined modulo situations.
 - Postcondition must be a boolean formula over args and `ret`.
+- Postcondition must be ONE valid expression (no semicolons, no multiple statements).
+- For int return values, write exact mapping with `ret == ...` (often with `If(...)`).
+- For bool return values, write `ret == (...)`.
+- Encode piecewise behavior explicitly:
+  `If(cond, expr1, expr2)` or `And(Implies(...), Implies(...))`.
+- Do not weaken semantics. The formula must describe exact behavior, not just range/properties.
 - NEVER call the function name in formulas (forbidden: `foo(x)`); use only args and `ret`.
 - Do not use `->`, `&&`, `||`, `>>`, `|`; use `Implies(...)`, `And(...)`, `Or(...)`.
+- Do not use `=>`, `;`, commas as logical separators,
+  chained comparisons like `a == b == c`, or names like `inf`.
+
+Examples:
+- int flag: `ret == If(x == 0, 1, 0)`
+- bool predicate: `ret == (x > 0)`
+- piecewise int: `ret == If(x > 0, 1, 0)`
 
 Signature:
 {signature}

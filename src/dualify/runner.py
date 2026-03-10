@@ -11,7 +11,7 @@ from dualify.ollama_client import OllamaClient
 from dualify.phases.p01_spec_to_logic import extract_spec_logic
 from dualify.phases.p02_code_to_logic import extract_code_logic
 from dualify.phases.p03_smt_checking import CaseSpec, check_equivalence, is_parseable
-from dualify.phases.p04_refinement import build_refinement
+from dualify.phases.p04_action_planning import build_action_plan
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -98,18 +98,13 @@ def run_experiment(model: str, base_url: str, benchmark_name: str = "synthetic")
 
         smt_result = check_equivalence(case_spec, spec_logic, code_logic)
 
-        refinement_payload = {"benchmark_id": benchmark_id, "status": "not_needed"}
-        if not smt_result.equivalent:
-            refinement_payload = build_refinement(
-                client=client,
-                benchmark_id=benchmark_id,
-                signature=signature,
-                informal_spec=informal_spec,
-                function_source=function_source,
-                spec_postcondition=spec_logic.postcondition,
-                code_postcondition=code_logic.postcondition,
-                smt_result=smt_result,
-            )
+        action_plan_payload = build_action_plan(
+            client=client,
+            benchmark_id=benchmark_id,
+            signature=signature,
+            informal_spec=informal_spec,
+            smt_result=smt_result,
+        )
 
         case_results.append(
             {
@@ -121,7 +116,7 @@ def run_experiment(model: str, base_url: str, benchmark_name: str = "synthetic")
                 "spec_to_logic": {**asdict(spec_logic), "used_fallback": used_spec_fallback},
                 "code_to_logic": {**asdict(code_logic), "used_fallback": used_code_fallback},
                 "smt_checking": asdict(smt_result),
-                "refinement": refinement_payload,
+                "action_planning": action_plan_payload,
             }
         )
 
