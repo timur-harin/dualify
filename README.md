@@ -7,23 +7,35 @@ Dualify is a research framework for bidirectional verification:
 3. SMT-Checking (Z3 compares formulas and finds counterexamples)
 4. Refinement (LLM suggests spec/code improvements from mismatches)
 
+## Pipeline overview
+
+![Dualify action matrix flow](scheme.drawio.png)
+
 ## Quick start
 
 1. Install all dependencies and checks (includes Ollama install/start check and model pull):
 
-   `./setup.sh`
+   ```bash
+   ./setup.sh
+   ```
 
    Optional model override:
 
-   `DUALIFY_MODEL=qwen2.5:3b-instruct ./setup.sh`
+   ```bash
+   DUALIFY_MODEL=qwen2.5:3b-instruct ./setup.sh
+   ```
 
 2. Run full experiment:
 
-   `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic`
+   ```bash
+   poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic
+   ```
 
 3. Run mismatch demo benchmark (intentionally inconsistent specs):
 
-   `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch`
+   ```bash
+   poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch
+   ```
 
 ## Benchmark input format (no JSON required)
 
@@ -34,14 +46,15 @@ Dualify is a research framework for bidirectional verification:
 
 Example:
 
-`# Return True when x is positive.`
-
-`def is_positive(x: int) -> bool: ...`
+```python
+# Return True when x is positive.
+def is_positive(x: int) -> bool: ...
+```
 
 ## Output artifacts
 
-- single run report per launch:
-- `results/<benchmark>_<yyyy_mm_dd_hh_mm_ss>.json`
+- Single run report per launch:
+  - `results/<benchmark>_<yyyy_mm_dd_hh_mm_ss>.json`
 
 ## Development quality checks
 
