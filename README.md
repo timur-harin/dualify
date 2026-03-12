@@ -7,27 +7,35 @@ Dualify is a research framework for bidirectional verification:
 3. SMT-Checking (Z3 compares formulas and finds counterexamples)
 4. Refinement (LLM suggests spec/code improvements from mismatches)
 
+## Pipeline overview
+
+![Dualify action matrix flow](scheme.drawio.png)
+
 ## Quick start
 
-1. Ensure Ollama is running:
+1. Install all dependencies and checks (includes Ollama install/start check and model pull):
 
-   `ollama serve`
+   ```bash
+   ./setup.sh
+   ```
 
-2. Pull a lightweight model:
+   Optional model override:
 
-   `ollama pull qwen2.5:3b-instruct`
+   ```bash
+   DUALIFY_MODEL=qwen2.5:3b-instruct ./setup.sh
+   ```
 
-3. Install all dependencies and checks:
+2. Run full experiment:
 
-   `./setup.sh`
+   ```bash
+   poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic
+   ```
 
-4. Run full experiment:
+3. Run mismatch demo benchmark (intentionally inconsistent specs):
 
-   `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic`
-
-5. Run mismatch demo benchmark (intentionally inconsistent specs):
-
-   `poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch`
+   ```bash
+   poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch
+   ```
 
 ## Benchmark input format (no JSON required)
 
@@ -38,14 +46,15 @@ Dualify is a research framework for bidirectional verification:
 
 Example:
 
-`# Return True when x is positive.`
-
-`def is_positive(x: int) -> bool: ...`
+```python
+# Return True when x is positive.
+def is_positive(x: int) -> bool: ...
+```
 
 ## Output artifacts
 
-- single run report per launch:
-- `results/<benchmark>_<dd_mm_yy_hh:mm>.json`
+- Single run report per launch:
+  - `results/<benchmark>_<yyyy_mm_dd_hh_mm_ss>.json`
 
 ## Development quality checks
 
