@@ -1,5 +1,6 @@
 import json
 import re
+from typing import TypedDict
 
 from dualify.ollama_client import OllamaClient
 from dualify.types import ExtractionResult
@@ -11,6 +12,25 @@ _IDENTIFIER_PATTERN = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
 _INFIX_BOOL_PATTERN = re.compile(r"\s(And|Or)\s")
 _LOWER_BOOL_PATTERN = re.compile(r"\b(and|or|not)\b")
 _RESERVED_NAMES = {"And", "Or", "Not", "Implies", "If", "Abs", "True", "False"}
+
+
+class _ExtractionPayload(TypedDict):
+    args: list[str]
+    return_type: str
+    domain_constraints: list[str]
+    postcondition: str
+    confidence: str
+    notes: str
+
+
+def _to_str(value: object, default: str) -> str:
+    return value if isinstance(value, str) else default
+
+
+def _to_str_list(value: object) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
 
 
 def _extract_signature_args(signature: str) -> list[str]:
@@ -33,14 +53,14 @@ def _extract_signature_args(signature: str) -> list[str]:
 
 def _coerce_payload(
     payload: dict, allowed_args: list[str], return_type: str
-) -> dict[str, object]:
+) -> _ExtractionPayload:
     return {
         "args": allowed_args,
-        "return_type": payload.get("return_type", return_type),
-        "domain_constraints": payload.get("domain_constraints", []),
-        "postcondition": payload.get("postcondition", "ret == ret"),
-        "confidence": payload.get("confidence", "unknown"),
-        "notes": payload.get("notes", ""),
+        "return_type": _to_str(payload.get("return_type"), return_type),
+        "domain_constraints": _to_str_list(payload.get("domain_constraints")),
+        "postcondition": _to_str(payload.get("postcondition"), "ret == ret"),
+        "confidence": _to_str(payload.get("confidence"), "unknown"),
+        "notes": _to_str(payload.get("notes"), ""),
     }
 
 
@@ -61,35 +81,29 @@ def _validate_expression(expr: str, allowed_names: set[str]) -> list[str]:
     return errors
 
 
-def _validate_payload(payload: dict[str, object], allowed_args: list[str]) -> list[str]:
+def _validate_payload(payload: _ExtractionPayload, allowed_args: list[str]) -> list[str]:
     errors: list[str] = []
     allowed_names = set(allowed_args) | {"ret"}
 
     if payload.get("args") != allowed_args:
         errors.append("args must exactly match signature arguments")
 
-    postcondition = payload.get("postcondition")
-    if not isinstance(postcondition, str) or not postcondition.strip():
+    postcondition = payload["postcondition"]
+    if not postcondition.strip():
         errors.append("postcondition must be a non-empty string")
     else:
         post_errors = _validate_expression(postcondition, allowed_names)
         errors.extend([f"postcondition {item}" for item in post_errors])
 
-    constraints = payload.get("domain_constraints")
-    if not isinstance(constraints, list) or not all(
-        isinstance(item, str) for item in constraints
-    ):
-        errors.append("domain_constraints must be list[str]")
-    else:
-        for constraint in constraints:
-            constraint_errors = _validate_expression(constraint, allowed_names)
-            errors.extend([f"domain constraint {item}" for item in constraint_errors])
+    for constraint in payload["domain_constraints"]:
+        constraint_errors = _validate_expression(constraint, allowed_names)
+        errors.extend([f"domain constraint {item}" for item in constraint_errors])
     return errors
 
 
 def _repair_payload(
     client: OllamaClient,
-    payload: dict[str, object],
+    payload: _ExtractionPayload,
     errors: list[str],
     signature: str,
     return_type: str,
@@ -238,11 +252,11 @@ Additional context:
 
     return ExtractionResult(
         benchmark_id=benchmark_id,
-        args=payload["args"],  # type: ignore[index]
-        return_type=payload["return_type"],  # type: ignore[index]
-        domain_constraints=payload.get("domain_constraints", []),  # type: ignore[arg-type]
-        postcondition=payload["postcondition"],  # type: ignore[index]
-        confidence=payload.get("confidence", "unknown"),  # type: ignore[arg-type]
-        notes=payload.get("notes", ""),  # type: ignore[arg-type]
+        args=payload["args"],
+        return_type=payload["return_type"],
+        domain_constraints=payload["domain_constraints"],
+        postcondition=payload["postcondition"],
+        confidence=payload["confidence"],
+        notes=payload["notes"],
     )
 
