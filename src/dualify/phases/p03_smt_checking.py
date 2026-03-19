@@ -20,6 +20,8 @@ def _make_var(name: str, type_name: str) -> Any:
         return z3.Int(name)
     if type_name == "bool":
         return z3.Bool(name)
+    if type_name == "float":
+        return z3.Real(name)
     raise ValueError(f"Unsupported type: {type_name}")
 
 
@@ -220,19 +222,27 @@ def check_equivalence(
     spec_assumptions = z3.And(*spec_constraints) if spec_constraints else z3.BoolVal(True)
     code_assumptions = z3.And(*code_constraints) if code_constraints else z3.BoolVal(True)
 
-    def model_to_counterexample(model: z3.ModelRef) -> dict[str, int | bool]:
-        counterexample: dict[str, int | bool] = {}
+    def _numeric_from_model_value(value: z3.ExprRef) -> int | float:
+        if z3.is_int_value(value):
+            return value.as_long()
+        if z3.is_rational_value(value):
+            return float(value.as_fraction())
+        # Fallback for numerals that are not plain int/rational.
+        return float(value.as_decimal(20).replace("?", ""))
+
+    def model_to_counterexample(model: z3.ModelRef) -> dict[str, int | float | bool]:
+        counterexample: dict[str, int | float | bool] = {}
         for arg_name in case_spec.arg_types:
             value = model.eval(scope[arg_name], model_completion=True)
             if z3.is_bool(value):
                 counterexample[arg_name] = z3.is_true(value)
             else:
-                counterexample[arg_name] = value.as_long()
+                counterexample[arg_name] = _numeric_from_model_value(value)
         ret_value = model.eval(scope["ret"], model_completion=True)
         if z3.is_bool(ret_value):
             counterexample["ret"] = z3.is_true(ret_value)
         else:
-            counterexample["ret"] = ret_value.as_long()
+            counterexample["ret"] = _numeric_from_model_value(ret_value)
         return counterexample
 
     # Step 1 from scheme: precondition mismatch check.

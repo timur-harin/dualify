@@ -231,18 +231,13 @@ Additional context:
 {extra_context}
 """
     allowed_args = _extract_signature_args(signature)
-    raw_payload = client.generate_json(prompt)
+    try:
+        raw_payload = client.generate_json(prompt)
+    except Exception:
+        raw_payload = {}
     payload = _coerce_payload(raw_payload, allowed_args, return_type)
     errors = _validate_payload(payload, allowed_args)
     if errors:
-        repaired_raw = _repair_payload(
-            client=client,
-            payload=payload,
-            errors=errors,
-            signature=signature,
-            return_type=return_type,
-        )
-        payload = _coerce_payload(repaired_raw, allowed_args, return_type)
         repair_errors = _validate_payload(payload, allowed_args)
         if repair_errors:
             payload["domain_constraints"] = []
