@@ -29,6 +29,6 @@ class SmtResult:
     benchmark_id: str
     equivalent: bool
     reason: str
-    counterexample: dict[str, int | bool] | None
+    counterexample: dict[str, int | float | bool] | None
     diagnostics: dict[str, object] | None = None
 

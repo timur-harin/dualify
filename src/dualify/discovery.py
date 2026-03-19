@@ -8,10 +8,10 @@ def _annotation_to_type(annotation: ast.expr | None, file_path: Path, arg_name: 
     if annotation is None:
         raise ValueError(f"Missing type annotation for '{arg_name}' in {file_path}")
     text = ast.unparse(annotation)
-    if text not in {"int", "bool"}:
+    if text not in {"int", "bool", "float"}:
         raise ValueError(
             f"Unsupported type '{text}' for '{arg_name}' in {file_path}. "
-            "Only int and bool are supported."
+            "Only int, bool, and float are supported."
         )
     return text
 
@@ -68,28 +68,54 @@ def _format_signature(node: ast.FunctionDef) -> str:
     return f"{node.name}({', '.join(parts)}) -> {ret}"
 
 
-def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[BenchmarkCase]:
+def _iter_python_files(base_dir: Path, recursive: bool) -> list[Path]:
+    pattern = "**/*.py" if recursive else "*.py"
+    return sorted(path for path in base_dir.glob(pattern) if path.is_file())
+
+
+def _discover_cases(
+    base_dir: Path,
+    root_dir: Path,
+    *,
+    recursive: bool,
+    skip_unsupported: bool,
+    benchmark_id_prefix_with_path: bool,
+) -> list[BenchmarkCase]:
     cases: list[BenchmarkCase] = []
-    for file_path in sorted(benchmark_dir.glob("*.py")):
+    for file_path in _iter_python_files(base_dir, recursive=recursive):
         source = file_path.read_text(encoding="utf-8")
         source_lines = source.splitlines()
-        module = ast.parse(source)
+        try:
+            module = ast.parse(source)
+        except SyntaxError:
+            if skip_unsupported:
+                continue
+            raise
 
         for node in module.body:
             if not isinstance(node, ast.FunctionDef):
                 continue
             arg_types: dict[str, str] = {}
-            for arg in node.args.args:
-                arg_types[arg.arg] = _annotation_to_type(arg.annotation, file_path, arg.arg)
+            try:
+                for arg in node.args.args:
+                    arg_types[arg.arg] = _annotation_to_type(arg.annotation, file_path, arg.arg)
+                return_type = _annotation_to_type(node.returns, file_path, "return")
+            except ValueError:
+                if skip_unsupported:
+                    continue
+                raise
 
-            return_type = _annotation_to_type(node.returns, file_path, "return")
             informal_spec, extra_context = _extract_spec_parts(node, source_lines)
             function_source = ast.get_source_segment(source, node) or source
+            relative_file = str(file_path.relative_to(root_dir))
+            benchmark_id = node.name
+            if benchmark_id_prefix_with_path:
+                benchmark_id = f"{relative_file.replace('/', '::')}::{node.name}"
 
             cases.append(
                 BenchmarkCase(
-                    benchmark_id=node.name,
-                    file=str(file_path.relative_to(root_dir)),
+                    benchmark_id=benchmark_id,
+                    file=relative_file,
                     signature=_format_signature(node),
                     arg_types=arg_types,
                     return_type=return_type,
@@ -98,6 +124,25 @@ def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[Benchmark
                     function_source=function_source,
                 )
             )
-
     return sorted(cases, key=lambda item: item.benchmark_id)
+
+
+def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[BenchmarkCase]:
+    return _discover_cases(
+        benchmark_dir,
+        root_dir,
+        recursive=False,
+        skip_unsupported=False,
+        benchmark_id_prefix_with_path=False,
+    )
+
+
+def discover_repo_cases(repo_dir: Path) -> list[BenchmarkCase]:
+    return _discover_cases(
+        repo_dir,
+        repo_dir,
+        recursive=True,
+        skip_unsupported=True,
+        benchmark_id_prefix_with_path=True,
+    )
 
