@@ -2,16 +2,12 @@ import json
 import re
 from typing import TypedDict
 
+from dualify.formula_parser import normalize_formula, validate_formula
 from dualify.ollama_client import OllamaClient
 from dualify.types import ExtractionResult
 
-_FORBIDDEN_EXPR_PATTERN = re.compile(
-    r"\bfloor\b|\bsqrt\b|\bpow\b|\blambda\b|\*\*|//|\[|\]|\{|\}"
-)
-_IDENTIFIER_PATTERN = re.compile(r"\b[A-Za-z_][A-Za-z0-9_]*\b")
 _INFIX_BOOL_PATTERN = re.compile(r"\s(And|Or)\s")
 _LOWER_BOOL_PATTERN = re.compile(r"\b(and|or|not)\b")
-_RESERVED_NAMES = {"And", "Or", "Not", "Implies", "If", "Abs", "True", "False"}
 
 
 class _ExtractionPayload(TypedDict):
@@ -21,6 +17,8 @@ class _ExtractionPayload(TypedDict):
     postcondition: str
     confidence: str
     notes: str
+    degraded: bool
+    degraded_reason: str
 
 
 def _to_str(value: object, default: str) -> str:
@@ -61,29 +59,47 @@ def _coerce_payload(
         "postcondition": _to_str(payload.get("postcondition"), "ret == ret"),
         "confidence": _to_str(payload.get("confidence"), "unknown"),
         "notes": _to_str(payload.get("notes"), ""),
+        "degraded": False,
+        "degraded_reason": "",
     }
 
 
 def _validate_expression(expr: str, allowed_names: set[str]) -> list[str]:
+    normalized = normalize_formula(expr)
     errors: list[str] = []
-    if _FORBIDDEN_EXPR_PATTERN.search(expr):
-        errors.append("contains forbidden tokens")
-    if _INFIX_BOOL_PATTERN.search(expr):
+    if _INFIX_BOOL_PATTERN.search(normalized):
         errors.append("uses infix And/Or")
-    if _LOWER_BOOL_PATTERN.search(expr):
+    if _LOWER_BOOL_PATTERN.search(normalized):
         errors.append("uses python and/or/not")
-    for token in _IDENTIFIER_PATTERN.findall(expr):
-        if token in _RESERVED_NAMES:
-            continue
-        if token not in allowed_names:
-            errors.append(f"unknown identifier `{token}`")
-            break
+    errors.extend(validate_formula(normalized, allowed_names))
     return errors
 
 
-def _validate_payload(payload: _ExtractionPayload, allowed_args: list[str]) -> list[str]:
+def _extract_self_symbols(text: str) -> set[str]:
+    return {f"self_{name}" for name in re.findall(r"\bself\.([A-Za-z_][A-Za-z0-9_]*)\b", text)}
+
+
+def _normalize_formula(expr: str) -> str:
+    normalized = normalize_formula(expr)
+    normalized = re.sub(r"\b(result|output|return_value)\b", "ret", normalized)
+    return normalized
+
+
+def _normalize_payload_formulas(payload: _ExtractionPayload) -> _ExtractionPayload:
+    payload["domain_constraints"] = [
+        _normalize_formula(expr) for expr in payload["domain_constraints"]
+    ]
+    payload["postcondition"] = _normalize_formula(payload["postcondition"])
+    return payload
+
+
+def _validate_payload(
+    payload: _ExtractionPayload,
+    allowed_args: list[str],
+    extra_symbols: set[str],
+) -> list[str]:
     errors: list[str] = []
-    allowed_names = set(allowed_args) | {"ret"}
+    allowed_names = set(allowed_args) | {"ret"} | extra_symbols
 
     if payload.get("args") != allowed_args:
         errors.append("args must exactly match signature arguments")
@@ -124,9 +140,9 @@ Return strict JSON with keys:
 Rules:
 - args must match signature args exactly (same names/order), never include ret.
 - postcondition must use only signature args and ret.
-- domain_constraints/postcondition must not use: floor, sqrt, pow, **, //, lambda, [] or braces.
-- Use only functional boolean ops: And(...), Or(...), Not(...), Implies(...).
-- Never use infix And/Or or python and/or/not.
+- domain_constraints/postcondition must be SMT-compatible.
+- Use explicit boolean combinators: And(...), Or(...), Not(...), Implies(...).
+- Avoid language-specific shorthand (`and/or/not`, infix `A And B`).
 - domain_constraints must include only true input guards from code.
 
 Signature:
@@ -141,6 +157,47 @@ Current invalid JSON:
     return client.generate_json(repair_prompt)
 
 
+def _safe_subset_repair_payload(
+    client: OllamaClient,
+    signature: str,
+    return_type: str,
+    function_source: str,
+    extra_context: str,
+) -> dict:
+    prompt = f"""
+You must output a conservative, syntactically valid extraction payload.
+
+Return strict JSON with keys:
+{{
+  "args": ["..."],
+  "return_type": "{return_type}",
+  "domain_constraints": ["..."],
+  "postcondition": "...",
+  "confidence": "low|medium|high",
+  "notes": "short explanation"
+}}
+
+Hard safety constraints:
+- Use only this safe subset in expressions:
+  And(...), Or(...), Not(...), If(...),
+  ==, !=, <, <=, >, >=, +, -, *, /, %, Length(...), Contains(...).
+- Do not use quantifiers (ForAll/Exists), lambdas, comprehensions, or free index variables.
+- Do not introduce helper predicates.
+- Use only signature args, normalized self fields (self_x), and ret.
+- Prefer partial-but-valid constraints over invalid syntax.
+
+Signature:
+{signature}
+
+Function source:
+{function_source}
+
+Additional context:
+{extra_context}
+"""
+    return client.generate_json(prompt)
+
+
 def extract_code_logic(
     client: OllamaClient,
     benchmark_id: str,
@@ -151,6 +208,10 @@ def extract_code_logic(
 ) -> ExtractionResult:
     prompt = f"""
 You are extracting implementation semantics from Python function code.
+
+Primary objective:
+- produce a precise SMT-friendly behavioral contract from code.
+- avoid vague constraints and avoid invented helper names.
 
 Output strict JSON with keys:
 {{
@@ -167,61 +228,35 @@ Rules:
   1) `args` must contain ONLY signature arguments in the same order.
   2) `args` MUST NOT contain `ret`.
   3) `postcondition` MUST reference only signature args and `ret`.
-  4) If forbidden tokens appear, rewrite before returning JSON.
+  4) `postcondition` must be exactly one boolean expression.
+  5) Return JSON only, without markdown/comments.
 - Capture actual behavior implied by code.
 - Use Z3/Python-style expressions over args and ret.
-- Allowed operators: And, Or, Not, Implies, If, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs
+- Allowed operators: And, Or, Not, Implies, If, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs,
+  Length, Contains, PrefixOf, SuffixOf, Concat
 - `ret` means return value.
 - Use only argument names that appear in the provided signature.
-- In formulas, allowed variable names are ONLY args and `ret`
-  (no temporaries like `r`, `tmp`, `value`).
-- If behavior depends on sorted input or other assumptions, include these in domain_constraints.
-- Add domain constraints only from explicit checks/guards/assertions in code.
-- Do not invent machine bounds or hidden assumptions (e.g., 32-bit ranges) unless explicit.
-- Branch predicates used to split behavior (e.g., `x >= 0` vs `x < 0`) belong in postcondition,
-  not in domain_constraints.
-- Avoid contradictory or exhaustive branch conditions in domain_constraints.
-- If code has no explicit guard/assert/raise for an argument, keep `domain_constraints` empty.
-- Never output both sides of a split as constraints (forbidden: `x >= 0` and `x < 0` together).
-- `domain_constraints` are only global input guards (assert/raise/precondition), not branch filters.
-- Example forbidden in domain_constraints: `x % 2 == 0`.
-- NEVER use Python boolean keywords `and`, `or`, `not`; use `And`, `Or`, `Not`.
-- Use boolean combinators only in functional form:
-  `And(...)`, `Or(...)`, `Not(...)`, `Implies(...)`.
-- Do not use infix forms like `A Or B` or `A And B`.
-- NEVER mix booleans into arithmetic (e.g., `a * (x > 0)` is forbidden).
-- If `%` is used with denominator `d`, guard it with `d != 0`
-  or encode with `If(d == 0, ..., expr_with_mod)`.
-- For gcd-like behavior, include explicit edge-case logic for zero inputs
-  and avoid undefined modulo situations.
-- Postcondition must be a boolean formula over args and `ret`.
-- Postcondition must be ONE valid expression (no semicolons, no multiple statements).
-- For int return values, encode exact return mapping as `ret == ...` (use `If(...)` for branches).
-- If code/docstring explicitly states "guarantees only ...", you MUST encode that weaker guarantee
-  as postcondition (contract-style), even if exact branch mapping is possible.
-- For bool return values, encode as `ret == (...)`.
-- Do not weaken behavior to broad ranges (e.g., avoid `ret >= 0` if code is piecewise exact).
-- Prefer exact branch-by-branch semantics from source.
-- NEVER call the function name in formulas (forbidden: `foo(x)`); use only args and `ret`.
-- Do not use `->`, `&&`, `||`, `>>`, `|`; use `Implies(...)`, `And(...)`, `Or(...)`.
-- Do not use `=>`, `;`, commas as logical separators,
-  chained comparisons like `a == b == c`, or names like `inf`.
-- Do not use function names like `int(...)`, `floor(...)`, `sqrt(...)` in formulas.
-- Forbidden tokens in formulas: `floor`, `sqrt`, `pow`,
-  `**`, `//`, `lambda`, `[` and `]`, and any braces.
-- If code computes integer square root, encode with constraints over `ret`, e.g.:
-  `And(x >= 0, ret >= 0, ret * ret <= x, x < (ret + 1) * (ret + 1))`.
-- Example forbidden: `ret == floor(sqrt(x))`
-- Example allowed: `And(ret * ret <= x, x < (ret + 1) * (ret + 1))`
+- Normalize object attributes: `self.code` -> `self_code`.
+- In formulas, allowed variable names are ONLY args, normalized object fields and `ret`.
+- Add domain constraints only from explicit global input guards in code.
+- Keep branch logic in postcondition.
+- Prefer exact behavior over loose properties whenever derivable from code.
+- Prefer built-in SMT operators/functions; introduce helper predicates only if unavoidable.
+- Never call the function name in formulas.
+- Avoid language-specific shorthand (`and/or/not`, `&&`, `||`, `->`, `=>`, semicolon chains).
+- `floor(x)` is allowed and interpreted via SMT floor.
+- `sqrt(x)` and `pow(x, y)` are allowed when SMT-compatible.
+- Forbidden tokens in formulas: `lambda` and any braces.
 - Self-check before final JSON:
   - `args` excludes `ret`
-  - No forbidden tokens in `domain_constraints` and `postcondition`
+  - Expressions are syntactically valid and SMT-compatible
   - `postcondition` uses only args and `ret`
 
-Examples:
-- `ret == If(x == 0, 1, 0)`
-- `ret == If(x > 0, 1, 0)`
+Universal examples:
+- `ret == a * b + c`
+- `ret == If(cond, v1, v2)`
 - `ret == (x > 0)`
+- `And(Length(ret) > 0, Contains(ret[0], "1"))`
 
 Signature:
 {signature}
@@ -233,19 +268,57 @@ Additional context:
 {extra_context}
 """
     allowed_args = _extract_signature_args(signature)
+    extra_symbols = _extract_self_symbols(function_source + "\n" + extra_context)
     try:
         raw_payload = client.generate_json(prompt)
     except Exception:
         raw_payload = {}
-    payload = _coerce_payload(raw_payload, allowed_args, return_type)
-    errors = _validate_payload(payload, allowed_args)
+    payload = _normalize_payload_formulas(_coerce_payload(raw_payload, allowed_args, return_type))
+    errors = _validate_payload(payload, allowed_args, extra_symbols)
     if errors:
-        repair_errors = _validate_payload(payload, allowed_args)
-        if repair_errors:
-            payload["domain_constraints"] = []
-            payload["postcondition"] = "ret == ret"
-            payload["notes"] = "Auto-sanitized after validation failure."
-            payload["confidence"] = "low"
+        try:
+            repaired_raw = _repair_payload(client, payload, errors, signature, return_type)
+        except Exception:
+            repaired_raw = {}
+        repaired_payload = _normalize_payload_formulas(
+            _coerce_payload(repaired_raw, allowed_args, return_type)
+        )
+        repair_errors = _validate_payload(repaired_payload, allowed_args, extra_symbols)
+        if not repair_errors:
+            payload = repaired_payload
+        else:
+            try:
+                safe_raw = _safe_subset_repair_payload(
+                    client=client,
+                    signature=signature,
+                    return_type=return_type,
+                    function_source=function_source,
+                    extra_context=extra_context,
+                )
+            except Exception:
+                safe_raw = {}
+            safe_payload = _normalize_payload_formulas(
+                _coerce_payload(safe_raw, allowed_args, return_type)
+            )
+            safe_errors = _validate_payload(safe_payload, allowed_args, extra_symbols)
+            if not safe_errors:
+                safe_payload["confidence"] = "low"
+                safe_payload["notes"] = (
+                    "Recovered via safe-subset repair after validation failure."
+                )
+                safe_payload["degraded"] = True
+                safe_payload["degraded_reason"] = "recovered_safe_subset"
+                payload = safe_payload
+            else:
+                payload["notes"] = (
+                    "Auto-sanitized after validation failure. "
+                    + f"Errors: {', '.join(safe_errors[:3])}"
+                )
+                payload["confidence"] = "low"
+                payload["domain_constraints"] = []
+                payload["postcondition"] = "ret == ret"
+                payload["degraded"] = True
+                payload["degraded_reason"] = "sanitize_after_validation_failure"
 
     return ExtractionResult(
         benchmark_id=benchmark_id,
@@ -255,5 +328,7 @@ Additional context:
         postcondition=payload["postcondition"],
         confidence=payload["confidence"],
         notes=payload["notes"],
+        degraded=payload["degraded"],
+        degraded_reason=payload["degraded_reason"],
     )
 

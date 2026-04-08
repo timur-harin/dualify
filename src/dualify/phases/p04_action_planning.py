@@ -43,6 +43,8 @@ def _case_color(case_name: str) -> str:
         return _ANSI_YELLOW
     if case_name in {"PRE_SPEC", "POST_SPEC"}:
         return _ANSI_BLUE
+    if case_name == "LOW_CONFIDENCE_PARSE":
+        return _ANSI_YELLOW
     return _ANSI_RED
 
 
@@ -53,6 +55,8 @@ def _case_badge(case_name: str) -> str:
         return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_YELLOW)
     if case_name in {"PRE_SPEC", "POST_SPEC"}:
         return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE)
+    if case_name == "LOW_CONFIDENCE_PARSE":
+        return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_YELLOW)
     return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_RED)
 
 
@@ -90,17 +94,26 @@ def _resolve_case_and_actions(smt_result: SmtResult) -> tuple[str, list[str]]:
             "POST_CODE",
             [
                 "refine_spec",
+                "fix_implementation",
+                "add_test_case",
                 "add_property_to_ignore_list",
-                "extend_implementation_or_feature_request",
-                "no_test_case",
             ],
         )
     if reason == "case_post_spec":
         return (
             "POST_SPEC",
             [
-                "relax_spec_maybe_ignore",
                 "fix_implementation",
+                "refine_spec",
+                "add_test_case",
+                "add_property_to_ignore_list",
+            ],
+        )
+    if reason == "low_confidence_parse":
+        return (
+            "LOW_CONFIDENCE_PARSE",
+            [
+                "refine_spec",
                 "add_test_case",
             ],
         )
@@ -137,17 +150,18 @@ def _resolve_case_and_actions(smt_result: SmtResult) -> tuple[str, list[str]]:
                 "POST_CODE",
                 [
                     "refine_spec",
+                    "fix_implementation",
+                    "add_test_case",
                     "add_property_to_ignore_list",
-                    "extend_implementation_or_feature_request",
-                    "no_test_case",
                 ],
             )
         return (
             "POST_SPEC",
             [
-                "relax_spec_maybe_ignore",
                 "fix_implementation",
+                "refine_spec",
                 "add_test_case",
+                "add_property_to_ignore_list",
             ],
         )
 
@@ -190,11 +204,10 @@ Use this scheme:
 2) If precondition mismatch is false and postcondition mismatch exists:
    - if post_spec_implies_post_code_on_common_pre is false:
      triggered_case = POST_CODE
-     actions = [refine_spec, add_property_to_ignore_list,
-                extend_implementation_or_feature_request, no_test_case]
+     actions = [refine_spec, fix_implementation, add_test_case, add_property_to_ignore_list]
    - else:
      triggered_case = POST_SPEC
-     actions = [relax_spec_maybe_ignore, fix_implementation, add_test_case]
+     actions = [fix_implementation, refine_spec, add_test_case, add_property_to_ignore_list]
 3) If equivalent:
    triggered_case = EQUIVALENT
    actions = []
@@ -249,6 +262,8 @@ Input:
     if not summary:
         if triggered_case == "EQUIVALENT":
             summary = "No mismatch on common preconditions and postconditions."
+        elif triggered_case == "LOW_CONFIDENCE_PARSE":
+            summary = "SMT matched, but extracted formulas are too weak to trust."
         elif triggered_case == "PRE_CODE":
             summary = "Implementation preconditions are stricter than specification."
         elif triggered_case == "PRE_SPEC":
@@ -272,10 +287,15 @@ Input:
 def print_comparison_report(
     *,
     benchmark_id: str,
+    file_path: str,
+    lineno: int,
     signature: str,
     informal_spec: str,
     smt_result: SmtResult,
     action_plan: dict,
+    verbose: bool = False,
+    spec_logic: dict | None = None,
+    code_logic: dict | None = None,
 ) -> None:
     triggered_case = action_plan.get("triggered_case", "UNKNOWN")
     if not isinstance(triggered_case, str):
@@ -287,14 +307,57 @@ def print_comparison_report(
     print("\n" + divider)
     print(header)
     print(divider)
-    print(_label("Function:"), _style(benchmark_id, _ANSI_BOLD, _ANSI_WHITE))
+    print(_label("Location:"), _style(f"{file_path}:{lineno}", _ANSI_BOLD, _ANSI_WHITE))
+    print(_label("Target:"), _style(benchmark_id, _ANSI_BOLD, _ANSI_WHITE))
     print(_label("Signature:"), _style(signature, _ANSI_WHITE))
-    print(_label("Spec:"), _style(informal_spec, _ANSI_WHITE))
     print(_label("SMT reason:"), _style(smt_result.reason, _ANSI_CYAN))
     print(_label("Equivalent:"), _bool_badge(smt_result.equivalent))
     print(_label("Triggered case:"), _case_badge(triggered_case))
-    print(_label("Counterexample:"), _style(str(smt_result.counterexample), case_color))
-    print(_label("Diagnostics:"), _style(str(smt_result.diagnostics or {}), _ANSI_WHITE))
+    print(_label("Counterexample(args):"), _style(str(smt_result.counterexample), case_color))
+    diagnostics = smt_result.diagnostics or {}
+    short_diagnostics = {
+        "pre_mismatch": diagnostics.get("pre_mismatch"),
+        "post_mismatch_on_common_pre": diagnostics.get("post_mismatch_on_common_pre"),
+        "failed_check": diagnostics.get("failed_check"),
+        "parse_low_confidence": diagnostics.get("parse_low_confidence"),
+        "spec_weak_postcondition": diagnostics.get("spec_weak_postcondition"),
+        "code_weak_postcondition": diagnostics.get("code_weak_postcondition"),
+    }
+    print(_label("Diagnostics(short):"), _style(str(short_diagnostics), _ANSI_WHITE))
+    if isinstance(spec_logic, dict):
+        print(
+            _label("Spec preconditions:"),
+            _style(str(spec_logic.get("domain_constraints", [])), _ANSI_WHITE),
+        )
+        print(
+            _label("Spec postcondition:"),
+            _style(str(spec_logic.get("postcondition", "")), _ANSI_WHITE),
+        )
+    if isinstance(code_logic, dict):
+        print(
+            _label("Implementation preconditions:"),
+            _style(str(code_logic.get("domain_constraints", [])), _ANSI_WHITE),
+        )
+        print(
+            _label("Implementation postcondition:"),
+            _style(str(code_logic.get("postcondition", "")), _ANSI_WHITE),
+        )
+    if verbose:
+        print(_label("Spec:"), _style(informal_spec, _ANSI_WHITE))
+        debug = diagnostics.get("debug", {})
+        if isinstance(debug, dict):
+            formulas = debug.get("formulas", {})
+            checks = debug.get("checks", {})
+            witness_model = debug.get("witness_model", {})
+            print(_label("Formulas:"), _style(str(formulas), _ANSI_WHITE))
+            failed_check = diagnostics.get("failed_check")
+            if isinstance(failed_check, str) and isinstance(checks, dict):
+                print(
+                    _label("Broken check:"),
+                    _style(f"{failed_check}: {checks.get(failed_check)}", _ANSI_WHITE),
+                )
+            print(_label("Witness:"), _style(str(witness_model), _ANSI_WHITE))
+        print(_label("Diagnostics(full):"), _style(str(diagnostics), _ANSI_WHITE))
     recommended = action_plan.get("recommended_actions", [])
     if isinstance(recommended, list) and recommended:
         print(_label("Recommended actions:"))
@@ -307,7 +370,34 @@ def print_comparison_report(
         print(_label("Planner summary:"), _style(summary, _ANSI_WHITE))
 
 
-def choose_action_interactively(action_plan: dict) -> str:
+def _expand_numeric_selection(raw: str, upper: int) -> list[int]:
+    normalized = raw.replace(",", " ")
+    tokens = [token for token in normalized.split() if token]
+    result: list[int] = []
+    for token in tokens:
+        if "-" in token:
+            bounds = token.split("-", maxsplit=1)
+            if len(bounds) != 2 or not bounds[0].isdigit() or not bounds[1].isdigit():
+                return []
+            start = int(bounds[0])
+            end = int(bounds[1])
+            if start < 1 or end < 1 or start > end or end > upper:
+                return []
+            for value in range(start, end + 1):
+                if value not in result:
+                    result.append(value)
+            continue
+        if not token.isdigit():
+            return []
+        index = int(token)
+        if index < 1 or index > upper:
+            return []
+        if index not in result:
+            result.append(index)
+    return result
+
+
+def choose_action_interactively(action_plan: dict) -> str | list[str]:
     recommended = action_plan.get("recommended_actions", [])
     if not isinstance(recommended, list):
         recommended = []
@@ -316,6 +406,7 @@ def choose_action_interactively(action_plan: dict) -> str:
     if not actions:
         print(_style("No actions suggested.", _ANSI_BOLD, _ANSI_YELLOW))
         commands_hint = (
+            f"{_style('[d]', _ANSI_CYAN, _ANSI_BOLD)} details  "
             f"{_style('[n]', _ANSI_CYAN, _ANSI_BOLD)} next  "
             f"{_style('[q]', _ANSI_RED, _ANSI_BOLD)} quit"
         )
@@ -324,7 +415,9 @@ def choose_action_interactively(action_plan: dict) -> str:
             choice = input("Select command: ").strip().lower()
             if choice in {"n", "q"}:
                 return "__next__" if choice == "n" else "__quit__"
-            print(_style("Invalid command. Use 'n' or 'q'.", _ANSI_RED))
+            if choice == "d":
+                return "__details__"
+            print(_style("Invalid command. Use 'd', 'n', or 'q'.", _ANSI_RED))
 
     print("\n" + _style(" Action menu ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
     for idx, action in enumerate(actions, start=1):
@@ -332,6 +425,14 @@ def choose_action_interactively(action_plan: dict) -> str:
             f"  {_style(f'[{idx}]', _ANSI_CYAN, _ANSI_BOLD)} "
             f"{_style(action, _ANSI_WHITE)}"
         )
+    print(
+        f"  {_style('[a]', _ANSI_CYAN, _ANSI_BOLD)} "
+        f"{_style('all recommended', _ANSI_WHITE)}"
+    )
+    print(
+        f"  {_style('[d]', _ANSI_CYAN, _ANSI_BOLD)} "
+        f"{_style('show details', _ANSI_WHITE)}"
+    )
     print(
         f"  {_style('[n]', _ANSI_CYAN, _ANSI_BOLD)} "
         f"{_style('next function', _ANSI_WHITE)}"
@@ -347,9 +448,15 @@ def choose_action_interactively(action_plan: dict) -> str:
             return "__next__"
         if choice == "q":
             return "__quit__"
-        if choice.isdigit():
-            index = int(choice) - 1
-            if 0 <= index < len(actions):
-                return actions[index]
-        print(_style("Invalid choice. Enter action number, 'n', or 'q'.", _ANSI_RED))
+        if choice == "d":
+            return "__details__"
+        if choice == "a":
+            return actions
+        indexes = _expand_numeric_selection(choice, len(actions))
+        if indexes:
+            selected = [actions[idx - 1] for idx in indexes]
+            if len(selected) == 1:
+                return selected[0]
+            return selected
+        print(_style("Invalid choice. Enter action index/range, 'a', 'd', 'n', or 'q'.", _ANSI_RED))
 

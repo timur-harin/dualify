@@ -1,12 +1,15 @@
 import argparse
 import ast
+import fnmatch
 import json
+import re
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
 
 from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
+from dualify.formula_parser import normalize_formula
 from dualify.io_utils import write_json
 from dualify.ollama_client import OllamaClient
 from dualify.phases.p01_spec_to_logic import extract_spec_logic
@@ -45,6 +48,11 @@ def _normalize_extraction(case_spec: CaseSpec, post: str, extraction: dict) -> d
     if "ret" not in post and case_spec.return_type == "bool":
         normalized["postcondition"] = f"ret == ({post})"
     return normalized
+
+
+def _is_weak_postcondition(postcondition: str) -> bool:
+    normalized = normalize_formula(postcondition).replace(" ", "")
+    return normalized in {"ret==ret", "True", "(True)", "(ret==ret)"}
 
 
 def _utc_timestamp_for_filename() -> str:
@@ -126,6 +134,40 @@ def _order_cases_by_execution(cases: list[BenchmarkCase]) -> list[BenchmarkCase]
     return ordered
 
 
+def _matches_target_pattern(benchmark_id: str, pattern: str) -> bool:
+    if fnmatch.fnmatch(benchmark_id, pattern):
+        return True
+    return pattern in benchmark_id
+
+
+def _filter_cases(
+    cases: list[BenchmarkCase],
+    *,
+    targets: list[str],
+    target_regexes: list[str],
+) -> list[BenchmarkCase]:
+    if not targets and not target_regexes:
+        return cases
+    compiled_regexes = [re.compile(expr) for expr in target_regexes]
+    filtered: list[BenchmarkCase] = []
+    for case in cases:
+        by_target = any(_matches_target_pattern(case.benchmark_id, pattern) for pattern in targets)
+        by_regex = any(regex.search(case.benchmark_id) for regex in compiled_regexes)
+        if by_target or by_regex:
+            filtered.append(case)
+    return filtered
+
+
+def _print_targets(repo_root: Path, cases: list[BenchmarkCase]) -> None:
+    print("\n" + _style(" Discoverable targets ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
+    for case in cases:
+        abs_location = str((repo_root / case.file).resolve())
+        print(
+            f"{_style(abs_location, _ANSI_WHITE)}:{_style(str(case.lineno), _ANSI_CYAN)} "
+            f"{_style(case.benchmark_id, _ANSI_YELLOW)}"
+        )
+
+
 def _run_cases(client: OllamaClient, cases: list[BenchmarkCase]) -> tuple[list[dict], int, int]:
     case_results: list[dict] = []
     fallback_spec_count = 0
@@ -188,6 +230,22 @@ def _run_cases(client: OllamaClient, cases: list[BenchmarkCase]) -> tuple[list[d
             fallback_code_count += 1
 
         smt_result = check_equivalence(case_spec, spec_logic, code_logic)
+        spec_weak = _is_weak_postcondition(spec_logic.postcondition)
+        code_weak = _is_weak_postcondition(code_logic.postcondition)
+        if spec_weak or code_weak:
+            diagnostics = smt_result.diagnostics or {}
+            diagnostics["parse_low_confidence"] = True
+            diagnostics["spec_weak_postcondition"] = spec_weak
+            diagnostics["code_weak_postcondition"] = code_weak
+            diagnostics["spec_postcondition"] = spec_logic.postcondition
+            diagnostics["code_postcondition"] = code_logic.postcondition
+            smt_result = SmtResult(
+                benchmark_id=smt_result.benchmark_id,
+                equivalent=smt_result.equivalent,
+                reason="low_confidence_parse" if smt_result.equivalent else smt_result.reason,
+                counterexample=smt_result.counterexample,
+                diagnostics=diagnostics,
+            )
 
         action_plan_payload = build_action_plan(
             client=client,
@@ -278,19 +336,32 @@ def run_repo_scan(
     base_url: str,
     repo_path: str,
     iterations: int = 1,
+    targets: list[str] | None = None,
+    target_regexes: list[str] | None = None,
+    list_targets: bool = False,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
         raise FileNotFoundError(f"Repository path not found: {target_repo}")
 
-    client = OllamaClient(model=model, base_url=base_url)
-    client.healthcheck()
-    cases = _order_cases_by_execution(discover_repo_cases(target_repo))
+    discovered_cases = discover_repo_cases(target_repo)
+    if list_targets:
+        _print_targets(target_repo, discovered_cases)
+        return {"mode": "repo_scan", "repo_path": str(target_repo), "listed_targets": True}
+    cases = _order_cases_by_execution(
+        _filter_cases(
+            discovered_cases,
+            targets=targets or [],
+            target_regexes=target_regexes or [],
+        )
+    )
     if not cases:
         raise ValueError(
             "No supported functions discovered. "
-            "Add type-annotated functions with int/bool/float signatures."
+            "Add type-annotated functions."
         )
+    client = OllamaClient(model=model, base_url=base_url)
+    client.healthcheck()
 
     history: list[dict[str, object]] = []
     previous_inconsistent: set[str] | None = None
@@ -343,19 +414,33 @@ def run_repo_cli(
     base_url: str,
     repo_path: str,
     iterations: int = 1,
+    targets: list[str] | None = None,
+    target_regexes: list[str] | None = None,
+    list_targets: bool = False,
+    verbose: bool = False,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
         raise FileNotFoundError(f"Repository path not found: {target_repo}")
 
-    client = OllamaClient(model=model, base_url=base_url)
-    client.healthcheck()
-    ordered_cases = _order_cases_by_execution(discover_repo_cases(target_repo))
+    discovered_cases = discover_repo_cases(target_repo)
+    if list_targets:
+        _print_targets(target_repo, discovered_cases)
+        return {"mode": "repo_cli", "repo_path": str(target_repo), "listed_targets": True}
+    ordered_cases = _order_cases_by_execution(
+        _filter_cases(
+            discovered_cases,
+            targets=targets or [],
+            target_regexes=target_regexes or [],
+        )
+    )
     if not ordered_cases:
         raise ValueError(
             "No supported functions discovered. "
-            "Add type-annotated functions with int/bool/float signatures."
+            "Add type-annotated functions."
         )
+    client = OllamaClient(model=model, base_url=base_url)
+    client.healthcheck()
 
     print("\n" + _style(" Repository scan ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
     print(_label("Repository:"), _style(str(target_repo), _ANSI_WHITE))
@@ -384,43 +469,68 @@ def run_repo_cli(
 
             print_comparison_report(
                 benchmark_id=case_result["benchmark_id"],
+                file_path=str((target_repo / case.file).resolve()),
+                lineno=case.lineno,
                 signature=case_result["signature"],
                 informal_spec=case_result["informal_spec"],
                 smt_result=smt_result,
                 action_plan=action_plan,
+                verbose=verbose,
+                spec_logic=case_result.get("spec_to_logic"),
+                code_logic=case_result.get("code_to_logic"),
             )
 
             if smt_result.equivalent:
                 print(
                     _label("Status:"),
                     _style("EQUIVALENT", _ANSI_BOLD, _ANSI_GREEN),
-                    _style("→ moving to next function", _ANSI_WHITE),
+                    _style("→ waiting for manual command", _ANSI_WHITE),
                 )
-                break
+            else:
+                selection = choose_action_interactively(action_plan)
+                if selection == "__details__":
+                    print_comparison_report(
+                        benchmark_id=case_result["benchmark_id"],
+                        file_path=str((target_repo / case.file).resolve()),
+                        lineno=case.lineno,
+                        signature=case_result["signature"],
+                        informal_spec=case_result["informal_spec"],
+                        smt_result=smt_result,
+                        action_plan=action_plan,
+                        verbose=True,
+                        spec_logic=case_result.get("spec_to_logic"),
+                        code_logic=case_result.get("code_to_logic"),
+                    )
+                    continue
+                if selection == "__quit__":
+                    stop_all = True
+                    break
+                if selection == "__next__":
+                    break
 
-            selection = choose_action_interactively(action_plan)
-            if selection == "__quit__":
-                stop_all = True
-                break
-            if selection == "__next__":
-                break
-
-            p05_result = execute_action(
-                client=client,
-                action=selection,
-                benchmark_id=case_result["benchmark_id"],
-                signature=case_result["signature"],
-                informal_spec=case_result["informal_spec"],
-                smt_result=smt_result,
-                triggered_case=action_plan.get("triggered_case", "UNKNOWN"),
-            )
-            print("\n" + _style(" p05 action result ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
-            print(json.dumps(p05_result, indent=2, ensure_ascii=False))
+                actions = [selection] if isinstance(selection, str) else selection
+                for action in actions:
+                    p05_result = execute_action(
+                        client=client,
+                        action=action,
+                        benchmark_id=case_result["benchmark_id"],
+                        signature=case_result["signature"],
+                        informal_spec=case_result["informal_spec"],
+                        smt_result=smt_result,
+                        triggered_case=action_plan.get("triggered_case", "UNKNOWN"),
+                    )
+                    print(
+                        "\n"
+                        + _style(" p05 action result ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE)
+                    )
+                    print(json.dumps(p05_result, indent=2, ensure_ascii=False))
 
             followup = input(
                 "\n"
                 + _style("Command", _ANSI_BOLD, _ANSI_WHITE)
                 + ": "
+                + _style("[Enter]", _ANSI_CYAN)
+                + " next, "
                 + _style("[r]", _ANSI_CYAN)
                 + " re-run, "
                 + _style("[n]", _ANSI_CYAN)
@@ -430,6 +540,8 @@ def run_repo_cli(
             ).strip().lower()
             if followup == "q":
                 stop_all = True
+                break
+            if followup == "":
                 break
             if followup != "r":
                 break
@@ -470,6 +582,10 @@ def main() -> None:
     parser.add_argument("--repo-path", default="")
     parser.add_argument("--iterations", type=int, default=1)
     parser.add_argument("--non-interactive", action="store_true")
+    parser.add_argument("--target", action="append", default=[])
+    parser.add_argument("--target-regex", action="append", default=[])
+    parser.add_argument("--list-targets", action="store_true")
+    parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
 
     if args.repo_path:
@@ -479,6 +595,9 @@ def main() -> None:
                 base_url=args.base_url,
                 repo_path=args.repo_path,
                 iterations=args.iterations,
+                targets=args.target,
+                target_regexes=args.target_regex,
+                list_targets=args.list_targets,
             )
         else:
             report = run_repo_cli(
@@ -486,6 +605,10 @@ def main() -> None:
                 base_url=args.base_url,
                 repo_path=args.repo_path,
                 iterations=args.iterations,
+                targets=args.target,
+                target_regexes=args.target_regex,
+                list_targets=args.list_targets,
+                verbose=args.verbose,
             )
     else:
         report = run_experiment(
