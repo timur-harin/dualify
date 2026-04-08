@@ -130,6 +130,11 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
     def _pow(lhs: Any, rhs: Any) -> Any:
         return lhs**rhs
 
+    def _is_digit_string(value: Any) -> Any:
+        if hasattr(z3, "InRe"):
+            return z3.InRe(value, z3.Star(z3.Range("0", "9")))
+        return z3.BoolVal(True)
+
     z3_callables = {
         name: getattr(z3, name)
         for name in dir(z3)
@@ -150,6 +155,7 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
         "floor": _floor,
         "sqrt": _sqrt,
         "pow": _pow,
+        "IsDigitString": _is_digit_string,
         "True": True,
         "False": False,
     }

@@ -19,6 +19,7 @@ class _ExtractionPayload(TypedDict):
     notes: str
     degraded: bool
     degraded_reason: str
+    extraction_trace: dict[str, object]
 
 
 def _to_str(value: object, default: str) -> str:
@@ -61,6 +62,7 @@ def _coerce_payload(
         "notes": _to_str(payload.get("notes"), ""),
         "degraded": False,
         "degraded_reason": "",
+        "extraction_trace": {},
     }
 
 
@@ -81,6 +83,7 @@ def _extract_self_symbols(text: str) -> set[str]:
 
 def _normalize_formula(expr: str) -> str:
     normalized = normalize_formula(expr)
+    normalized = re.sub(r"\b([A-Za-z_][A-Za-z0-9_]*)_isdigit\(\)", r"IsDigitString(\1)", normalized)
     normalized = re.sub(r"\b(result|output|return_value)\b", "ret", normalized)
     return normalized
 
@@ -143,6 +146,9 @@ Rules:
 - domain_constraints/postcondition must be SMT-compatible.
 - Use explicit boolean combinators: And(...), Or(...), Not(...), Implies(...).
 - Avoid language-specific shorthand (`and/or/not`, infix `A And B`).
+- Never use `&` or `|`; use `And(...)` / `Or(...)`.
+- Never output natural-language sentences in formulas.
+- Do not use `all(...)`, `any(...)`, comprehensions, generator expressions, or `is`.
 
 Signature:
 {signature}
@@ -184,6 +190,9 @@ Hard safety constraints:
 - Do not introduce helper predicates.
 - Use only signature args, normalized self fields (self_x), and ret.
 - Prefer partial-but-valid constraints over invalid syntax.
+- Never use `&` or `|`; use `And(...)` / `Or(...)`.
+- Never output natural-language sentences in formulas.
+- Do not use `all(...)`, `any(...)`, comprehensions, generator expressions, or `is`.
 
 Signature:
 {signature}
@@ -248,6 +257,9 @@ Rules:
 - Prefer built-in SMT operators/functions; introduce helper predicates only if unavoidable.
 - Never call the function name in formulas.
 - Avoid language-specific shorthand (`and/or/not`, `&&`, `||`, `->`, `=>`, semicolon chains).
+- Never use `&` or `|`; use `And(...)` / `Or(...)`.
+- Never output natural-language sentences in formulas.
+- Do not use `all(...)`, `any(...)`, comprehensions, generator expressions, or `is`.
 - `floor(x)` is allowed and interpreted via SMT floor.
 - `sqrt(x)` and `pow(x, y)` are allowed when SMT-compatible.
 - Forbidden tokens in formulas: `lambda` and any braces.
@@ -279,6 +291,11 @@ Additional context:
         raw_payload = {}
     payload = _normalize_payload_formulas(_coerce_payload(raw_payload, allowed_args, return_type))
     errors = _validate_payload(payload, allowed_args, extra_symbols)
+    payload["extraction_trace"]["initial"] = {
+        "domain_constraints": list(payload["domain_constraints"]),
+        "postcondition": payload["postcondition"],
+        "errors": list(errors),
+    }
     if errors:
         try:
             repaired_raw = _repair_payload(client, payload, errors, signature, return_type)
@@ -288,6 +305,11 @@ Additional context:
             _coerce_payload(repaired_raw, allowed_args, return_type)
         )
         repair_errors = _validate_payload(repaired_payload, allowed_args, extra_symbols)
+        payload["extraction_trace"]["repair"] = {
+            "domain_constraints": list(repaired_payload["domain_constraints"]),
+            "postcondition": repaired_payload["postcondition"],
+            "errors": list(repair_errors),
+        }
         if not repair_errors:
             payload = repaired_payload
         else:
@@ -305,6 +327,11 @@ Additional context:
                 _coerce_payload(safe_raw, allowed_args, return_type)
             )
             safe_errors = _validate_payload(safe_payload, allowed_args, extra_symbols)
+            payload["extraction_trace"]["safe_repair"] = {
+                "domain_constraints": list(safe_payload["domain_constraints"]),
+                "postcondition": safe_payload["postcondition"],
+                "errors": list(safe_errors),
+            }
             if not safe_errors:
                 safe_payload["confidence"] = "low"
                 safe_payload["notes"] = (
@@ -312,6 +339,7 @@ Additional context:
                 )
                 safe_payload["degraded"] = True
                 safe_payload["degraded_reason"] = "recovered_safe_subset"
+                safe_payload["extraction_trace"] = dict(payload["extraction_trace"])
                 payload = safe_payload
             else:
                 payload["notes"] = (
@@ -323,6 +351,12 @@ Additional context:
                 payload["postcondition"] = "ret == ret"
                 payload["degraded"] = True
                 payload["degraded_reason"] = "sanitize_after_validation_failure"
+    payload["extraction_trace"]["final"] = {
+        "domain_constraints": list(payload["domain_constraints"]),
+        "postcondition": payload["postcondition"],
+        "degraded": payload["degraded"],
+        "degraded_reason": payload["degraded_reason"],
+    }
 
     return ExtractionResult(
         benchmark_id=benchmark_id,
@@ -334,5 +368,6 @@ Additional context:
         notes=payload["notes"],
         degraded=payload["degraded"],
         degraded_reason=payload["degraded_reason"],
+        extraction_trace=payload["extraction_trace"],
     )
 
