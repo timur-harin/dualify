@@ -7,13 +7,7 @@ from dualify.types import BenchmarkCase
 def _annotation_to_type(annotation: ast.expr | None, file_path: Path, arg_name: str) -> str:
     if annotation is None:
         raise ValueError(f"Missing type annotation for '{arg_name}' in {file_path}")
-    text = ast.unparse(annotation)
-    if text not in {"int", "bool", "float"}:
-        raise ValueError(
-            f"Unsupported type '{text}' for '{arg_name}' in {file_path}. "
-            "Only int, bool, and float are supported."
-        )
-    return text
+    return ast.unparse(annotation)
 
 
 def _extract_comment_block(lines: list[str], func_lineno: int) -> list[str]:
@@ -92,30 +86,47 @@ def _discover_cases(
                 continue
             raise
 
-        for node in module.body:
-            if not isinstance(node, ast.FunctionDef):
-                continue
+        relative_file = str(file_path.relative_to(root_dir))
+
+        def add_case(
+            node: ast.FunctionDef,
+            *,
+            qualname: str,
+            local_file_path: Path,
+            local_source_lines: list[str],
+            local_source: str,
+            local_relative_file: str,
+        ) -> None:
             arg_types: dict[str, str] = {}
             try:
                 for arg in node.args.args:
-                    arg_types[arg.arg] = _annotation_to_type(arg.annotation, file_path, arg.arg)
-                return_type = _annotation_to_type(node.returns, file_path, "return")
+                    if arg.arg in {"self", "cls"} and arg.annotation is None:
+                        continue
+                    arg_types[arg.arg] = _annotation_to_type(
+                        arg.annotation,
+                        local_file_path,
+                        arg.arg,
+                    )
+                return_type = _annotation_to_type(node.returns, local_file_path, "return")
             except ValueError:
                 if skip_unsupported:
-                    continue
+                    return
                 raise
 
-            informal_spec, extra_context = _extract_spec_parts(node, source_lines)
-            function_source = ast.get_source_segment(source, node) or source
-            relative_file = str(file_path.relative_to(root_dir))
-            benchmark_id = node.name
+            informal_spec, extra_context = _extract_spec_parts(node, local_source_lines)
+            function_source = ast.get_source_segment(local_source, node) or local_source
+            benchmark_id = qualname
             if benchmark_id_prefix_with_path:
-                benchmark_id = f"{relative_file.replace('/', '::')}::{node.name}"
+                benchmark_id = (
+                    f"{local_relative_file.replace('/', '::')}::{qualname.replace('.', '::')}"
+                )
 
             cases.append(
                 BenchmarkCase(
                     benchmark_id=benchmark_id,
-                    file=relative_file,
+                    file=local_relative_file,
+                    qualname=qualname,
+                    lineno=node.lineno,
                     signature=_format_signature(node),
                     arg_types=arg_types,
                     return_type=return_type,
@@ -124,6 +135,29 @@ def _discover_cases(
                     function_source=function_source,
                 )
             )
+
+        for node in module.body:
+            if isinstance(node, ast.FunctionDef):
+                add_case(
+                    node,
+                    qualname=node.name,
+                    local_file_path=file_path,
+                    local_source_lines=source_lines,
+                    local_source=source,
+                    local_relative_file=relative_file,
+                )
+                continue
+            if isinstance(node, ast.ClassDef):
+                for class_item in node.body:
+                    if isinstance(class_item, ast.FunctionDef):
+                        add_case(
+                            class_item,
+                            qualname=f"{node.name}.{class_item.name}",
+                            local_file_path=file_path,
+                            local_source_lines=source_lines,
+                            local_source=source,
+                            local_relative_file=relative_file,
+                        )
     return sorted(cases, key=lambda item: item.benchmark_id)
 
 
