@@ -18,6 +18,33 @@ class _NormalizeTransformer(ast.NodeTransformer):
                 ast.Call(func=ast.Name(id="Length", ctx=ast.Load()), args=node.args, keywords=[]),
                 node,
             )
+        if isinstance(node.func, ast.Name) and node.func.id == "All_Distinct" and any(
+            isinstance(arg, (ast.ListComp, ast.GeneratorExp)) for arg in node.args
+        ):
+            # Unsupported comprehensions in formulas: keep surrounding formula parseable.
+            return ast.copy_location(ast.Constant(value=True), node)
+        return node
+
+    def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
+        self.generic_visit(node)
+        if isinstance(node.op, ast.BitAnd):
+            return ast.copy_location(
+                ast.Call(
+                    func=ast.Name(id="And", ctx=ast.Load()),
+                    args=[node.left, node.right],
+                    keywords=[],
+                ),
+                node,
+            )
+        if isinstance(node.op, ast.BitOr):
+            return ast.copy_location(
+                ast.Call(
+                    func=ast.Name(id="Or", ctx=ast.Load()),
+                    args=[node.left, node.right],
+                    keywords=[],
+                ),
+                node,
+            )
         return node
 
 

@@ -26,6 +26,7 @@ class ExtractionResult:
     notes: str
     degraded: bool = False
     degraded_reason: str = ""
+    extraction_trace: dict[str, object] | None = None
 
 
 @dataclass
