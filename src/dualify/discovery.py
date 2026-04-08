@@ -30,7 +30,37 @@ def _extract_comment_block(lines: list[str], func_lineno: int) -> list[str]:
     return block
 
 
-def _extract_spec_parts(node: ast.FunctionDef, source_lines: list[str]) -> tuple[str, str]:
+def _extract_class_context(class_node: ast.ClassDef, source: str) -> str:
+    context_parts: list[str] = []
+    class_doc = ast.get_docstring(class_node)
+    if class_doc:
+        context_parts.append(f"Class doc: {class_doc.strip()}")
+
+    class_attrs: list[str] = []
+    for item in class_node.body:
+        if isinstance(item, ast.Assign):
+            for target in item.targets:
+                if isinstance(target, ast.Name):
+                    class_attrs.append(target.id)
+    if class_attrs:
+        context_parts.append(f"Class attributes: {', '.join(class_attrs)}")
+
+    init_source = ""
+    for item in class_node.body:
+        if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+            init_source = ast.get_source_segment(source, item) or ""
+            break
+    if init_source:
+        context_parts.append(f"__init__ source:\n{init_source}")
+    return "\n\n".join(context_parts).strip()
+
+
+def _extract_spec_parts(
+    node: ast.FunctionDef,
+    source_lines: list[str],
+    *,
+    class_context: str = "",
+) -> tuple[str, str]:
     comments = _extract_comment_block(source_lines, node.lineno)
     description_lines: list[str] = []
     context_lines: list[str] = []
@@ -50,6 +80,8 @@ def _extract_spec_parts(node: ast.FunctionDef, source_lines: list[str]) -> tuple
     if not informal_spec:
         informal_spec = f"Describe behavior of function '{node.name}'."
 
+    if class_context:
+        extra_context = f"{extra_context}\n\n{class_context}".strip()
     return informal_spec, extra_context
 
 
@@ -92,6 +124,7 @@ def _discover_cases(
             node: ast.FunctionDef,
             *,
             qualname: str,
+            class_context: str,
             local_file_path: Path,
             local_source_lines: list[str],
             local_source: str,
@@ -113,7 +146,11 @@ def _discover_cases(
                     return
                 raise
 
-            informal_spec, extra_context = _extract_spec_parts(node, local_source_lines)
+            informal_spec, extra_context = _extract_spec_parts(
+                node,
+                local_source_lines,
+                class_context=class_context,
+            )
             function_source = ast.get_source_segment(local_source, node) or local_source
             benchmark_id = qualname
             if benchmark_id_prefix_with_path:
@@ -141,6 +178,7 @@ def _discover_cases(
                 add_case(
                     node,
                     qualname=node.name,
+                    class_context="",
                     local_file_path=file_path,
                     local_source_lines=source_lines,
                     local_source=source,
@@ -148,11 +186,13 @@ def _discover_cases(
                 )
                 continue
             if isinstance(node, ast.ClassDef):
+                class_context = _extract_class_context(node, source)
                 for class_item in node.body:
                     if isinstance(class_item, ast.FunctionDef):
                         add_case(
                             class_item,
                             qualname=f"{node.name}.{class_item.name}",
+                            class_context=class_context,
                             local_file_path=file_path,
                             local_source_lines=source_lines,
                             local_source=source,

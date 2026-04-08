@@ -89,6 +89,16 @@ ACTION_PROMPTS: Final[dict[str, str]] = {
         "}\n"
         "Be strict and risk-aware."
     ),
+    "investigate_instrumentation": (
+        "You are proposing diagnostics to debug extraction/instrumentation quality.\n"
+        "Output strict JSON with keys:\n"
+        "{\n"
+        '  "suspected_layer": "prompt|parser|normalizer|validator|smt_bridge",\n'
+        '  "checks": ["check1", "check2"],\n'
+        '  "minimal_change": "single safe instrumentation improvement"\n'
+        "}\n"
+        "Focus on identifying whether failures come from logic understanding or syntax shaping."
+    ),
 }
 
 

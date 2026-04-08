@@ -25,6 +25,7 @@ ACTION_CATALOG = [
     "relax_spec_maybe_ignore",
     "add_test_case",
     "no_test_case",
+    "investigate_instrumentation",
 ]
 
 
@@ -114,7 +115,9 @@ def _resolve_case_and_actions(smt_result: SmtResult) -> tuple[str, list[str]]:
             "LOW_CONFIDENCE_PARSE",
             [
                 "refine_spec",
-                "add_test_case",
+                "fix_implementation",
+                "investigate_instrumentation",
+                "no_test_case",
             ],
         )
     if reason == "equivalent_no_mismatch" or smt_result.equivalent:
@@ -263,7 +266,10 @@ Input:
         if triggered_case == "EQUIVALENT":
             summary = "No mismatch on common preconditions and postconditions."
         elif triggered_case == "LOW_CONFIDENCE_PARSE":
-            summary = "SMT matched, but extracted formulas are too weak to trust."
+            summary = (
+                "SMT matched, but extracted formulas are low-confidence; "
+                "refine spec/implementation or investigate extraction instrumentation."
+            )
         elif triggered_case == "PRE_CODE":
             summary = "Implementation preconditions are stricter than specification."
         elif triggered_case == "PRE_SPEC":
@@ -324,6 +330,57 @@ def print_comparison_report(
         "code_weak_postcondition": diagnostics.get("code_weak_postcondition"),
     }
     print(_label("Diagnostics(short):"), _style(str(short_diagnostics), _ANSI_WHITE))
+
+    def _print_trace(title: str, logic: dict) -> None:
+        trace = logic.get("extraction_trace")
+        if not isinstance(trace, dict) or not trace:
+            return
+        print(_label(title))
+        for stage in ("initial", "repair", "safe_repair", "final"):
+            stage_payload = trace.get(stage)
+            if not isinstance(stage_payload, dict):
+                continue
+            constraints = stage_payload.get("domain_constraints", [])
+            postcondition = stage_payload.get("postcondition", "")
+            errors = stage_payload.get("errors", [])
+            degraded = stage_payload.get("degraded")
+            degraded_reason = stage_payload.get("degraded_reason")
+
+            print("  " + _style(f"[{stage}]", _ANSI_BOLD, _ANSI_CYAN))
+            print(
+                "    "
+                + _style("PRE:", _ANSI_BOLD, _ANSI_BLUE)
+                + " "
+                + _style(str(constraints), _ANSI_WHITE)
+            )
+            print(
+                "    "
+                + _style("POST:", _ANSI_BOLD, _ANSI_YELLOW)
+                + " "
+                + _style(str(postcondition), _ANSI_BOLD, _ANSI_WHITE)
+            )
+            if isinstance(errors, list) and errors:
+                print(
+                    "    "
+                    + _style("ERRORS:", _ANSI_BOLD, _ANSI_RED)
+                    + " "
+                    + _style(str(errors), _ANSI_WHITE)
+                )
+            if isinstance(degraded, bool):
+                print(
+                    "    "
+                    + _style("DEGRADED:", _ANSI_BOLD, _ANSI_RED if degraded else _ANSI_GREEN)
+                    + " "
+                    + _style(str(degraded), _ANSI_WHITE)
+                )
+            if isinstance(degraded_reason, str) and degraded_reason:
+                print(
+                    "    "
+                    + _style("DEGRADED_REASON:", _ANSI_BOLD, _ANSI_RED)
+                    + " "
+                    + _style(degraded_reason, _ANSI_WHITE)
+                )
+
     if isinstance(spec_logic, dict):
         print(
             _label("Spec preconditions:"),
@@ -333,6 +390,7 @@ def print_comparison_report(
             _label("Spec postcondition:"),
             _style(str(spec_logic.get("postcondition", "")), _ANSI_WHITE),
         )
+        _print_trace("Spec extraction trace:", spec_logic)
     if isinstance(code_logic, dict):
         print(
             _label("Implementation preconditions:"),
@@ -342,6 +400,7 @@ def print_comparison_report(
             _label("Implementation postcondition:"),
             _style(str(code_logic.get("postcondition", "")), _ANSI_WHITE),
         )
+        _print_trace("Implementation extraction trace:", code_logic)
     if verbose:
         print(_label("Spec:"), _style(informal_spec, _ANSI_WHITE))
         debug = diagnostics.get("debug", {})
