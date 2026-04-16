@@ -8,7 +8,7 @@ import requests
 class OllamaClient:
     model: str
     base_url: str = "http://127.0.0.1:11434"
-    timeout_sec: int = 120
+    timeout_sec: int = 30
 
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict:
         url = f"{self.base_url}/api/generate"
