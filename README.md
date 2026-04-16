@@ -37,6 +37,21 @@ Dualify is a research framework for bidirectional verification:
    poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark mismatch
    ```
 
+4. Scan a real Python repository (iterative inconsistency search):
+
+   ```bash
+   poetry run dualify-run --model qwen2.5:3b-instruct --repo-path ./path/to/repo --iterations 2
+   ```
+
+   - Interactive mode (default): for each function, Dualify shows SMT comparison,
+     asks you to choose an action (p04), then executes selected action prompt (p05).
+   - Non-interactive mode:
+
+   ```bash
+   poetry run dualify-run --model qwen2.5:3b-instruct \
+     --repo-path ./path/to/repo --iterations 2 --non-interactive
+   ```
+
 ## Benchmark input format (no JSON required)
 
 - Put Python files into `benchmark/synthetic/`.

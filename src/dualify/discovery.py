@@ -7,13 +7,7 @@ from dualify.types import BenchmarkCase
 def _annotation_to_type(annotation: ast.expr | None, file_path: Path, arg_name: str) -> str:
     if annotation is None:
         raise ValueError(f"Missing type annotation for '{arg_name}' in {file_path}")
-    text = ast.unparse(annotation)
-    if text not in {"int", "bool"}:
-        raise ValueError(
-            f"Unsupported type '{text}' for '{arg_name}' in {file_path}. "
-            "Only int and bool are supported."
-        )
-    return text
+    return ast.unparse(annotation)
 
 
 def _extract_comment_block(lines: list[str], func_lineno: int) -> list[str]:
@@ -36,7 +30,37 @@ def _extract_comment_block(lines: list[str], func_lineno: int) -> list[str]:
     return block
 
 
-def _extract_spec_parts(node: ast.FunctionDef, source_lines: list[str]) -> tuple[str, str]:
+def _extract_class_context(class_node: ast.ClassDef, source: str) -> str:
+    context_parts: list[str] = []
+    class_doc = ast.get_docstring(class_node)
+    if class_doc:
+        context_parts.append(f"Class doc: {class_doc.strip()}")
+
+    class_attrs: list[str] = []
+    for item in class_node.body:
+        if isinstance(item, ast.Assign):
+            for target in item.targets:
+                if isinstance(target, ast.Name):
+                    class_attrs.append(target.id)
+    if class_attrs:
+        context_parts.append(f"Class attributes: {', '.join(class_attrs)}")
+
+    init_source = ""
+    for item in class_node.body:
+        if isinstance(item, ast.FunctionDef) and item.name == "__init__":
+            init_source = ast.get_source_segment(source, item) or ""
+            break
+    if init_source:
+        context_parts.append(f"__init__ source:\n{init_source}")
+    return "\n\n".join(context_parts).strip()
+
+
+def _extract_spec_parts(
+    node: ast.FunctionDef,
+    source_lines: list[str],
+    *,
+    class_context: str = "",
+) -> tuple[str, str]:
     comments = _extract_comment_block(source_lines, node.lineno)
     description_lines: list[str] = []
     context_lines: list[str] = []
@@ -56,6 +80,8 @@ def _extract_spec_parts(node: ast.FunctionDef, source_lines: list[str]) -> tuple
     if not informal_spec:
         informal_spec = f"Describe behavior of function '{node.name}'."
 
+    if class_context:
+        extra_context = f"{extra_context}\n\n{class_context}".strip()
     return informal_spec, extra_context
 
 
@@ -68,28 +94,76 @@ def _format_signature(node: ast.FunctionDef) -> str:
     return f"{node.name}({', '.join(parts)}) -> {ret}"
 
 
-def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[BenchmarkCase]:
+def _iter_python_files(base_dir: Path, recursive: bool) -> list[Path]:
+    pattern = "**/*.py" if recursive else "*.py"
+    return sorted(path for path in base_dir.glob(pattern) if path.is_file())
+
+
+def _discover_cases(
+    base_dir: Path,
+    root_dir: Path,
+    *,
+    recursive: bool,
+    skip_unsupported: bool,
+    benchmark_id_prefix_with_path: bool,
+) -> list[BenchmarkCase]:
     cases: list[BenchmarkCase] = []
-    for file_path in sorted(benchmark_dir.glob("*.py")):
+    for file_path in _iter_python_files(base_dir, recursive=recursive):
         source = file_path.read_text(encoding="utf-8")
         source_lines = source.splitlines()
-        module = ast.parse(source)
-
-        for node in module.body:
-            if not isinstance(node, ast.FunctionDef):
+        try:
+            module = ast.parse(source)
+        except SyntaxError:
+            if skip_unsupported:
                 continue
-            arg_types: dict[str, str] = {}
-            for arg in node.args.args:
-                arg_types[arg.arg] = _annotation_to_type(arg.annotation, file_path, arg.arg)
+            raise
 
-            return_type = _annotation_to_type(node.returns, file_path, "return")
-            informal_spec, extra_context = _extract_spec_parts(node, source_lines)
-            function_source = ast.get_source_segment(source, node) or source
+        relative_file = str(file_path.relative_to(root_dir))
+
+        def add_case(
+            node: ast.FunctionDef,
+            *,
+            qualname: str,
+            class_context: str,
+            local_file_path: Path,
+            local_source_lines: list[str],
+            local_source: str,
+            local_relative_file: str,
+        ) -> None:
+            arg_types: dict[str, str] = {}
+            try:
+                for arg in node.args.args:
+                    if arg.arg in {"self", "cls"} and arg.annotation is None:
+                        continue
+                    arg_types[arg.arg] = _annotation_to_type(
+                        arg.annotation,
+                        local_file_path,
+                        arg.arg,
+                    )
+                return_type = _annotation_to_type(node.returns, local_file_path, "return")
+            except ValueError:
+                if skip_unsupported:
+                    return
+                raise
+
+            informal_spec, extra_context = _extract_spec_parts(
+                node,
+                local_source_lines,
+                class_context=class_context,
+            )
+            function_source = ast.get_source_segment(local_source, node) or local_source
+            benchmark_id = qualname
+            if benchmark_id_prefix_with_path:
+                benchmark_id = (
+                    f"{local_relative_file.replace('/', '::')}::{qualname.replace('.', '::')}"
+                )
 
             cases.append(
                 BenchmarkCase(
-                    benchmark_id=node.name,
-                    file=str(file_path.relative_to(root_dir)),
+                    benchmark_id=benchmark_id,
+                    file=local_relative_file,
+                    qualname=qualname,
+                    lineno=node.lineno,
                     signature=_format_signature(node),
                     arg_types=arg_types,
                     return_type=return_type,
@@ -99,5 +173,50 @@ def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[Benchmark
                 )
             )
 
+        for node in module.body:
+            if isinstance(node, ast.FunctionDef):
+                add_case(
+                    node,
+                    qualname=node.name,
+                    class_context="",
+                    local_file_path=file_path,
+                    local_source_lines=source_lines,
+                    local_source=source,
+                    local_relative_file=relative_file,
+                )
+                continue
+            if isinstance(node, ast.ClassDef):
+                class_context = _extract_class_context(node, source)
+                for class_item in node.body:
+                    if isinstance(class_item, ast.FunctionDef):
+                        add_case(
+                            class_item,
+                            qualname=f"{node.name}.{class_item.name}",
+                            class_context=class_context,
+                            local_file_path=file_path,
+                            local_source_lines=source_lines,
+                            local_source=source,
+                            local_relative_file=relative_file,
+                        )
     return sorted(cases, key=lambda item: item.benchmark_id)
+
+
+def discover_python_cases(benchmark_dir: Path, root_dir: Path) -> list[BenchmarkCase]:
+    return _discover_cases(
+        benchmark_dir,
+        root_dir,
+        recursive=False,
+        skip_unsupported=False,
+        benchmark_id_prefix_with_path=False,
+    )
+
+
+def discover_repo_cases(repo_dir: Path) -> list[BenchmarkCase]:
+    return _discover_cases(
+        repo_dir,
+        repo_dir,
+        recursive=True,
+        skip_unsupported=True,
+        benchmark_id_prefix_with_path=True,
+    )
 
