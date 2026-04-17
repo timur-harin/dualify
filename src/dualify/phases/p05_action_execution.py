@@ -5,7 +5,7 @@ This phase executes one selected action from p04 using dedicated prompts.
 
 from typing import Final
 
-from dualify.ollama_client import OllamaClient
+from dualify.ollama_client import LLMClient
 from dualify.types import SmtResult
 
 ACTION_PROMPTS: Final[dict[str, str]] = {
@@ -103,7 +103,7 @@ ACTION_PROMPTS: Final[dict[str, str]] = {
 
 
 def execute_action(
-    client: OllamaClient,
+    client: LLMClient,
     *,
     action: str,
     benchmark_id: str,

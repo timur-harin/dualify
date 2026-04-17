@@ -11,7 +11,7 @@ from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
 from dualify.formula_parser import normalize_formula
 from dualify.io_utils import write_json
-from dualify.ollama_client import OllamaClient
+from dualify.ollama_client import LLMClient, create_llm_client
 from dualify.phases.p01_spec_to_logic import extract_spec_logic
 from dualify.phases.p02_code_to_logic import extract_code_logic
 from dualify.phases.p03_smt_checking import CaseSpec, check_equivalence, is_parseable
@@ -168,7 +168,7 @@ def _print_targets(repo_root: Path, cases: list[BenchmarkCase]) -> None:
         )
 
 
-def _run_cases(client: OllamaClient, cases: list[BenchmarkCase]) -> tuple[list[dict], int, int]:
+def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict], int, int]:
     case_results: list[dict] = []
     fallback_spec_count = 0
     fallback_code_count = 0
@@ -304,13 +304,19 @@ def _build_report(
     return report
 
 
-def run_experiment(model: str, base_url: str, benchmark_name: str = "synthetic") -> dict:
+def run_experiment(
+    model: str,
+    base_url: str,
+    benchmark_name: str = "synthetic",
+    provider: str = "ollama",
+    api_key: str = "",
+) -> dict:
     benchmark_dir = ROOT / "benchmark" / benchmark_name
     if not benchmark_dir.exists():
         raise FileNotFoundError(f"Benchmark directory not found: {benchmark_dir}")
     cases = discover_python_cases(benchmark_dir=benchmark_dir, root_dir=ROOT)
 
-    client = OllamaClient(model=model, base_url=base_url)
+    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
     client.healthcheck()
     case_results, fallback_spec_count, fallback_code_count = _run_cases(client, cases)
 
@@ -339,6 +345,8 @@ def run_repo_scan(
     targets: list[str] | None = None,
     target_regexes: list[str] | None = None,
     list_targets: bool = False,
+    provider: str = "ollama",
+    api_key: str = "",
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -360,7 +368,7 @@ def run_repo_scan(
             "No supported functions discovered. "
             "Add type-annotated functions."
         )
-    client = OllamaClient(model=model, base_url=base_url)
+    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
     client.healthcheck()
 
     history: list[dict[str, object]] = []
@@ -418,6 +426,8 @@ def run_repo_cli(
     target_regexes: list[str] | None = None,
     list_targets: bool = False,
     verbose: bool = False,
+    provider: str = "ollama",
+    api_key: str = "",
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -439,7 +449,7 @@ def run_repo_cli(
             "No supported functions discovered. "
             "Add type-annotated functions."
         )
-    client = OllamaClient(model=model, base_url=base_url)
+    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
     client.healthcheck()
 
     print("\n" + _style(" Repository scan ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
@@ -578,6 +588,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Run Dualify full experiment")
     parser.add_argument("--model", default="qwen2.5:3b-instruct")
     parser.add_argument("--base-url", default="http://127.0.0.1:11434")
+    parser.add_argument("--provider", choices=["ollama", "openai"], default="ollama")
+    parser.add_argument("--api-key", default="")
     parser.add_argument("--benchmark", default="synthetic")
     parser.add_argument("--repo-path", default="")
     parser.add_argument("--iterations", type=int, default=1)
@@ -598,6 +610,8 @@ def main() -> None:
                 targets=args.target,
                 target_regexes=args.target_regex,
                 list_targets=args.list_targets,
+                provider=args.provider,
+                api_key=args.api_key,
             )
         else:
             report = run_repo_cli(
@@ -609,12 +623,16 @@ def main() -> None:
                 target_regexes=args.target_regex,
                 list_targets=args.list_targets,
                 verbose=args.verbose,
+                provider=args.provider,
+                api_key=args.api_key,
             )
     else:
         report = run_experiment(
             model=args.model,
             base_url=args.base_url,
             benchmark_name=args.benchmark,
+            provider=args.provider,
+            api_key=args.api_key,
         )
     print(json.dumps(report, indent=2, ensure_ascii=False))
 

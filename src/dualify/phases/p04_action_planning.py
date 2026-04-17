@@ -1,6 +1,6 @@
 import os
 
-from dualify.ollama_client import OllamaClient
+from dualify.ollama_client import LLMClient
 from dualify.types import SmtResult
 
 _ANSI_RESET = "\033[0m"
@@ -177,7 +177,7 @@ def _resolve_case_and_actions(smt_result: SmtResult) -> tuple[str, list[str]]:
 
 
 def build_action_plan(
-    client: OllamaClient,
+    client: LLMClient,
     benchmark_id: str,
     signature: str,
     informal_spec: str,
