@@ -10,6 +10,7 @@ packages = [{ include = "dualify", from = "src" }]
 python = "^3.11"
 requests = "^2.32.5"
 z3-solver = "^4.16.0.0"
+python-dotenv = "^1.0.1"
 
 [tool.poetry.group.dev.dependencies]
 ruff = "^0.13.1"
