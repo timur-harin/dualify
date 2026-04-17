@@ -31,6 +31,17 @@ Dualify is a research framework for bidirectional verification:
    poetry run python scripts/run_experiment.py --model qwen2.5:3b-instruct --benchmark synthetic
    ```
 
+   Run against OpenAI-compatible API (e.g. vLLM `/v1/completions`):
+
+   ```bash
+   poetry run dualify-run \
+     --provider openai \
+     --base-url http://10.100.30.241:8800 \
+     --api-key API_KEY \
+     --model Qwen/Qwen3-Coder-Next-FP8 \
+     --benchmark synthetic
+   ```
+
 3. Run mismatch demo benchmark (intentionally inconsistent specs):
 
    ```bash

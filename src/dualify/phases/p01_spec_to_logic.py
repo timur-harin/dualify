@@ -3,7 +3,7 @@ import re
 from typing import TypedDict
 
 from dualify.formula_parser import normalize_formula, validate_formula
-from dualify.ollama_client import OllamaClient
+from dualify.ollama_client import LLMClient
 from dualify.types import ExtractionResult
 
 _INFIX_BOOL_PATTERN = re.compile(r"\s(And|Or)\s")
@@ -121,7 +121,7 @@ def _validate_payload(
 
 
 def _repair_payload(
-    client: OllamaClient,
+    client: LLMClient,
     payload: _ExtractionPayload,
     errors: list[str],
     signature: str,
@@ -163,7 +163,7 @@ Current invalid JSON:
 
 
 def _safe_subset_repair_payload(
-    client: OllamaClient,
+    client: LLMClient,
     signature: str,
     return_type: str,
     informal_spec: str,
@@ -207,7 +207,7 @@ Additional context:
 
 
 def extract_spec_logic(
-    client: OllamaClient,
+    client: LLMClient,
     benchmark_id: str,
     signature: str,
     informal_spec: str,
