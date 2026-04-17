@@ -12,3 +12,8 @@ results/
 .ruff_cache/
 .DS_Store
 
+# Env files with secrets (never commit). Presets stay tracked: *.example
+.env*
+!.env.example
+!.env.*.example
+

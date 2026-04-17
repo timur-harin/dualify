@@ -2,7 +2,9 @@ import argparse
 import ast
 import fnmatch
 import json
+import os
 import re
+import sys
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,6 +26,13 @@ from dualify.phases.p05_action_execution import execute_action
 from dualify.types import BenchmarkCase, SmtResult
 
 ROOT = Path(__file__).resolve().parents[2]
+
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(ROOT / ".env")
+except ImportError:
+    pass
 
 _ANSI_RESET = "\033[0m"
 _ANSI_BOLD = "\033[1m"
@@ -586,10 +595,24 @@ def run_repo_cli(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Run Dualify full experiment")
-    parser.add_argument("--model", default="qwen2.5:3b-instruct")
-    parser.add_argument("--base-url", default="http://127.0.0.1:11434")
-    parser.add_argument("--provider", choices=["ollama", "openai"], default="ollama")
-    parser.add_argument("--api-key", default="")
+    parser.add_argument(
+        "--model",
+        default=os.environ.get("DUALIFY_MODEL", "qwen2.5:3b-instruct"),
+    )
+    parser.add_argument(
+        "--base-url",
+        default=os.environ.get("DUALIFY_BASE_URL", "http://127.0.0.1:11434"),
+    )
+    parser.add_argument(
+        "--provider",
+        choices=["ollama", "openai"],
+        default=os.environ.get("DUALIFY_PROVIDER", "ollama"),
+    )
+    parser.add_argument(
+        "--api-key",
+        default=os.environ.get("DUALIFY_API_KEY", ""),
+        help="Also reads GROQ_API_KEY if set and this flag is empty.",
+    )
     parser.add_argument("--benchmark", default="synthetic")
     parser.add_argument("--repo-path", default="")
     parser.add_argument("--iterations", type=int, default=1)
@@ -599,6 +622,7 @@ def main() -> None:
     parser.add_argument("--list-targets", action="store_true")
     parser.add_argument("--verbose", action="store_true")
     args = parser.parse_args()
+    api_key = (args.api_key or os.environ.get("GROQ_API_KEY", "")).strip()
 
     if args.repo_path:
         if args.non_interactive:
@@ -611,7 +635,7 @@ def main() -> None:
                 target_regexes=args.target_regex,
                 list_targets=args.list_targets,
                 provider=args.provider,
-                api_key=args.api_key,
+                api_key=api_key,
             )
         else:
             report = run_repo_cli(
@@ -624,7 +648,7 @@ def main() -> None:
                 list_targets=args.list_targets,
                 verbose=args.verbose,
                 provider=args.provider,
-                api_key=args.api_key,
+                api_key=api_key,
             )
     else:
         report = run_experiment(
@@ -632,11 +656,15 @@ def main() -> None:
             base_url=args.base_url,
             benchmark_name=args.benchmark,
             provider=args.provider,
-            api_key=args.api_key,
+            api_key=api_key,
         )
     print(json.dumps(report, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except (ValueError, RuntimeError) as exc:
+        print(f"Error: {exc}", file=sys.stderr)
+        raise SystemExit(1) from exc
 
