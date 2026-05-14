@@ -66,4 +66,3 @@ def get_fallback_extraction(benchmark_id: str) -> ExtractionResult:
             notes="Deterministic fallback formula for bounded array.",
         )
     raise ValueError(f"No fallback for benchmark {benchmark_id}")
-

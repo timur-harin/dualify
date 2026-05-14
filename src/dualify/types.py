@@ -36,4 +36,3 @@ class SmtResult:
     reason: str
     counterexample: dict[str, int | float | bool | str] | None
     diagnostics: dict[str, object] | None = None
-

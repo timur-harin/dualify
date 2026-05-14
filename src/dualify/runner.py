@@ -373,10 +373,7 @@ def run_repo_scan(
         )
     )
     if not cases:
-        raise ValueError(
-            "No supported functions discovered. "
-            "Add type-annotated functions."
-        )
+        raise ValueError("No supported functions discovered. Add type-annotated functions.")
     client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
     client.healthcheck()
 
@@ -454,10 +451,7 @@ def run_repo_cli(
         )
     )
     if not ordered_cases:
-        raise ValueError(
-            "No supported functions discovered. "
-            "Add type-annotated functions."
-        )
+        raise ValueError("No supported functions discovered. Add type-annotated functions.")
     client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
     client.healthcheck()
 
@@ -539,24 +533,27 @@ def run_repo_cli(
                         triggered_case=action_plan.get("triggered_case", "UNKNOWN"),
                     )
                     print(
-                        "\n"
-                        + _style(" p05 action result ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE)
+                        "\n" + _style(" p05 action result ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE)
                     )
                     print(json.dumps(p05_result, indent=2, ensure_ascii=False))
 
-            followup = input(
-                "\n"
-                + _style("Command", _ANSI_BOLD, _ANSI_WHITE)
-                + ": "
-                + _style("[Enter]", _ANSI_CYAN)
-                + " next, "
-                + _style("[r]", _ANSI_CYAN)
-                + " re-run, "
-                + _style("[n]", _ANSI_CYAN)
-                + " next, "
-                + _style("[q]", _ANSI_RED)
-                + " quit: "
-            ).strip().lower()
+            followup = (
+                input(
+                    "\n"
+                    + _style("Command", _ANSI_BOLD, _ANSI_WHITE)
+                    + ": "
+                    + _style("[Enter]", _ANSI_CYAN)
+                    + " next, "
+                    + _style("[r]", _ANSI_CYAN)
+                    + " re-run, "
+                    + _style("[n]", _ANSI_CYAN)
+                    + " next, "
+                    + _style("[q]", _ANSI_RED)
+                    + " quit: "
+                )
+                .strip()
+                .lower()
+            )
             if followup == "q":
                 stop_all = True
                 break
@@ -667,4 +664,3 @@ if __name__ == "__main__":
     except (ValueError, RuntimeError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         raise SystemExit(1) from exc
-
