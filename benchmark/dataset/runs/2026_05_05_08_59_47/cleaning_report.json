@@ -1,0 +1,14 @@
+{
+  "created_at_utc": "2026-05-05T08:59:50.006071+00:00",
+  "total_raw": 1929,
+  "total_clean": 202,
+  "total_rejected": 1727,
+  "reject_reason_histogram": {
+    "has_normalized_postcondition": 1552,
+    "contract_parseable_for_smt": 1552,
+    "non_trivial_contract": 1552,
+    "duplicate_reject": 1727,
+    "has_explicit_contract": 1328,
+    "has_type_info_minimum": 35
+  }
+}
