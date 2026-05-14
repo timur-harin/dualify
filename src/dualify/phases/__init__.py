@@ -6,4 +6,3 @@ p03_smt_checking
 p04_action_planning
 p05_action_execution
 """
-

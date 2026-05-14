@@ -189,7 +189,9 @@ def _decorator_contracts(node: ast.FunctionDef) -> tuple[list[str], str, list[di
             blocks.append({"kind": "post", "style": style, "decorator": dec_name, "raw": formula})
         elif base in ("inv",) or "invariant" in lowered or lowered.endswith(".inv"):
             style = "deal" if "deal" in lowered else (style if style != "unknown" else "icontract")
-            blocks.append({"kind": "invariant", "style": style, "decorator": dec_name, "raw": formula})
+            blocks.append(
+                {"kind": "invariant", "style": style, "decorator": dec_name, "raw": formula}
+            )
     post_formula = " and ".join(p for p in post if p).strip()
     return pre, post_formula, blocks, style
 
@@ -220,7 +222,9 @@ def _collect_function_node(
 ) -> CanonicalParsedExample:
     source_file = str(file_path.relative_to(root))
     source_function_id = f"{source_file}:{qualname}:{node.lineno}"
-    benchmark_id = f"{dataset_name}::{source_file.replace('/', '::')}::{qualname.replace('.', '::')}"
+    benchmark_id = (
+        f"{dataset_name}::{source_file.replace('/', '::')}::{qualname.replace('.', '::')}"
+    )
     arg_types: dict[str, str] = {}
     for arg in node.args.args:
         if arg.arg in ("self", "cls") and arg.annotation is None:
@@ -287,7 +291,9 @@ def _collect_function_node(
     )
 
 
-def _collect_python_functions(dataset_name: str, dataset_version: str, root: Path) -> list[CanonicalParsedExample]:
+def _collect_python_functions(
+    dataset_name: str, dataset_version: str, root: Path
+) -> list[CanonicalParsedExample]:
     parser_name = "dualify.dataset_pipeline"
     parser_version = "1.0"
     records: list[CanonicalParsedExample] = []
@@ -512,13 +518,25 @@ def run_dataset_pipeline(
     accepted_ids = {item.benchmark_id for item in accepted}
     for item in all_records:
         if item.benchmark_id in accepted_ids:
-            lineage.append({"raw_id": item.benchmark_id, "status": "kept", "clean_id": item.benchmark_id})
+            lineage.append(
+                {"raw_id": item.benchmark_id, "status": "kept", "clean_id": item.benchmark_id}
+            )
         else:
             reject_reasons = next(
-                (row["reject_reasons"] for row in rejected if row["benchmark_id"] == item.benchmark_id),
+                (
+                    row["reject_reasons"]
+                    for row in rejected
+                    if row["benchmark_id"] == item.benchmark_id
+                ),
                 [],
             )
-            lineage.append({"raw_id": item.benchmark_id, "status": "rejected", "reject_reasons": reject_reasons})
+            lineage.append(
+                {
+                    "raw_id": item.benchmark_id,
+                    "status": "rejected",
+                    "reject_reasons": reject_reasons,
+                }
+            )
     write_json(out_root / "lineage.json", lineage)
 
     reject_reason_hist: dict[str, int] = {}
@@ -548,7 +566,9 @@ def run_dataset_pipeline(
 
 
 def _main() -> None:
-    parser = argparse.ArgumentParser(description="Parse, normalize, and clean Python contract datasets")
+    parser = argparse.ArgumentParser(
+        description="Parse, normalize, and clean Python contract datasets"
+    )
     parser.add_argument("--python-by-contract-path", required=True)
     parser.add_argument("--crosshair-examples-path", required=True)
     parser.add_argument("--output-dir", default="results/dataset_pipeline")

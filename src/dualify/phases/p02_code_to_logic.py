@@ -50,9 +50,7 @@ def _extract_signature_args(signature: str) -> list[str]:
     return args
 
 
-def _coerce_payload(
-    payload: dict, allowed_args: list[str], return_type: str
-) -> _ExtractionPayload:
+def _coerce_payload(payload: dict, allowed_args: list[str], return_type: str) -> _ExtractionPayload:
     return {
         "args": allowed_args,
         "return_type": _to_str(payload.get("return_type"), return_type),
@@ -330,9 +328,7 @@ Additional context:
             }
             if not safe_errors:
                 safe_payload["confidence"] = "low"
-                safe_payload["notes"] = (
-                    "Recovered via safe-subset repair after validation failure."
-                )
+                safe_payload["notes"] = "Recovered via safe-subset repair after validation failure."
                 safe_payload["degraded"] = True
                 safe_payload["degraded_reason"] = "recovered_safe_subset"
                 safe_payload["extraction_trace"] = dict(payload["extraction_trace"])
@@ -366,4 +362,3 @@ Additional context:
         degraded_reason=payload["degraded_reason"],
         extraction_trace=payload["extraction_trace"],
     )
-
