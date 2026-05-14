@@ -219,4 +219,3 @@ def discover_repo_cases(repo_dir: Path) -> list[BenchmarkCase]:
         skip_unsupported=True,
         benchmark_id_prefix_with_path=True,
     )
-

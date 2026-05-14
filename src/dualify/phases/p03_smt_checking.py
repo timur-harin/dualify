@@ -599,4 +599,3 @@ def is_parseable(case_spec: CaseSpec, extraction: ExtractionResult) -> bool:
     except Exception:
         return False
     return True
-
