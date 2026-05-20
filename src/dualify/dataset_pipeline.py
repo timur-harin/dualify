@@ -496,7 +496,10 @@ def run_dataset_pipeline(
         preview_report = {
             "status": "awaiting_cleaning_confirmation",
             "run_dir": str(out_root),
-            "message": "Raw snapshot and objective cleaning preview are ready. Re-run with --apply-cleaning after confirmation.",
+            "message": (
+                "Raw snapshot and objective cleaning preview are ready. "
+                "Re-run with --apply-cleaning after confirmation."
+            ),
             "summary": manifest["counts"],
         }
         write_json(out_root / "checkpoint_preview.json", preview_report)
@@ -514,7 +517,7 @@ def run_dataset_pipeline(
     write_json(clean_dir / "dualify_cases.json", clean_cases)
     _write_jsonl(clean_dir / "evaluation_index.jsonl", clean_eval)
 
-    lineage = []
+    lineage: list[dict[str, Any]] = []
     accepted_ids = {item.benchmark_id for item in accepted}
     for item in all_records:
         if item.benchmark_id in accepted_ids:
@@ -522,7 +525,7 @@ def run_dataset_pipeline(
                 {"raw_id": item.benchmark_id, "status": "kept", "clean_id": item.benchmark_id}
             )
         else:
-            reject_reasons = next(
+            reject_reasons: list[str] = next(
                 (
                     row["reject_reasons"]
                     for row in rejected

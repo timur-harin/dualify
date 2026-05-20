@@ -6,7 +6,17 @@
 *.egg-info/
 dist/
 build/
+
+# Dualify benchmark / experiment run logs (JSON reports from dualify-run, repo scans, etc.)
 results/
+
+# Dataset pipeline run logs (regenerated artifacts; keep clean/ + reports in git)
+benchmark/dataset/runs/**/raw/
+benchmark/dataset/runs/**/rejects/
+benchmark/dataset/runs/**/lineage.json
+
+# Curated dataset stays tracked: benchmark/dataset/docs/, benchmark/dataset/runs/**/clean/
+
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
