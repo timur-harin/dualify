@@ -480,26 +480,11 @@ def choose_action_interactively(action_plan: dict) -> str | list[str]:
 
     print("\n" + _style(" Action menu ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
     for idx, action in enumerate(actions, start=1):
-        print(
-            f"  {_style(f'[{idx}]', _ANSI_CYAN, _ANSI_BOLD)} "
-            f"{_style(action, _ANSI_WHITE)}"
-        )
-    print(
-        f"  {_style('[a]', _ANSI_CYAN, _ANSI_BOLD)} "
-        f"{_style('all recommended', _ANSI_WHITE)}"
-    )
-    print(
-        f"  {_style('[d]', _ANSI_CYAN, _ANSI_BOLD)} "
-        f"{_style('show details', _ANSI_WHITE)}"
-    )
-    print(
-        f"  {_style('[n]', _ANSI_CYAN, _ANSI_BOLD)} "
-        f"{_style('next function', _ANSI_WHITE)}"
-    )
-    print(
-        f"  {_style('[q]', _ANSI_RED, _ANSI_BOLD)} "
-        f"{_style('quit', _ANSI_WHITE)}"
-    )
+        print(f"  {_style(f'[{idx}]', _ANSI_CYAN, _ANSI_BOLD)} {_style(action, _ANSI_WHITE)}")
+    print(f"  {_style('[a]', _ANSI_CYAN, _ANSI_BOLD)} {_style('all recommended', _ANSI_WHITE)}")
+    print(f"  {_style('[d]', _ANSI_CYAN, _ANSI_BOLD)} {_style('show details', _ANSI_WHITE)}")
+    print(f"  {_style('[n]', _ANSI_CYAN, _ANSI_BOLD)} {_style('next function', _ANSI_WHITE)}")
+    print(f"  {_style('[q]', _ANSI_RED, _ANSI_BOLD)} {_style('quit', _ANSI_WHITE)}")
 
     while True:
         choice = input("Select action: ").strip().lower()
@@ -518,4 +503,3 @@ def choose_action_interactively(action_plan: dict) -> str | list[str]:
                 return selected[0]
             return selected
         print(_style("Invalid choice. Enter action index/range, 'a', 'd', 'n', or 'q'.", _ANSI_RED))
-

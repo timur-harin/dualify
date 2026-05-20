@@ -15,4 +15,3 @@ def binary_search(a0: int, a1: int, a2: int, a3: int, target: int) -> int:
             right = mid - 1
 
     return -1
-

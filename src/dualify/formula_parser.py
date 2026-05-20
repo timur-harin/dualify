@@ -18,8 +18,10 @@ class _NormalizeTransformer(ast.NodeTransformer):
                 ast.Call(func=ast.Name(id="Length", ctx=ast.Load()), args=node.args, keywords=[]),
                 node,
             )
-        if isinstance(node.func, ast.Name) and node.func.id == "All_Distinct" and any(
-            isinstance(arg, (ast.ListComp, ast.GeneratorExp)) for arg in node.args
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "All_Distinct"
+            and any(isinstance(arg, (ast.ListComp, ast.GeneratorExp)) for arg in node.args)
         ):
             # Unsupported comprehensions in formulas: keep surrounding formula parseable.
             return ast.copy_location(ast.Constant(value=True), node)

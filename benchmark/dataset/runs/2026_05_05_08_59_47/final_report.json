@@ -1,0 +1,9 @@
+{
+  "status": "cleaning_completed",
+  "run_dir": "/Users/timur/develop/dualify/benchmark/dataset/runs/2026_05_05_08_59_47",
+  "summary": {
+    "raw_total": 1929,
+    "clean_total": 202,
+    "rejected_total": 1727
+  }
+}
