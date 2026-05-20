@@ -12,4 +12,3 @@ def test_canonicalizes_implication_and_conjunction() -> None:
     normalized = _canonicalize_expression(expr, "demo")
     assert "And(" in normalized
     assert "Implies(" in normalized
-

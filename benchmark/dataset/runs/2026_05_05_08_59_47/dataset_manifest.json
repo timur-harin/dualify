@@ -1,0 +1,17 @@
+{
+  "created_at_utc": "2026-05-05T08:59:49.926473+00:00",
+  "pipeline": "dualify.dataset_pipeline",
+  "pipeline_version": "1.0",
+  "sources": {
+    "python_by_contract_path": "/Users/timur/develop/dualify/benchmark/dataset/sources/python-by-contract-corpus/python_by_contract_corpus",
+    "crosshair_examples_path": "/Users/timur/develop/dualify/benchmark/dataset/sources/CrossHair/crosshair/examples"
+  },
+  "counts": {
+    "raw_total": 1929,
+    "raw_python_by_contract": 1852,
+    "raw_crosshair_examples": 77,
+    "accepted_preview": 202,
+    "rejected_preview": 1727
+  },
+  "apply_cleaning": true
+}
