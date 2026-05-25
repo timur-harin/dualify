@@ -254,6 +254,7 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
                 reason="low_confidence_parse" if smt_result.equivalent else smt_result.reason,
                 counterexample=smt_result.counterexample,
                 diagnostics=diagnostics,
+                well_formedness=smt_result.well_formedness,
             )
 
         action_plan_payload = build_action_plan(
