@@ -319,6 +319,45 @@ Input:
     }
 
 
+def _format_side_health(side_label: str, side_logic: dict | None) -> str:
+    if not isinstance(side_logic, dict):
+        return ""
+    health = side_logic.get("extractor_health")
+    if not isinstance(health, dict):
+        return ""
+    final_stage = health.get("final_stage", "?")
+    degraded = bool(health.get("degraded", False))
+    weak = bool(health.get("postcondition_is_weak", False))
+    used_fallback = bool(health.get("used_fallback", False))
+    color = _ANSI_GREEN
+    if final_stage == "sanitized" or used_fallback:
+        color = _ANSI_RED
+    elif final_stage in {"safe_repair", "repair"} or degraded or weak:
+        color = _ANSI_YELLOW
+    badge = str(final_stage)
+    markers: list[str] = []
+    if degraded:
+        markers.append("degraded")
+    if weak:
+        markers.append("weak")
+    if used_fallback:
+        markers.append("fallback")
+    marker_text = f" [{', '.join(markers)}]" if markers else ""
+    return _style(f"{side_label}={badge}{marker_text}", color)
+
+
+def _format_extractor_health_line(spec_logic: dict | None, code_logic: dict | None) -> str:
+    parts = [
+        part
+        for part in (
+            _format_side_health("spec", spec_logic),
+            _format_side_health("code", code_logic),
+        )
+        if part
+    ]
+    return "  ".join(parts)
+
+
 def print_comparison_report(
     *,
     benchmark_id: str,
@@ -354,6 +393,9 @@ def print_comparison_report(
             _label("Well-formedness:"),
             _style(smt_result.well_formedness, _ANSI_BOLD, _ANSI_YELLOW),
         )
+    health_line = _format_extractor_health_line(spec_logic, code_logic)
+    if health_line:
+        print(_label("Extractor:"), health_line)
     diagnostics = smt_result.diagnostics or {}
     short_diagnostics = {
         "pre_mismatch": diagnostics.get("pre_mismatch"),
