@@ -259,6 +259,78 @@ def _infer_symbol_type(name: str, expressions: list[str]) -> str:
     return "str"
 
 
+def _free_identifiers(expr: str) -> set[str]:
+    """Return the set of identifiers that appear in expr but are not used as a call target.
+
+    Used by the well-formedness check; intentionally lenient on parse failures
+    (returns an empty set rather than raising), because the surrounding code
+    already handles parse errors via _safe_eval.
+    """
+    if not expr.strip():
+        return set()
+    called_names: set[str] = set()
+    try:
+        tree = ast.parse(expr, mode="eval")
+        called_names = {
+            node.func.id
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+    except Exception:
+        return set()
+    return {
+        token
+        for token in _TOKEN_PATTERN.findall(expr)
+        if token not in _RESERVED_FORMULA_TOKENS
+        and token not in called_names
+        and not token.isdigit()
+    }
+
+
+def _check_post_well_formedness(spec_post: str, code_post: str) -> str:
+    """Detect post-conditions whose comparison would be vacuous.
+
+    Returns "ok" when the equivalence check is meaningful, or a specific
+    reason string otherwise. The reasons are:
+
+      - "neither_post_mentions_ret": the postconditions do not constrain
+        the return value at all (e.g. both are pure input predicates).
+      - "post_ret_asymmetry": one side mentions ret and the other does
+        not, so the equivalence check ranges over disjoint variable sets
+        and any verdict is semantically vacuous.
+      - "disjoint_post_vocab": both sides mention ret, but the rest of
+        their vocabularies do not overlap at all, which usually means
+        the two extractions are talking about different aspects of the
+        function.
+
+    The third check is intentionally weak: many genuine equivalences
+    legitimately involve only `ret` (e.g. `ret == 5` vs `ret == 5`), so
+    we only flag the disjoint-vocab case when both formulas reference
+    additional symbols and those symbol sets do not intersect.
+    """
+    spec_vars = _free_identifiers(spec_post)
+    code_vars = _free_identifiers(code_post)
+    spec_has_ret = "ret" in spec_vars
+    code_has_ret = "ret" in code_vars
+    if not (spec_has_ret or code_has_ret):
+        return "neither_post_mentions_ret"
+    if spec_has_ret != code_has_ret:
+        return "post_ret_asymmetry"
+    spec_extra = spec_vars - {"ret"}
+    code_extra = code_vars - {"ret"}
+    if spec_extra and code_extra and not (spec_extra & code_extra):
+        return "disjoint_post_vocab"
+    return "ok"
+
+
+def _check_with_status(solver: z3.Solver) -> z3.CheckSatResult:
+    """Run solver.check() and return its raw status, never coerced to sat/unsat.
+
+    Centralized so the call site can distinguish unknown from unsat.
+    """
+    return solver.check()
+
+
 def _augment_scope_from_formulas(
     scope: dict[str, Any],
     known_names: set[str],
@@ -338,6 +410,14 @@ def check_equivalence(
             counterexample=None,
         )
 
+    # Compute well-formedness from the raw post strings so the check sees the
+    # author-visible vocabulary (e.g. `self_code`, `ret`). The result gates
+    # any later claim of equivalence: if it is not "ok", the equivalence
+    # verdict is vacuous and must be flagged rather than reported as PASS.
+    post_well_formedness = _check_post_well_formedness(
+        spec_logic.postcondition, code_logic.postcondition
+    )
+
     spec_assumptions = z3.And(*spec_constraints) if spec_constraints else z3.BoolVal(True)
     code_assumptions = z3.And(*code_constraints) if code_constraints else z3.BoolVal(True)
 
@@ -381,7 +461,8 @@ def check_equivalence(
     pre_xor_solver = z3.Solver()
     pre_mismatch_check = z3.Xor(spec_assumptions, code_assumptions)
     pre_xor_solver.add(pre_mismatch_check)
-    pre_xor_result = pre_xor_solver.check()
+    pre_xor_result = _check_with_status(pre_xor_solver)
+    pre_xor_unknown = pre_xor_result == z3.unknown
     preconditions_mismatch = pre_xor_result == z3.sat
     preconditions_counterexample = None
     pre_mismatch_witness = None
@@ -393,7 +474,7 @@ def check_equivalence(
     spec_implies_code_solver = z3.Solver()
     pre_spec_to_pre_code_implication = z3.Implies(spec_assumptions, code_assumptions)
     spec_implies_code_solver.add(z3.Not(pre_spec_to_pre_code_implication))
-    spec_implies_code_status = spec_implies_code_solver.check()
+    spec_implies_code_status = _check_with_status(spec_implies_code_solver)
     spec_implies_code = spec_implies_code_status == z3.unsat
     pre_spec_implies_pre_code_witness = (
         model_to_counterexample(spec_implies_code_solver.model(), include_ret=True)
@@ -404,12 +485,16 @@ def check_equivalence(
     code_implies_spec_solver = z3.Solver()
     pre_code_to_pre_spec_implication = z3.Implies(code_assumptions, spec_assumptions)
     code_implies_spec_solver.add(z3.Not(pre_code_to_pre_spec_implication))
-    code_implies_spec_status = code_implies_spec_solver.check()
+    code_implies_spec_status = _check_with_status(code_implies_spec_solver)
     code_implies_spec = code_implies_spec_status == z3.unsat
     pre_code_implies_pre_spec_witness = (
         model_to_counterexample(code_implies_spec_solver.model(), include_ret=True)
         if code_implies_spec_status == z3.sat
         else None
+    )
+
+    pre_solver_unknown = pre_xor_unknown or (
+        spec_implies_code_status == z3.unknown or code_implies_spec_status == z3.unknown
     )
 
     failed_check = "none"
@@ -421,6 +506,12 @@ def check_equivalence(
         "pre_code_implies_pre_spec": code_implies_spec,
         "pre_counterexample": preconditions_counterexample,
         "failed_check": failed_check,
+        "post_well_formedness": post_well_formedness,
+        "solver_status": {
+            "pre_mismatch_check": str(pre_xor_result),
+            "pre_spec_implies_pre_code": str(spec_implies_code_status),
+            "pre_code_implies_pre_spec": str(code_implies_spec_status),
+        },
         "debug": {
             "formulas": {
                 "pre_spec": _z3_expr_to_text(spec_assumptions),
@@ -482,14 +573,29 @@ def check_equivalence(
             diagnostics=diagnostics,
         )
 
+    # If the pre-mismatch solver returned unknown, the precondition
+    # comparison is undecided: we cannot rule out a hidden mismatch, so
+    # refuse to proceed to the post-check (which would silently report
+    # equivalent on a partially-decided domain).
+    if pre_solver_unknown:
+        return SmtResult(
+            benchmark_id=case_spec.benchmark_id,
+            equivalent=False,
+            reason="solver_unknown",
+            counterexample=None,
+            diagnostics=diagnostics,
+            well_formedness="solver_unknown_pre",
+        )
+
     # Step 2 from scheme (evaluated only after pre checks are common):
     # post mismatch on common domain?
     post_mismatch_solver = z3.Solver()
     post_disagreement_implication = z3.Implies(common_domain, z3.Xor(spec_post, code_post))
     post_mismatch_solver.add(common_domain)
     post_mismatch_solver.add(post_disagreement_implication)
-    post_mismatch_result = post_mismatch_solver.check()
+    post_mismatch_result = _check_with_status(post_mismatch_solver)
     post_mismatch = post_mismatch_result == z3.sat
+    post_mismatch_unknown = post_mismatch_result == z3.unknown
     post_mismatch_counterexample = None
     post_mismatch_witness = None
     if post_mismatch:
@@ -499,13 +605,43 @@ def check_equivalence(
 
     diagnostics["post_mismatch_on_common_pre"] = post_mismatch
     diagnostics["post_mismatch_counterexample"] = post_mismatch_counterexample
+    solver_status = diagnostics.get("solver_status")
+    if isinstance(solver_status, dict):
+        solver_status["post_mismatch_check"] = str(post_mismatch_result)
     debug = diagnostics.get("debug")
     if isinstance(debug, dict):
         witness_model = debug.get("witness_model")
         if isinstance(witness_model, dict):
             witness_model["post_mismatch_check"] = post_mismatch_witness
 
+    # An undecided post-mismatch check used to silently fall through to
+    # `equivalent_no_mismatch`. That is unsound: Z3 returning unknown on
+    # strings/sequences/nonlinear theories does not imply the formulas
+    # agree. Surface it as solver_unknown instead.
+    if post_mismatch_unknown:
+        return SmtResult(
+            benchmark_id=case_spec.benchmark_id,
+            equivalent=False,
+            reason="solver_unknown",
+            counterexample=None,
+            diagnostics=diagnostics,
+            well_formedness="solver_unknown_post",
+        )
+
     if not post_mismatch:
+        # The XOR check said "no input where they disagree" -- but if the
+        # postconditions range over disjoint variable sets, that verdict is
+        # vacuous (the formulas are not even talking about the same thing).
+        # Refuse to claim equivalence in that case.
+        if post_well_formedness != "ok":
+            return SmtResult(
+                benchmark_id=case_spec.benchmark_id,
+                equivalent=False,
+                reason="vacuous_equivalence",
+                counterexample=None,
+                diagnostics=diagnostics,
+                well_formedness=post_well_formedness,
+            )
         return SmtResult(
             benchmark_id=case_spec.benchmark_id,
             equivalent=True,
@@ -519,7 +655,7 @@ def check_equivalence(
     spec_post_implies_code_solver = z3.Solver()
     spec_to_code_implication = z3.Implies(z3.And(common_domain, spec_post), code_post)
     spec_post_implies_code_solver.add(z3.Not(spec_to_code_implication))
-    spec_post_implies_code_status = spec_post_implies_code_solver.check()
+    spec_post_implies_code_status = _check_with_status(spec_post_implies_code_solver)
     spec_post_implies_code = spec_post_implies_code_status == z3.unsat
     spec_post_implies_code_witness = (
         model_to_counterexample(spec_post_implies_code_solver.model(), include_ret=True)
@@ -530,7 +666,7 @@ def check_equivalence(
     code_post_implies_spec_solver = z3.Solver()
     code_to_spec_implication = z3.Implies(z3.And(common_domain, code_post), spec_post)
     code_post_implies_spec_solver.add(z3.Not(code_to_spec_implication))
-    code_post_implies_spec_status = code_post_implies_spec_solver.check()
+    code_post_implies_spec_status = _check_with_status(code_post_implies_spec_solver)
     code_post_implies_spec = code_post_implies_spec_status == z3.unsat
     code_post_implies_spec_witness = (
         model_to_counterexample(code_post_implies_spec_solver.model(), include_ret=True)
@@ -546,12 +682,29 @@ def check_equivalence(
         diagnostics["failed_check"] = "code_post_implies_spec_post"
     else:
         diagnostics["failed_check"] = "post_mismatch_check"
+    solver_status = diagnostics.get("solver_status")
+    if isinstance(solver_status, dict):
+        solver_status["spec_post_implies_code_post"] = str(spec_post_implies_code_status)
+        solver_status["code_post_implies_spec_post"] = str(code_post_implies_spec_status)
     debug = diagnostics.get("debug")
     if isinstance(debug, dict):
         witness_model = debug.get("witness_model")
         if isinstance(witness_model, dict):
             witness_model["spec_post_implies_code_post"] = spec_post_implies_code_witness
             witness_model["code_post_implies_spec_post"] = code_post_implies_spec_witness
+
+    # If either direction-check came back unknown, we know the
+    # postconditions disagree (Step 2 returned sat) but we cannot tell
+    # which side is stronger. Report solver_unknown rather than guess.
+    if spec_post_implies_code_status == z3.unknown or code_post_implies_spec_status == z3.unknown:
+        return SmtResult(
+            benchmark_id=case_spec.benchmark_id,
+            equivalent=False,
+            reason="solver_unknown",
+            counterexample=post_mismatch_counterexample,
+            diagnostics=diagnostics,
+            well_formedness="solver_unknown_post_direction",
+        )
 
     reason = "case_post_code" if not spec_post_implies_code else "case_post_spec"
     return SmtResult(
