@@ -24,6 +24,7 @@ from dualify.phases.p04_action_planning import (
     print_comparison_report,
 )
 from dualify.phases.p05_action_execution import execute_action
+from dualify.transcript import RecordingLLMClient, ReplayLLMClient
 from dualify.types import BenchmarkCase, SmtResult
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -327,13 +328,19 @@ def run_experiment(
     benchmark_name: str = "synthetic",
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     benchmark_dir = ROOT / "benchmark" / benchmark_name
     if not benchmark_dir.exists():
         raise FileNotFoundError(f"Benchmark directory not found: {benchmark_dir}")
     cases = discover_python_cases(benchmark_dir=benchmark_dir, root_dir=ROOT)
 
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
     case_results, fallback_spec_count, fallback_code_count = _run_cases(client, cases)
 
@@ -364,6 +371,7 @@ def run_repo_scan(
     list_targets: bool = False,
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -382,7 +390,12 @@ def run_repo_scan(
     )
     if not cases:
         raise ValueError("No supported functions discovered. Add type-annotated functions.")
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
 
     history: list[dict[str, object]] = []
@@ -442,6 +455,7 @@ def run_repo_cli(
     verbose: bool = False,
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -460,7 +474,12 @@ def run_repo_cli(
     )
     if not ordered_cases:
         raise ValueError("No supported functions discovered. Add type-annotated functions.")
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
 
     print("\n" + _style(" Repository scan ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
@@ -672,8 +691,27 @@ def main() -> None:
     parser.add_argument("--target-regex", action="append", default=[])
     parser.add_argument("--list-targets", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--record-transcript",
+        default="",
+        help=(
+            "Append every LLM call to this JSONL file. Wraps the live provider so the "
+            "run still produces real results."
+        ),
+    )
+    parser.add_argument(
+        "--replay",
+        default="",
+        help=(
+            "Replay LLM responses from this JSONL transcript instead of calling any "
+            "live provider. The model / provider / api-key flags are ignored when "
+            "replay is active."
+        ),
+    )
     args = parser.parse_args()
     api_key = (args.api_key or os.environ.get("GROQ_API_KEY", "")).strip()
+
+    client_override = _build_client_override(args, api_key)
 
     if args.repo_path:
         if args.non_interactive:
@@ -687,6 +725,7 @@ def main() -> None:
                 list_targets=args.list_targets,
                 provider=args.provider,
                 api_key=api_key,
+                client_override=client_override,
             )
         else:
             report = run_repo_cli(
@@ -700,6 +739,7 @@ def main() -> None:
                 verbose=args.verbose,
                 provider=args.provider,
                 api_key=api_key,
+                client_override=client_override,
             )
     else:
         report = run_experiment(
@@ -708,8 +748,40 @@ def main() -> None:
             benchmark_name=args.benchmark,
             provider=args.provider,
             api_key=api_key,
+            client_override=client_override,
         )
     print(json.dumps(report, indent=2, ensure_ascii=False))
+    if isinstance(client_override, RecordingLLMClient):
+        client_override.close()
+
+
+def _build_client_override(args: argparse.Namespace, api_key: str) -> LLMClient | None:
+    """Construct the LLM client from --replay / --record-transcript flags.
+
+    Returns None when neither flag is given; the run_* functions then build
+    a live client from --provider / --model / --base-url / --api-key.
+    """
+    replay_path = (args.replay or "").strip()
+    record_path = (args.record_transcript or "").strip()
+    if replay_path and record_path:
+        raise ValueError("--replay and --record-transcript are mutually exclusive.")
+    if replay_path:
+        return ReplayLLMClient.from_path(Path(replay_path).expanduser().resolve())
+    if record_path:
+        live_client = create_llm_client(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=api_key,
+        )
+        return RecordingLLMClient(
+            inner=live_client,
+            transcript_path=Path(record_path).expanduser().resolve(),
+            model=args.model,
+            base_url=args.base_url,
+            provider=args.provider,
+        )
+    return None
 
 
 if __name__ == "__main__":
