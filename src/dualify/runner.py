@@ -12,6 +12,7 @@ from pathlib import Path
 from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
 from dualify.formula_parser import normalize_formula
+from dualify.health import summarize_extraction, summarize_run
 from dualify.io_utils import write_json
 from dualify.ollama_client import LLMClient, create_llm_client
 from dualify.phases.p01_spec_to_logic import extract_spec_logic
@@ -265,6 +266,10 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
             smt_result=smt_result,
         )
 
+        spec_payload = {**asdict(spec_logic), "used_fallback": used_spec_fallback}
+        spec_payload["extractor_health"] = summarize_extraction(spec_payload)
+        code_payload = {**asdict(code_logic), "used_fallback": used_code_fallback}
+        code_payload["extractor_health"] = summarize_extraction(code_payload)
         case_results.append(
             {
                 "benchmark_id": benchmark_id,
@@ -272,8 +277,8 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
                 "signature": signature,
                 "informal_spec": informal_spec,
                 "extra_context": extra_context,
-                "spec_to_logic": {**asdict(spec_logic), "used_fallback": used_spec_fallback},
-                "code_to_logic": {**asdict(code_logic), "used_fallback": used_code_fallback},
+                "spec_to_logic": spec_payload,
+                "code_to_logic": code_payload,
                 "smt_checking": asdict(smt_result),
                 "action_planning": action_plan_payload,
             }
@@ -294,6 +299,7 @@ def _build_report(
 ) -> dict:
     run_stamp = _utc_timestamp_for_filename()
     equivalent_count = sum(1 for result in case_results if result["smt_checking"]["equivalent"])
+    run_health = summarize_run(case_results)
     report: dict[str, object] = {
         "run_id": f"{run_id_prefix}_{run_stamp}",
         "mode": mode_name,
@@ -306,6 +312,7 @@ def _build_report(
             "non_equivalent_cases": len(case_results) - equivalent_count,
             "spec_fallback_count": fallback_spec_count,
             "code_fallback_count": fallback_code_count,
+            **run_health,
         },
         "results": case_results,
     }
@@ -588,7 +595,53 @@ def run_repo_cli(
     run_stamp = report["run_id"].split(f"repo_cli_{target_repo.name}_", maxsplit=1)[1]
     output_path = ROOT / "results" / f"repo_cli_{target_repo.name}_{run_stamp}.json"
     write_json(output_path, report)
+    _print_run_health_banner(report.get("summary"))
     return report
+
+
+def _print_run_health_banner(summary: object) -> None:
+    if not isinstance(summary, dict):
+        return
+    print("\n" + _style(" Run health ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
+    print(
+        _label("Cases:"),
+        _style(
+            f"total={summary.get('total_cases', 0)}  "
+            f"equivalent={summary.get('equivalent_cases', 0)}  "
+            f"non_equivalent={summary.get('non_equivalent_cases', 0)}",
+            _ANSI_WHITE,
+        ),
+    )
+    extractor = summary.get("extractor_health")
+    if isinstance(extractor, dict):
+        for side in ("spec", "code"):
+            side_payload = extractor.get(side)
+            if not isinstance(side_payload, dict):
+                continue
+            print(
+                _label(f"{side.capitalize()} extractor:"),
+                _style(
+                    f"degraded={side_payload.get('degraded_count', 0)}  "
+                    f"weak={side_payload.get('weak_postcondition_count', 0)}  "
+                    f"final_stages={side_payload.get('final_stage_counts', {})}",
+                    _ANSI_WHITE,
+                ),
+            )
+        print(
+            _label("Joint:"),
+            _style(
+                f"either_degraded={extractor.get('either_degraded_count', 0)}  "
+                f"both_degraded={extractor.get('both_degraded_count', 0)}  "
+                f"both_weak={extractor.get('both_weak_postcondition_count', 0)}",
+                _ANSI_WHITE,
+            ),
+        )
+    verdicts = summary.get("verdict_distribution")
+    if isinstance(verdicts, dict) and verdicts:
+        print(_label("Verdicts:"), _style(str(verdicts), _ANSI_WHITE))
+    wf = summary.get("well_formedness_distribution")
+    if isinstance(wf, dict) and wf:
+        print(_label("Well-formedness:"), _style(str(wf), _ANSI_WHITE))
 
 
 def main() -> None:
