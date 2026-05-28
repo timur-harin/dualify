@@ -24,17 +24,27 @@ from dualify.phases.p04_action_planning import (
     print_comparison_report,
 )
 from dualify.phases.p05_action_execution import execute_action
-from dualify.transcript import RecordingLLMClient, ReplayLLMClient
+from dualify.transcript import RecordingLLMClient, ReplayLLMClient, ResumingLLMClient
 from dualify.types import BenchmarkCase, SmtResult
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_DOTENV_PATH = ROOT / ".env"
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(ROOT / ".env")
+    load_dotenv(_DOTENV_PATH)
 except ImportError:
-    pass
+    # python-dotenv is a declared dependency in pyproject.toml. If the
+    # import fails the env is broken (probably an incomplete `poetry
+    # install`). Silently ignoring used to mask a real misconfiguration
+    # where users edited .env but their values never reached the runner.
+    if _DOTENV_PATH.exists():
+        print(
+            f"Warning: {_DOTENV_PATH} exists but python-dotenv is not installed; "
+            "values were not loaded. Run `poetry install` to fix.",
+            file=sys.stderr,
+        )
 
 _ANSI_RESET = "\033[0m"
 _ANSI_BOLD = "\033[1m"
@@ -708,6 +718,16 @@ def main() -> None:
             "replay is active."
         ),
     )
+    parser.add_argument(
+        "--resume-transcript",
+        default="",
+        help=(
+            "Serve cached responses from this existing JSONL transcript prefix and "
+            "fall through to the live provider for any extra calls (appending them "
+            "to the same file). Use this to continue an interrupted recording. "
+            "Mutually exclusive with --replay and --record-transcript."
+        ),
+    )
     args = parser.parse_args()
     api_key = (args.api_key or os.environ.get("GROQ_API_KEY", "")).strip()
 
@@ -751,20 +771,30 @@ def main() -> None:
             client_override=client_override,
         )
     print(json.dumps(report, indent=2, ensure_ascii=False))
-    if isinstance(client_override, RecordingLLMClient):
+    if isinstance(client_override, RecordingLLMClient | ResumingLLMClient):
         client_override.close()
 
 
 def _build_client_override(args: argparse.Namespace, api_key: str) -> LLMClient | None:
-    """Construct the LLM client from --replay / --record-transcript flags.
+    """Construct the LLM client from --replay / --record-transcript / --resume-transcript.
 
-    Returns None when neither flag is given; the run_* functions then build
+    Returns None when none are given; the run_* functions then build
     a live client from --provider / --model / --base-url / --api-key.
     """
     replay_path = (args.replay or "").strip()
     record_path = (args.record_transcript or "").strip()
-    if replay_path and record_path:
-        raise ValueError("--replay and --record-transcript are mutually exclusive.")
+    resume_path = (getattr(args, "resume_transcript", "") or "").strip()
+    chosen = [
+        name
+        for name, val in (
+            ("--replay", replay_path),
+            ("--record-transcript", record_path),
+            ("--resume-transcript", resume_path),
+        )
+        if val
+    ]
+    if len(chosen) > 1:
+        raise ValueError(f"{', '.join(chosen)} are mutually exclusive; pick one.")
     if replay_path:
         return ReplayLLMClient.from_path(Path(replay_path).expanduser().resolve())
     if record_path:
@@ -780,6 +810,17 @@ def _build_client_override(args: argparse.Namespace, api_key: str) -> LLMClient 
             model=args.model,
             base_url=args.base_url,
             provider=args.provider,
+        )
+    if resume_path:
+        live_client = create_llm_client(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=api_key,
+        )
+        return ResumingLLMClient.from_path(
+            inner=live_client,
+            path=Path(resume_path).expanduser().resolve(),
         )
     return None
 
