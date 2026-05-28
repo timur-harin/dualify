@@ -10,6 +10,7 @@ import pytest
 from dualify.transcript import (
     RecordingLLMClient,
     ReplayLLMClient,
+    ResumingLLMClient,
     TranscriptExhaustedError,
     TranscriptPromptMismatchError,
 )
@@ -219,3 +220,170 @@ def test_end_to_end_record_then_replay_produces_identical_report(tmp_path: Path)
         return scrubbed
 
     assert _strip_volatile(recorded_report) == _strip_volatile(replayed_report)
+
+
+def test_recording_is_line_buffered_visible_mid_stream(tmp_path: Path) -> None:
+    """Each generate_json call must commit its record to disk immediately,
+    so a sibling process reading the file (or a subsequent resume) sees the
+    prefix without waiting for the recorder to close."""
+    transcript = tmp_path / "live.jsonl"
+    fake = FakeLLMClient([{"i": 0}, {"i": 1}, {"i": 2}])
+    recorder = RecordingLLMClient(
+        inner=fake,
+        transcript_path=transcript,
+        model="m",
+        base_url="b",
+        provider="p",
+    )
+    # Header is written eagerly in __post_init__.
+    assert transcript.read_text().count("\n") == 1
+
+    recorder.generate_json("first")
+    assert transcript.read_text().count("\n") == 2  # header + 1 record
+
+    recorder.generate_json("second")
+    assert transcript.read_text().count("\n") == 3  # header + 2 records
+
+    recorder.close()
+    assert transcript.read_text().count("\n") == 3  # closing does not add a line
+
+
+def test_resume_serves_cached_prefix_then_falls_through(tmp_path: Path) -> None:
+    transcript = tmp_path / "interrupted.jsonl"
+
+    # Phase 1: a recording that we will "interrupt" after 2 of 4 calls.
+    fake1 = FakeLLMClient([{"i": 0}, {"i": 1}])
+    recorder = RecordingLLMClient(
+        inner=fake1,
+        transcript_path=transcript,
+        model="m",
+        base_url="b",
+        provider="p",
+    )
+    recorder.generate_json("p0")
+    recorder.generate_json("p1")
+    recorder.close()
+    assert len(_read_jsonl(transcript)) == 3  # header + 2 records
+
+    # Phase 2: resume against a live client that only knows the suffix.
+    fake2 = FakeLLMClient([{"i": 2}, {"i": 3}])
+    resumer = ResumingLLMClient.from_path(inner=fake2, path=transcript)
+    assert resumer.cached_remaining() == 2
+
+    # First two calls -> cached, no live LLM call.
+    assert resumer.generate_json("p0") == {"i": 0}
+    assert resumer.generate_json("p1") == {"i": 1}
+    assert fake2.calls == []  # nothing forwarded yet
+    assert resumer.cached_remaining() == 0
+    assert resumer.appended_count() == 0
+
+    # Next two calls -> forwarded to inner and appended.
+    assert resumer.generate_json("p2") == {"i": 2}
+    assert resumer.generate_json("p3") == {"i": 3}
+    assert [c[0] for c in fake2.calls] == ["p2", "p3"]
+    assert resumer.appended_count() == 2
+    resumer.close()
+
+    # Final transcript = header + 4 records, contiguous call_index 0..3.
+    records = _read_jsonl(transcript)
+    assert len(records) == 5
+    assert records[0]["transcript_metadata"]["model"] == "m"
+    assert [r["call_index"] for r in records[1:]] == [0, 1, 2, 3]
+    assert [r["prompt"] for r in records[1:]] == ["p0", "p1", "p2", "p3"]
+
+
+def test_resume_detects_prompt_drift_at_boundary(tmp_path: Path) -> None:
+    """If the caller re-issues a different prompt for an already-recorded
+    call, the resume must raise immediately rather than silently producing
+    a stale response (or worse, poisoning the suffix)."""
+    transcript = tmp_path / "drift.jsonl"
+    fake1 = FakeLLMClient([{"x": 1}])
+    recorder = RecordingLLMClient(
+        inner=fake1,
+        transcript_path=transcript,
+        model="m",
+        base_url="b",
+        provider="p",
+    )
+    recorder.generate_json("original prompt")
+    recorder.close()
+
+    fake2 = FakeLLMClient([])
+    resumer = ResumingLLMClient.from_path(inner=fake2, path=transcript)
+    with pytest.raises(TranscriptPromptMismatchError) as exc_info:
+        resumer.generate_json("mutated prompt")
+    assert "prompt hash mismatch" in str(exc_info.value)
+    assert fake2.calls == []  # never forwarded
+    resumer.close()
+
+
+def test_resume_full_run_equals_record_from_scratch(tmp_path: Path) -> None:
+    """Round-trip: record-all and (record-half + resume-rest) must yield
+    byte-identical transcripts modulo the metadata timestamp."""
+    prompts = [f"prompt {i}" for i in range(5)]
+    responses = [{"i": i} for i in range(5)]
+
+    # Path A: record from scratch.
+    scratch = tmp_path / "scratch.jsonl"
+    rec_a = RecordingLLMClient(
+        inner=FakeLLMClient(list(responses)),
+        transcript_path=scratch,
+        model="m",
+        base_url="b",
+        provider="p",
+    )
+    for p in prompts:
+        rec_a.generate_json(p)
+    rec_a.close()
+
+    # Path B: record first 2, then resume with the remaining 3.
+    split = tmp_path / "split.jsonl"
+    rec_b = RecordingLLMClient(
+        inner=FakeLLMClient(list(responses[:2])),
+        transcript_path=split,
+        model="m",
+        base_url="b",
+        provider="p",
+    )
+    rec_b.generate_json(prompts[0])
+    rec_b.generate_json(prompts[1])
+    rec_b.close()
+
+    resumer = ResumingLLMClient.from_path(
+        inner=FakeLLMClient(list(responses[2:])),
+        path=split,
+    )
+    # First two calls are served from the cached prefix.
+    resumer.generate_json(prompts[0])
+    resumer.generate_json(prompts[1])
+    # Remaining three are forwarded.
+    for p in prompts[2:]:
+        resumer.generate_json(p)
+    resumer.close()
+
+    records_a = _read_jsonl(scratch)[1:]  # drop header
+    records_b = _read_jsonl(split)[1:]
+    # call_index, prompt, prompt_sha256, temperature, response must all match.
+    for ra, rb in zip(records_a, records_b, strict=True):
+        assert ra["call_index"] == rb["call_index"]
+        assert ra["prompt"] == rb["prompt"]
+        assert ra["prompt_sha256"] == rb["prompt_sha256"]
+        assert ra["temperature"] == rb["temperature"]
+        assert ra["response"] == rb["response"]
+
+
+def test_resume_on_empty_transcript_acts_like_recording(tmp_path: Path) -> None:
+    """If the existing transcript holds only a header (no records yet),
+    resume should forward every call to the live client."""
+    transcript = tmp_path / "header_only.jsonl"
+    # Write only the metadata header.
+    transcript.write_text(json.dumps({"transcript_metadata": {"version": 1, "model": "m"}}) + "\n")
+    fake = FakeLLMClient([{"x": 1}, {"x": 2}])
+    resumer = ResumingLLMClient.from_path(inner=fake, path=transcript)
+    assert resumer.cached_remaining() == 0
+    assert resumer.generate_json("a") == {"x": 1}
+    assert resumer.generate_json("b") == {"x": 2}
+    resumer.close()
+    records = _read_jsonl(transcript)
+    assert len(records) == 3
+    assert [r["call_index"] for r in records[1:]] == [0, 1]
