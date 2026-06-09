@@ -12,6 +12,7 @@ from pathlib import Path
 from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
 from dualify.formula_parser import normalize_formula
+from dualify.health import summarize_extraction, summarize_run
 from dualify.io_utils import write_json
 from dualify.ollama_client import LLMClient, create_llm_client
 from dualify.phases.p01_spec_to_logic import extract_spec_logic
@@ -23,16 +24,27 @@ from dualify.phases.p04_action_planning import (
     print_comparison_report,
 )
 from dualify.phases.p05_action_execution import execute_action
+from dualify.transcript import RecordingLLMClient, ReplayLLMClient, ResumingLLMClient
 from dualify.types import BenchmarkCase, SmtResult
 
 ROOT = Path(__file__).resolve().parents[2]
 
+_DOTENV_PATH = ROOT / ".env"
 try:
     from dotenv import load_dotenv
 
-    load_dotenv(ROOT / ".env")
+    load_dotenv(_DOTENV_PATH)
 except ImportError:
-    pass
+    # python-dotenv is a declared dependency in pyproject.toml. If the
+    # import fails the env is broken (probably an incomplete `poetry
+    # install`). Silently ignoring used to mask a real misconfiguration
+    # where users edited .env but their values never reached the runner.
+    if _DOTENV_PATH.exists():
+        print(
+            f"Warning: {_DOTENV_PATH} exists but python-dotenv is not installed; "
+            "values were not loaded. Run `poetry install` to fix.",
+            file=sys.stderr,
+        )
 
 _ANSI_RESET = "\033[0m"
 _ANSI_BOLD = "\033[1m"
@@ -254,6 +266,7 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
                 reason="low_confidence_parse" if smt_result.equivalent else smt_result.reason,
                 counterexample=smt_result.counterexample,
                 diagnostics=diagnostics,
+                well_formedness=smt_result.well_formedness,
             )
 
         action_plan_payload = build_action_plan(
@@ -264,6 +277,10 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
             smt_result=smt_result,
         )
 
+        spec_payload = {**asdict(spec_logic), "used_fallback": used_spec_fallback}
+        spec_payload["extractor_health"] = summarize_extraction(spec_payload)
+        code_payload = {**asdict(code_logic), "used_fallback": used_code_fallback}
+        code_payload["extractor_health"] = summarize_extraction(code_payload)
         case_results.append(
             {
                 "benchmark_id": benchmark_id,
@@ -271,8 +288,8 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
                 "signature": signature,
                 "informal_spec": informal_spec,
                 "extra_context": extra_context,
-                "spec_to_logic": {**asdict(spec_logic), "used_fallback": used_spec_fallback},
-                "code_to_logic": {**asdict(code_logic), "used_fallback": used_code_fallback},
+                "spec_to_logic": spec_payload,
+                "code_to_logic": code_payload,
                 "smt_checking": asdict(smt_result),
                 "action_planning": action_plan_payload,
             }
@@ -293,6 +310,7 @@ def _build_report(
 ) -> dict:
     run_stamp = _utc_timestamp_for_filename()
     equivalent_count = sum(1 for result in case_results if result["smt_checking"]["equivalent"])
+    run_health = summarize_run(case_results)
     report: dict[str, object] = {
         "run_id": f"{run_id_prefix}_{run_stamp}",
         "mode": mode_name,
@@ -305,6 +323,7 @@ def _build_report(
             "non_equivalent_cases": len(case_results) - equivalent_count,
             "spec_fallback_count": fallback_spec_count,
             "code_fallback_count": fallback_code_count,
+            **run_health,
         },
         "results": case_results,
     }
@@ -319,13 +338,19 @@ def run_experiment(
     benchmark_name: str = "synthetic",
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     benchmark_dir = ROOT / "benchmark" / benchmark_name
     if not benchmark_dir.exists():
         raise FileNotFoundError(f"Benchmark directory not found: {benchmark_dir}")
     cases = discover_python_cases(benchmark_dir=benchmark_dir, root_dir=ROOT)
 
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
     case_results, fallback_spec_count, fallback_code_count = _run_cases(client, cases)
 
@@ -356,6 +381,7 @@ def run_repo_scan(
     list_targets: bool = False,
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -374,7 +400,12 @@ def run_repo_scan(
     )
     if not cases:
         raise ValueError("No supported functions discovered. Add type-annotated functions.")
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
 
     history: list[dict[str, object]] = []
@@ -434,6 +465,7 @@ def run_repo_cli(
     verbose: bool = False,
     provider: str = "ollama",
     api_key: str = "",
+    client_override: LLMClient | None = None,
 ) -> dict:
     target_repo = Path(repo_path).expanduser().resolve()
     if not target_repo.exists() or not target_repo.is_dir():
@@ -452,7 +484,12 @@ def run_repo_cli(
     )
     if not ordered_cases:
         raise ValueError("No supported functions discovered. Add type-annotated functions.")
-    client = create_llm_client(provider=provider, model=model, base_url=base_url, api_key=api_key)
+    if client_override is not None:
+        client = client_override
+    else:
+        client = create_llm_client(
+            provider=provider, model=model, base_url=base_url, api_key=api_key
+        )
     client.healthcheck()
 
     print("\n" + _style(" Repository scan ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
@@ -587,7 +624,53 @@ def run_repo_cli(
     run_stamp = report["run_id"].split(f"repo_cli_{target_repo.name}_", maxsplit=1)[1]
     output_path = ROOT / "results" / f"repo_cli_{target_repo.name}_{run_stamp}.json"
     write_json(output_path, report)
+    _print_run_health_banner(report.get("summary"))
     return report
+
+
+def _print_run_health_banner(summary: object) -> None:
+    if not isinstance(summary, dict):
+        return
+    print("\n" + _style(" Run health ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE))
+    print(
+        _label("Cases:"),
+        _style(
+            f"total={summary.get('total_cases', 0)}  "
+            f"equivalent={summary.get('equivalent_cases', 0)}  "
+            f"non_equivalent={summary.get('non_equivalent_cases', 0)}",
+            _ANSI_WHITE,
+        ),
+    )
+    extractor = summary.get("extractor_health")
+    if isinstance(extractor, dict):
+        for side in ("spec", "code"):
+            side_payload = extractor.get(side)
+            if not isinstance(side_payload, dict):
+                continue
+            print(
+                _label(f"{side.capitalize()} extractor:"),
+                _style(
+                    f"degraded={side_payload.get('degraded_count', 0)}  "
+                    f"weak={side_payload.get('weak_postcondition_count', 0)}  "
+                    f"final_stages={side_payload.get('final_stage_counts', {})}",
+                    _ANSI_WHITE,
+                ),
+            )
+        print(
+            _label("Joint:"),
+            _style(
+                f"either_degraded={extractor.get('either_degraded_count', 0)}  "
+                f"both_degraded={extractor.get('both_degraded_count', 0)}  "
+                f"both_weak={extractor.get('both_weak_postcondition_count', 0)}",
+                _ANSI_WHITE,
+            ),
+        )
+    verdicts = summary.get("verdict_distribution")
+    if isinstance(verdicts, dict) and verdicts:
+        print(_label("Verdicts:"), _style(str(verdicts), _ANSI_WHITE))
+    wf = summary.get("well_formedness_distribution")
+    if isinstance(wf, dict) and wf:
+        print(_label("Well-formedness:"), _style(str(wf), _ANSI_WHITE))
 
 
 def main() -> None:
@@ -618,8 +701,37 @@ def main() -> None:
     parser.add_argument("--target-regex", action="append", default=[])
     parser.add_argument("--list-targets", action="store_true")
     parser.add_argument("--verbose", action="store_true")
+    parser.add_argument(
+        "--record-transcript",
+        default="",
+        help=(
+            "Append every LLM call to this JSONL file. Wraps the live provider so the "
+            "run still produces real results."
+        ),
+    )
+    parser.add_argument(
+        "--replay",
+        default="",
+        help=(
+            "Replay LLM responses from this JSONL transcript instead of calling any "
+            "live provider. The model / provider / api-key flags are ignored when "
+            "replay is active."
+        ),
+    )
+    parser.add_argument(
+        "--resume-transcript",
+        default="",
+        help=(
+            "Serve cached responses from this existing JSONL transcript prefix and "
+            "fall through to the live provider for any extra calls (appending them "
+            "to the same file). Use this to continue an interrupted recording. "
+            "Mutually exclusive with --replay and --record-transcript."
+        ),
+    )
     args = parser.parse_args()
     api_key = (args.api_key or os.environ.get("GROQ_API_KEY", "")).strip()
+
+    client_override = _build_client_override(args, api_key)
 
     if args.repo_path:
         if args.non_interactive:
@@ -633,6 +745,7 @@ def main() -> None:
                 list_targets=args.list_targets,
                 provider=args.provider,
                 api_key=api_key,
+                client_override=client_override,
             )
         else:
             report = run_repo_cli(
@@ -646,6 +759,7 @@ def main() -> None:
                 verbose=args.verbose,
                 provider=args.provider,
                 api_key=api_key,
+                client_override=client_override,
             )
     else:
         report = run_experiment(
@@ -654,8 +768,61 @@ def main() -> None:
             benchmark_name=args.benchmark,
             provider=args.provider,
             api_key=api_key,
+            client_override=client_override,
         )
     print(json.dumps(report, indent=2, ensure_ascii=False))
+    if isinstance(client_override, RecordingLLMClient | ResumingLLMClient):
+        client_override.close()
+
+
+def _build_client_override(args: argparse.Namespace, api_key: str) -> LLMClient | None:
+    """Construct the LLM client from --replay / --record-transcript / --resume-transcript.
+
+    Returns None when none are given; the run_* functions then build
+    a live client from --provider / --model / --base-url / --api-key.
+    """
+    replay_path = (args.replay or "").strip()
+    record_path = (args.record_transcript or "").strip()
+    resume_path = (getattr(args, "resume_transcript", "") or "").strip()
+    chosen = [
+        name
+        for name, val in (
+            ("--replay", replay_path),
+            ("--record-transcript", record_path),
+            ("--resume-transcript", resume_path),
+        )
+        if val
+    ]
+    if len(chosen) > 1:
+        raise ValueError(f"{', '.join(chosen)} are mutually exclusive; pick one.")
+    if replay_path:
+        return ReplayLLMClient.from_path(Path(replay_path).expanduser().resolve())
+    if record_path:
+        live_client = create_llm_client(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=api_key,
+        )
+        return RecordingLLMClient(
+            inner=live_client,
+            transcript_path=Path(record_path).expanduser().resolve(),
+            model=args.model,
+            base_url=args.base_url,
+            provider=args.provider,
+        )
+    if resume_path:
+        live_client = create_llm_client(
+            provider=args.provider,
+            model=args.model,
+            base_url=args.base_url,
+            api_key=api_key,
+        )
+        return ResumingLLMClient.from_path(
+            inner=live_client,
+            path=Path(resume_path).expanduser().resolve(),
+        )
+    return None
 
 
 if __name__ == "__main__":

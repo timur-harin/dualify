@@ -44,7 +44,7 @@ def _case_color(case_name: str) -> str:
         return _ANSI_YELLOW
     if case_name in {"PRE_SPEC", "POST_SPEC"}:
         return _ANSI_BLUE
-    if case_name == "LOW_CONFIDENCE_PARSE":
+    if case_name in {"LOW_CONFIDENCE_PARSE", "VACUOUS_EQUIVALENCE", "SOLVER_UNKNOWN"}:
         return _ANSI_YELLOW
     return _ANSI_RED
 
@@ -56,7 +56,7 @@ def _case_badge(case_name: str) -> str:
         return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_YELLOW)
     if case_name in {"PRE_SPEC", "POST_SPEC"}:
         return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_BLUE)
-    if case_name == "LOW_CONFIDENCE_PARSE":
+    if case_name in {"LOW_CONFIDENCE_PARSE", "VACUOUS_EQUIVALENCE", "SOLVER_UNKNOWN"}:
         return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_YELLOW)
     return _style(f" {case_name} ", _ANSI_BOLD, _ANSI_WHITE, _ANSI_BG_RED)
 
@@ -118,6 +118,24 @@ def _resolve_case_and_actions(smt_result: SmtResult) -> tuple[str, list[str]]:
                 "fix_implementation",
                 "investigate_instrumentation",
                 "no_test_case",
+            ],
+        )
+    if reason == "vacuous_equivalence":
+        return (
+            "VACUOUS_EQUIVALENCE",
+            [
+                "refine_spec",
+                "investigate_instrumentation",
+                "add_test_case",
+            ],
+        )
+    if reason == "solver_unknown":
+        return (
+            "SOLVER_UNKNOWN",
+            [
+                "investigate_instrumentation",
+                "add_test_case",
+                "add_property_to_ignore_list",
             ],
         )
     if reason == "equivalent_no_mismatch" or smt_result.equivalent:
@@ -278,6 +296,17 @@ Input:
             summary = "Implementation postconditions are weaker on common preconditions."
         elif triggered_case == "POST_SPEC":
             summary = "Specification postconditions are weaker on common preconditions."
+        elif triggered_case == "VACUOUS_EQUIVALENCE":
+            summary = (
+                "Postconditions range over disjoint vocabularies "
+                "(e.g. spec talks about inputs, code talks about ret); "
+                "equivalence verdict would be semantically vacuous."
+            )
+        elif triggered_case == "SOLVER_UNKNOWN":
+            summary = (
+                "Z3 returned unknown on at least one obligation; "
+                "verdict undecided. Investigate extraction or narrow the formula."
+            )
         else:
             summary = "Mismatch detected; review diagnostics and add targeted test."
 
@@ -288,6 +317,45 @@ Input:
         "recommended_actions": clean_recommended,
         "summary": summary,
     }
+
+
+def _format_side_health(side_label: str, side_logic: dict | None) -> str:
+    if not isinstance(side_logic, dict):
+        return ""
+    health = side_logic.get("extractor_health")
+    if not isinstance(health, dict):
+        return ""
+    final_stage = health.get("final_stage", "?")
+    degraded = bool(health.get("degraded", False))
+    weak = bool(health.get("postcondition_is_weak", False))
+    used_fallback = bool(health.get("used_fallback", False))
+    color = _ANSI_GREEN
+    if final_stage == "sanitized" or used_fallback:
+        color = _ANSI_RED
+    elif final_stage in {"safe_repair", "repair"} or degraded or weak:
+        color = _ANSI_YELLOW
+    badge = str(final_stage)
+    markers: list[str] = []
+    if degraded:
+        markers.append("degraded")
+    if weak:
+        markers.append("weak")
+    if used_fallback:
+        markers.append("fallback")
+    marker_text = f" [{', '.join(markers)}]" if markers else ""
+    return _style(f"{side_label}={badge}{marker_text}", color)
+
+
+def _format_extractor_health_line(spec_logic: dict | None, code_logic: dict | None) -> str:
+    parts = [
+        part
+        for part in (
+            _format_side_health("spec", spec_logic),
+            _format_side_health("code", code_logic),
+        )
+        if part
+    ]
+    return "  ".join(parts)
 
 
 def print_comparison_report(
@@ -320,6 +388,14 @@ def print_comparison_report(
     print(_label("Equivalent:"), _bool_badge(smt_result.equivalent))
     print(_label("Triggered case:"), _case_badge(triggered_case))
     print(_label("Counterexample(args):"), _style(str(smt_result.counterexample), case_color))
+    if smt_result.well_formedness != "ok":
+        print(
+            _label("Well-formedness:"),
+            _style(smt_result.well_formedness, _ANSI_BOLD, _ANSI_YELLOW),
+        )
+    health_line = _format_extractor_health_line(spec_logic, code_logic)
+    if health_line:
+        print(_label("Extractor:"), health_line)
     diagnostics = smt_result.diagnostics or {}
     short_diagnostics = {
         "pre_mismatch": diagnostics.get("pre_mismatch"),
