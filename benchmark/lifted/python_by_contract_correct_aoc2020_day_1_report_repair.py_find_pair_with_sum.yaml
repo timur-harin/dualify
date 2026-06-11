@@ -1,0 +1,41 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_1_report_repair.py::find_pair_with_sum
+qualname: find_pair_with_sum
+file: ''
+signature: 'find_pair_with_sum(items: List[int], total: int) -> Optional[Tuple[int,
+  int]]'
+arg_types:
+  items: List[int]
+  total: int
+return_type: Optional[Tuple[int, int]]
+informal_spec: Find the two entries in items that sum to total. Return them as a tuple
+  (x, y) where x appears at an earlier position than y in items, or return None if
+  no such pair exists.
+informal_spec_raw: Find the two entries that sum to ``total``.
+function_source: "def find_pair_with_sum(items: List[int], total: int) -> Optional[Tuple[int,\
+  \ int]]:\n    \"\"\"Find the two entries that sum to ``total``.\"\"\"\n    for i,\
+  \ x in enumerate(items):\n        for y in items[i + 1 :]:\n            if x + y\
+  \ == total:\n                return (x, y)\n    return None"
+profile: 'In scope: arithmetic search over a list of integers for two entries at distinct
+  positions whose sum equals total, returning that pair or None when none exists.
+  Out of scope: which specific pair is returned when several exist, and the order
+  of the two elements within the returned tuple beyond what the index-order witness
+  encodes. Observable: ret is either None or a 2-tuple whose components sum to total
+  and are witnessed by two distinct indices in items.'
+in_fragment: true
+reference_pre: []
+reference_post: Or(ret == None, And(Length(ret) == 2, ret[0] + ret[1] == total, Exists([_i],
+  And(0 <= _i, _i < Length(items), items[_i] == ret[0], Exists([_j], And(_i < _j,
+  _j < Length(items), items[_j] == ret[1]))))))
+notes: 'ai-review: Rewrote the auto-seeded post from the failing form (which used
+  `is None`, `in`, and an undefined `items_count` helper). The corrected post uses
+  `ret == None` for the no-pair branch and a nested Exists witnessing two distinct
+  indices i < j in items with items[i] == ret[0] and items[j] == ret[1], plus ret[0]
+  + ret[1] == total. This matches the implementation''s left-to-right pair search
+  semantics (the second index strictly greater than the first).'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: Or(ret == None, And(Length(ret) == 2, ret[0] + ret[1] == total, Exists([_i],
+    And(0 <= _i, _i < Length(items), items[_i] == ret[0], Exists([_j], And(_i < _j,
+    _j < Length(items), items[_j] == ret[1]))))))

@@ -1,0 +1,39 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_5_binary_boarding.py::determine_column
+qualname: determine_column
+file: ''
+signature: 'determine_column(identifier: str) -> int'
+arg_types:
+  identifier: str
+return_type: int
+informal_spec: Compute the column of the seat identified by the ``identifier``.
+informal_spec_raw: Compute the column of the seat identified by the ``identifier``.
+function_source: "def determine_column(identifier: str) -> int:\n    \"\"\"Compute\
+  \ the column of the seat identified by the ``identifier``.\"\"\"\n    first = 0\n\
+  \    last = 7\n\n    for directive in identifier:\n        first, last = apply(first=first,\
+  \ last=last, directive=directive)\n\n    assert first == last, \"The last step should\
+  \ have completely defined the column.\"\n    return first"
+profile: 'In scope: mapping a 3-character L/R directive string to the corresponding
+  seat column index produced by repeated binary halving of [0, 7]. Out of scope: the
+  auxiliary `apply` helper''s signature and intermediate `first`/`last` state. Observable:
+  the returned integer column in 0..7.'
+in_fragment: true
+reference_pre:
+- Length(identifier) == 3
+- ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(identifier[k] == 'L',
+  identifier[k] == 'R')))
+reference_post: And(0 <= ret, ret <= 7)
+notes: 'ai-review: Rewrote the draft''s `re_match(''^[LR]{3}\\Z'', identifier)` precondition
+  into in-fragment form: a length constraint plus a ForAll over characters restricted
+  to ''L''/''R''. Tightened the postcondition from `0 <= ret <= 127` (which would
+  correspond to the full seat id range) to `0 <= ret <= 7`, since this function only
+  produces the column of an 8-column row obtained by 3 binary-halving steps over [0,
+  7]. The exact value depends on the `apply` helper, which the contract treats as
+  a black box; only the resulting range is observable here.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(identifier) == 3
+  - ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(identifier[k] == 'L',
+    identifier[k] == 'R')))
+  post: And(0 <= ret, ret <= 7)

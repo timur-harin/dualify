@@ -1,0 +1,34 @@
+benchmark_id: crosshair_examples::icontract::correct_code::arith.py::perimiter_length
+qualname: perimiter_length
+file: ''
+signature: 'perimiter_length(length: int, width: int) -> int'
+arg_types:
+  length: int
+  width: int
+return_type: int
+informal_spec: 'Behavior of perimiter_length: given positive integers length and width,
+  return the perimeter of the rectangle (2*length + 2*width), which is strictly greater
+  than each side length.'
+informal_spec_raw: Behavior of perimiter_length
+function_source: "def perimiter_length(length: int, width: int) -> int:\n    return\
+  \ 2 * length + 2 * width"
+profile: 'In scope: arithmetic relation between two positive integer side lengths
+  and the rectangle perimeter return value. Out of scope: integer overflow / unbounded
+  size, non-integer inputs. Observable: the returned int compared to the two input
+  ints.'
+in_fragment: true
+reference_pre:
+- length > 0
+- width > 0
+reference_post: And(ret > length, ret > width)
+notes: 'ai-review: Draft used unknown identifiers `ln`/`w` and Python `and`; rewrote
+  to use the actual signature arg names `length`/`width` and prefix `And(...)`. Postcondition
+  mirrors the icontract example''s "ret > length and ret > width" invariant (which
+  holds for any positive length/width).'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - length > 0
+  - width > 0
+  post: And(ret > length, ret > width)

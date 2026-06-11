@@ -1,0 +1,58 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_08::problem_05.py::simulate
+qualname: simulate
+file: ''
+signature: 'simulate(trials: int, grid_size: int) -> float'
+arg_types:
+  trials: int
+  grid_size: int
+return_type: float
+informal_spec: Simulate ``trials`` number of wolf journeys on the quadratic ``grid_size``
+  grid.
+informal_spec_raw: Simulate ``trials` number of wolf journeys on the quadratic ``grid_size``
+  grid.
+function_source: "def simulate(trials: int, grid_size: int) -> float:\n    \"\"\"\n\
+  \    Simulate ``trials` number of wolf journeys on the quadratic ``grid_size`` grid.\"\
+  \"\"\n    success_count = 0\n\n    half_grid_size = grid_size // 2\n    border =\
+  \ (-half_grid_size, half_grid_size)\n\n    for _ in range(trials):\n        visited\
+  \ = set()  # type: Set[Position]\n\n        position = Position(x=0, y=0)\n\n  \
+  \      success = None  # type: Optional[bool]\n        while True:\n           \
+  \ assert position.x < half_grid_size, (\n                f\"position invariant for\
+  \ x: \"\n                f\"{position=}, {half_grid_size=}, {grid_size=}\"\n   \
+  \         )\n            assert position.y < half_grid_size, (\n               \
+  \ f\"position invariant for y: \"\n                f\"{position=}, {half_grid_size=},\
+  \ {grid_size=}\"\n            )\n            assert (\n                position\
+  \ not in visited\n            ), f\"visited invariant: {visited=}, {grid_size=}\"\
+  \n\n            old_visited_len = len(visited)\n            visited.add(position)\n\
+  \n            next_positions = list_next_positions(pos=position)\n\n           \
+  \ if all(next_pos in visited for next_pos in next_positions):\n                success\
+  \ = False\n                break\n\n            position = random.choice(\n    \
+  \            [pos for pos in next_positions if pos not in visited]\n           \
+  \ )\n            if position.x in border or position.y in border:\n            \
+  \    success = True\n                break\n\n            assert len(visited) ==\
+  \ old_visited_len + 1, \"Loop invariant\"\n\n        assert success is not None\n\
+  \n        if success:\n            success_count += 1\n\n    return success_count\
+  \ / trials"
+profile: 'In scope: probabilistic Monte Carlo estimate of wolf-walk success rate,
+  bounded by trial count and grid geometry. Out of scope: randomness source, exact
+  probability value, intermediate visited-set bookkeeping. Observable: the returned
+  float ratio of successful trials to total trials.'
+in_fragment: true
+reference_pre:
+- trials > 0
+- grid_size > 1
+- grid_size % 2 == 1
+reference_post: And(0 <= ret, ret <= 1)
+notes: 'ai-review: Rewrote chained comparison `0 <= ret <= 1` as `And(0 <= ret, ret
+  <= 1)` for explicit fragment form. The function is stochastic (uses random.choice),
+  so only the range of the success ratio is observable; exact value cannot be specified.
+  Preconditions enforce: trials > 0 (division by trials), grid_size odd and > 1 (so
+  half_grid_size >= 1, enabling position invariants `position.x < half_grid_size`
+  to hold for the starting position (0,0)).'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - trials > 0
+  - grid_size > 1
+  - grid_size % 2 == 1
+  post: And(0 <= ret, ret <= 1)

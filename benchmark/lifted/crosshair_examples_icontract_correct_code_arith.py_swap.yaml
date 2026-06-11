@@ -1,0 +1,25 @@
+benchmark_id: crosshair_examples::icontract::correct_code::arith.py::swap
+qualname: swap
+file: ''
+signature: 'swap(things: Tuple[int, int]) -> Tuple[int, int]'
+arg_types:
+  things: Tuple[int, int]
+return_type: Tuple[int, int]
+informal_spec: Swap the arguments.
+informal_spec_raw: Swap the arguments.
+function_source: "def swap(things: Tuple[int, int]) -> Tuple[int, int]:\n    \"\"\"\
+  \n    Swap the arguments.\n    \"\"\"\n    return (things[1], things[0])"
+profile: 'In scope: element-wise swap of a 2-tuple of integers. Out of scope: tuple
+  identity or any mutation of the input. Observable: the returned 2-tuple''s element
+  values.'
+in_fragment: true
+reference_pre: []
+reference_post: And(ret[0] == things[1], ret[1] == things[0])
+notes: 'ai-review: Rewrote the postcondition from Python `and` to prefix `And(...)`
+  to fit the Dualify fragment. No preconditions are needed; the signature already
+  restricts `things` to a 2-tuple of ints.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: And(ret[0] == things[1], ret[1] == things[0])

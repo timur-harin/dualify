@@ -1,0 +1,37 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_08::problem_01.py::matches
+qualname: matches
+file: ''
+signature: 'matches(src: str, chars: str, dist: int) -> bool'
+arg_types:
+  src: str
+  chars: str
+  dist: int
+return_type: bool
+informal_spec: Return whether chars approximately matches a substring of src within
+  the given non-negative distance budget.
+informal_spec_raw: Behavior of matches
+function_source: "def matches(src: str, chars: str, dist: int) -> bool:\n    return\
+  \ stretch(src, Counter(chars), len(src) - len(chars), dist)"
+profile: 'In scope: Boolean result of matches(src, chars, dist) reporting whether
+  chars approximately appears in src under a non-negative distance budget. Out of
+  scope: the semantics of the helper stretch/Counter and the exact distance metric
+  used. Observable: the returned boolean.'
+in_fragment: false
+reference_pre:
+- dist >= 0
+- Length(chars) <= Length(src)
+reference_post: Implies(Contains(src, chars), ret == True)
+notes: 'ai-review: Informal spec is effectively empty ("Behavior of matches"). The
+  function delegates to an external `stretch` helper with a Counter of `chars` and
+  a stretch budget tied to `len(src) - len(chars)` plus `dist`. Without the definition
+  of `stretch` and a clearer informal spec we cannot precisely characterize the postcondition.
+  The draft''s reference_post used IfExp and `sorted(...)` which are out of fragment;
+  rewrote into a best-effort Implies asserting that a literal substring occurrence
+  forces a True result, but even this is a guess. Marking in_fragment=false because
+  the true contract likely depends on a permutation/anagram or edit-distance predicate
+  that is not expressible without user-defined helpers.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized: null

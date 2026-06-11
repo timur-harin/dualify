@@ -1,0 +1,33 @@
+benchmark_id: crosshair_examples::deal::correct_code::average.py::average
+qualname: average
+file: ''
+signature: 'average(numbers: List[float]) -> float'
+arg_types:
+  numbers: List[float]
+return_type: float
+informal_spec: Behavior of average
+informal_spec_raw: Behavior of average
+function_source: "def average(numbers: List[float]) -> float:\n    return sum(numbers)\
+  \ / len(numbers)"
+profile: 'In scope: arithmetic mapping from a non-empty list of floats to a float
+  that lies between the list''s minimum and maximum elements. Out of scope: numerical
+  precision, rounding error, NaN/Inf inputs, and the exact mean value. Observable:
+  the returned float compared against the elements of numbers.'
+in_fragment: true
+reference_pre:
+- Length(numbers) > 0
+reference_post: And(Exists([k], And(0 <= k, k < Length(numbers), numbers[k] <= ret)),
+  Exists([k], And(0 <= k, k < Length(numbers), numbers[k] >= ret)))
+notes: 'ai-review: Rewrote draft post `min(numbers) <= ret <= max(numbers)` into the
+  fragment using Exists quantifiers: `min(numbers) <= ret` iff some element is <=
+  ret (since the min is itself in the list), and symmetrically for the upper bound.
+  This is logically equivalent given the precondition that numbers is non-empty. Did
+  not strengthen to the exact arithmetic mean because that would require summing the
+  list, which is not directly expressible without an additional helper.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(numbers) > 0
+  post: And(Exists([k], And(0 <= k, k < Length(numbers), numbers[k] <= ret)), Exists([k],
+    And(0 <= k, k < Length(numbers), numbers[k] >= ret)))

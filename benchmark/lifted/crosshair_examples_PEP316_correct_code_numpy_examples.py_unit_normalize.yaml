@@ -1,0 +1,65 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::numpy_examples.py::unit_normalize
+qualname: unit_normalize
+file: ''
+signature: 'unit_normalize(a: np.ndarray) -> np.ndarray'
+arg_types:
+  a: np.ndarray
+return_type: np.ndarray
+informal_spec: 'Normalize the given array values into the [0,1] range.
+
+
+  >>> unit_normalize(np.arange(-1, 2))
+
+  array([0. , 0.5, 1. ])'
+informal_spec_raw: 'Normalize the given array values into the [0,1] range.
+
+
+  >>> unit_normalize(np.arange(-1, 2))
+
+  array([0. , 0.5, 1. ])
+
+
+  pre: a.size > 0
+
+  pre: a.dtype == np.float64
+
+  pre: np.ptp(a) > 0
+
+  post: np.max(_) <= 1.0
+
+  post: np.min(_) >= 0.0'
+function_source: "def unit_normalize(a: np.ndarray) -> np.ndarray:\n    \"\"\"\n \
+  \   Normalize the given array values into the [0,1] range.\n\n    >>> unit_normalize(np.arange(-1,\
+  \ 2))\n    array([0. , 0.5, 1. ])\n\n    pre: a.size > 0\n    pre: a.dtype == np.float64\n\
+  \    pre: np.ptp(a) > 0\n    post: np.max(_) <= 1.0\n    post: np.min(_) >= 0.0\n\
+  \    \"\"\"\n    return (a - np.min(a)) / np.ptp(a)"
+profile: 'In scope: numeric mapping from a non-empty float numpy array with non-constant
+  values to a same-length array whose values are bounded in [0, 1]. Out of scope:
+  numpy dtype identity, exact min-max attainment, internal numpy representation. Observable:
+  length of the returned array and per-element bounds.'
+in_fragment: true
+reference_pre:
+- Length(a) > 0
+- Exists([k], And(0 <= k, k < Length(a), Exists([j], And(0 <= j, j < Length(a), a[k]
+  != a[j]))))
+reference_post: And(Length(ret) == Length(a), ForAll([k], Implies(And(0 <= k, k <
+  Length(ret)), And(ret[k] >= 0.0, ret[k] <= 1.0))))
+notes: 'ai-review: Dropped the `a.dtype == np.float64` precondition because the fragment
+  has no notion of numpy dtype identity; the signature annotation already declares
+  `np.ndarray`. Rewrote `np.ptp(a) > 0` (max - min > 0) as an Exists/Exists witness
+  that two elements differ, which is equivalent for finite arrays. Rewrote the original
+  max/min postconditions as a universal element-wise bound and added the length-preservation
+  conjunct that the implementation `(a - min(a)) / ptp(a)` clearly satisfies. The
+  exact value of `(a[i] - min(a)) / (max(a) - min(a))` is not pinned down element-by-element
+  because min/max are not in the fragment.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(a) > 0
+  - Exists([k], And(0 <= k, k < Length(a), Exists([j], And(0 <= j, j < Length(a),
+    a[k] != a[j]))))
+  post: And(Length(ret) == Length(a), ForAll([k], Implies(And(0 <= k, k < Length(ret)),
+    And(ret[k] >= 0.0, ret[k] <= 1.0))))
