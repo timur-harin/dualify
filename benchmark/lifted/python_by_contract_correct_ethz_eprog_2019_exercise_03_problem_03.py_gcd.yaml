@@ -1,0 +1,34 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_03::problem_03.py::gcd
+qualname: gcd
+file: ''
+signature: 'gcd(x: int, y: int) -> int'
+arg_types:
+  x: int
+  y: int
+return_type: int
+informal_spec: Compute the greatest common divisor (GCD) between ``x`` and ``y``.
+informal_spec_raw: Compute the greatest common divisor (GCD) between ``x`` and ``y``.
+function_source: "def gcd(x: int, y: int) -> int:\n    \"\"\"Compute the greatest\
+  \ common divisor (GCD) between ``x`` and ``y``.\"\"\"\n    if x >= y and x % y ==\
+  \ 0:\n        return y\n\n    return gcd(y, x % y)"
+profile: 'In scope: arithmetic mapping from two positive integers to their greatest
+  common divisor. Out of scope: behavior on zero or negative inputs, recursion depth.
+  Observable: the returned integer is a positive common divisor of both arguments
+  (the maximality clause is not expressible in the fragment).'
+in_fragment: false
+reference_pre:
+- x > 0
+- y > 0
+reference_post: And(ret > 0, x % ret == 0, y % ret == 0)
+notes: 'ai-review: Draft used `math_gcd(x, y)`, which is a user-defined helper call
+  and not in the Dualify fragment. Rewrote the postcondition to express the common-divisor
+  part of GCD (ret > 0 and ret divides both x and y). The maximality clause ("ret
+  is the greatest such divisor") would require an unbounded ForAll over the integers,
+  which the fragment only permits over a Length-indexed collection — so it is genuinely
+  out of fragment. Marked in_fragment=false because the postcondition is therefore
+  weaker than the true GCD specification.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized: null

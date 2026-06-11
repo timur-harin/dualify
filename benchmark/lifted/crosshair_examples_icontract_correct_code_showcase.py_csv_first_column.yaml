@@ -1,0 +1,37 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::csv_first_column
+qualname: csv_first_column
+file: ''
+signature: 'csv_first_column(lines: List[str]) -> List[str]'
+arg_types:
+  lines: List[str]
+return_type: List[str]
+informal_spec: 'Behavior of csv_first_column: for each line in `lines`, return the
+  substring of the line up to (but not including) the first comma. Requires every
+  line to contain at least one comma.'
+informal_spec_raw: Behavior of csv_first_column
+function_source: "def csv_first_column(lines: List[str]) -> List[str]:\n    return\
+  \ [line[: line.index(\",\")] for line in lines]"
+profile: 'In scope: arithmetic/string mapping from a list of strings (each containing
+  a comma) to the list of prefixes preceding the first comma. Out of scope: behavior
+  when a line has no comma (the implementation raises ValueError). Observable: the
+  returned list of strings (length and per-element content).'
+in_fragment: true
+reference_pre:
+- ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(lines)), Contains(lines[_k0], ',')))
+reference_post: And(Length(ret) == Length(lines), ForAll([_k0], Implies(And(0 <= _k0,
+  _k0 < Length(lines)), And(PrefixOf(ret[_k0], lines[_k0]), Not(Contains(ret[_k0],
+  ',')), PrefixOf(Concat(ret[_k0], ','), lines[_k0])))))
+notes: 'ai-review: Rewrote precondition''s `'','' in lines[_k0]` as `Contains(lines[_k0],
+  '','')`. Rewrote the auto-seeded list-comprehension postcondition as `Length(ret)
+  == Length(lines)` plus a ForAll asserting, for each index, that `ret[k]` is a prefix
+  of `lines[k]`, contains no comma, and that `ret[k] + '',''` is also a prefix of
+  `lines[k]` — which together pin `ret[k]` to the substring before the first comma.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(lines)), Contains(lines[_k0],
+    ',')))
+  post: And(Length(ret) == Length(lines), ForAll([_k0], Implies(And(0 <= _k0, _k0
+    < Length(lines)), And(PrefixOf(ret[_k0], lines[_k0]), Not(Contains(ret[_k0], ',')),
+    PrefixOf(Concat(ret[_k0], ','), lines[_k0])))))

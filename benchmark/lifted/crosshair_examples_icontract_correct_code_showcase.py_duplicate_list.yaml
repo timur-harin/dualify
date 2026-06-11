@@ -1,0 +1,22 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::duplicate_list
+qualname: duplicate_list
+file: ''
+signature: 'duplicate_list(a: List[T]) -> List[T]'
+arg_types:
+  a: List[T]
+return_type: List[T]
+informal_spec: Behavior of duplicate_list
+informal_spec_raw: Behavior of duplicate_list
+function_source: "def duplicate_list(a: List[T]) -> List[T]:\n    return a + a"
+profile: ''
+in_fragment: true
+reference_pre: []
+reference_post: Length(ret) == 2 * Length(a) and ret[:Length(a)] == a and (ret[-Length(a):]
+  == a)
+notes: ''
+reference_normalized:
+  pre: []
+  post: Length(ret) == 2 * Length(a) and Extract(ret, 0, Length(a)) == a and (Extract(ret,
+    Length(ret) - Length(a), Length(a)) == a)
+status: confirmed
+needs_attention: false

@@ -1,0 +1,36 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_20_jurassic_jigsaw.py::reverse_side
+qualname: reverse_side
+file: ''
+signature: 'reverse_side(side: str) -> str'
+arg_types:
+  side: str
+return_type: str
+informal_spec: Return the input side string reversed (the tile edge read in the opposite
+  direction).
+informal_spec_raw: Flip the side.
+function_source: "def reverse_side(side: str) -> str:\n    \"\"\"Flip the side.\"\"\
+  \"\n    return \"\".join(reversed(side))"
+profile: 'In scope: string reversal of a fixed-format tile side. Out of scope: the
+  broader jigsaw puzzle context and any caller-side semantics. Observable: the returned
+  string equals the input read back to front.'
+in_fragment: true
+reference_pre:
+- Length(side) == 10
+- ForAll([k], Implies(And(0 <= k, k < Length(side)), Or(side[k] == '.', side[k] ==
+  '#')))
+reference_post: And(Length(ret) == Length(side), ForAll([k], Implies(And(0 <= k, k
+  < Length(side)), ret[k] == side[Length(side) - 1 - k])))
+notes: 'ai-review: Rewrote the draft''s regex-based pre/post (VALID_SIDE_RE_fullmatch,
+  re_fullmatch(''[.#]{10}'', ret)) into fragment-compatible ForAll quantifiers. Precondition
+  encodes the AoC-2020 tile invariant (length 10, only ''.'' and ''#''); postcondition
+  states pointwise reversal. The implementation itself works for any string, but the
+  draft''s intent (and the surrounding puzzle) restricts inputs to fixed-shape sides.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(side) == 10
+  - ForAll([k], Implies(And(0 <= k, k < Length(side)), Or(side[k] == '.', side[k]
+    == '#')))
+  post: And(Length(ret) == Length(side), ForAll([k], Implies(And(0 <= k, k < Length(side)),
+    ret[k] == side[Length(side) - 1 - k])))

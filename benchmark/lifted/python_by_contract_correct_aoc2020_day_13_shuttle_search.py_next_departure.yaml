@@ -1,0 +1,31 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_13_shuttle_search.py::next_departure
+qualname: next_departure
+file: ''
+signature: 'next_departure(bus_id: int, min_time: int) -> int'
+arg_types:
+  bus_id: int
+  min_time: int
+return_type: int
+informal_spec: Compute the next departure of ``bus_id`` leaving earliest at ``min_time``.
+informal_spec_raw: Compute the next departure of ``bus_id`` leaving earliest at ``min_time``.
+function_source: "def next_departure(bus_id: int, min_time: int) -> int:\n    \"\"\
+  \"Compute the next departure of ``bus_id`` leaving earliest at ``min_time``.\"\"\
+  \"\n    missed_last_bus_by = min_time % bus_id\n    if missed_last_bus_by == 0:\n\
+  \        return min_time\n    else:\n        return min_time - missed_last_bus_by\
+  \ + bus_id"
+profile: ''
+in_fragment: true
+reference_pre:
+- min_time >= 0
+- bus_id > 0
+reference_post: ret >= min_time and ret < min_time + bus_id and (min_time != 0) or
+  ret == 0
+notes: ''
+reference_normalized:
+  pre:
+  - min_time >= 0
+  - bus_id > 0
+  post: ret >= min_time and ret < min_time + bus_id and (min_time != 0) or ret ==
+    0
+status: confirmed
+needs_attention: false

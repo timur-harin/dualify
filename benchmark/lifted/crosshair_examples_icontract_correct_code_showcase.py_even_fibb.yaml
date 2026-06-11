@@ -1,0 +1,49 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::even_fibb
+qualname: even_fibb
+file: ''
+signature: 'even_fibb(n: int) -> List[int]'
+arg_types:
+  n: int
+return_type: List[int]
+informal_spec: 'Return a list of the first N even Fibonacci numbers.
+
+
+  >>> even_fibb(2)
+
+  [2, 8]'
+informal_spec_raw: 'Return a list of the first N even fibbonacci numbers.
+
+
+  >>> even_fibb(2)
+
+  [2, 8]'
+function_source: "def even_fibb(n: int) -> List[int]:\n    \"\"\"\n    Return a list\
+  \ of the first N even fibbonacci numbers.\n\n    >>> even_fibb(2)\n    [2, 8]\n\
+  \    \"\"\"\n    prev = 1\n    cur = 1\n    result = []\n    while n > 0:\n    \
+  \    prev, cur = cur, prev + cur\n        if cur % 2 == 0:\n            result.append(cur)\n\
+  \            n -= 1\n    return result"
+profile: 'In scope: arithmetic-shape contract that a non-negative integer N maps to
+  a length-N list of strictly increasing positive even integers (the first N even
+  Fibonacci numbers). Out of scope: the actual Fibonacci recurrence linking consecutive
+  returned values (e.g. ret[1] == 8, ret[2] == 34). Observable: the returned list
+  (length, parity of entries, ordering, first entry when N>=1).'
+in_fragment: true
+reference_pre:
+- n >= 0
+reference_post: And(Length(ret) == n, ForAll([k], Implies(And(0 <= k, k < Length(ret)),
+  And(ret[k] > 0, ret[k] % 2 == 0))), ForAll([k], Implies(And(0 <= k, k < Length(ret)
+  - 1), ret[k] < ret[k+1])), Implies(n >= 1, ret[0] == 2))
+notes: 'ai-review: Strengthened the draft postcondition (which only constrained Length)
+  to additionally require each returned element to be a positive even integer, strict
+  monotonicity, and ret[0]==2 when n>=1. The actual Fibonacci recurrence (ret[k] being
+  the k-th even Fibonacci number) is not expressible in the fragment without quantifying
+  over an auxiliary sequence, so the spec is captured only up to the observable "even,
+  increasing, starts at 2" shape.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - n >= 0
+  post: And(Length(ret) == n, ForAll([k], Implies(And(0 <= k, k < Length(ret)), And(ret[k]
+    > 0, ret[k] % 2 == 0))), ForAll([k], Implies(And(0 <= k, k < Length(ret) - 1),
+    ret[k] < ret[k + 1])), Implies(n >= 1, ret[0] == 2))

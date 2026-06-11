@@ -1,0 +1,31 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::arith.py::perimiter_length
+qualname: perimiter_length
+file: ''
+signature: 'perimiter_length(length: int, width: int) -> int'
+arg_types:
+  length: int
+  width: int
+return_type: int
+informal_spec: 'The perimeter of a rectangle is longer than any single side:'
+informal_spec_raw: 'pre: l > 0 and w > 0
+
+
+  The perimeter of a rectangle is longer than any single side:
+
+  post: _ > l and _ > w'
+function_source: "def perimiter_length(length: int, width: int) -> int:\n    \"\"\"\
+  \n    pre: l > 0 and w > 0\n\n    The perimeter of a rectangle is longer than any\
+  \ single side:\n    post: _ > l and _ > w\n    \"\"\"\n    return 2 * length + 2\
+  \ * width"
+profile: ''
+in_fragment: true
+reference_pre:
+- length > 0 and width > 0
+reference_post: ret > length and ret > width
+notes: ''
+reference_normalized:
+  pre:
+  - length > 0 and width > 0
+  post: ret > length and ret > width
+status: confirmed
+needs_attention: false

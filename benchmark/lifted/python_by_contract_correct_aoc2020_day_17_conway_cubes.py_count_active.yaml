@@ -1,0 +1,27 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_17_conway_cubes.py::count_active
+qualname: count_active
+file: ''
+signature: 'count_active(activity: Activity) -> int'
+arg_types:
+  activity: Activity
+return_type: int
+informal_spec: Count the number of active cells in ``activity`` and return that count.
+informal_spec_raw: Count number of active cells in the ``activity``.
+function_source: "def count_active(activity: Activity) -> int:\n    \"\"\"Count number\
+  \ of active cells in the ``activity``.\"\"\"\n    return len(activity)"
+profile: 'In scope: arithmetic mapping from the activity collection to its element
+  count. Out of scope: the internal type of Activity (set vs list vs dict) and the
+  semantic meaning of "active" cells. Observable: the returned non-negative integer
+  equal to the number of elements in activity.'
+in_fragment: true
+reference_pre: []
+reference_post: And(ret == Length(activity), ret >= 0)
+notes: 'ai-review: Strengthened postcondition from the trivial ret >= 0 to ret ==
+  Length(activity), which captures the implementation (return len(activity)) and remains
+  in the Dualify fragment. Length() works generically over any sized container, which
+  fits the Activity alias regardless of whether it is a list, set, or dict.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: And(ret == Length(activity), ret >= 0)

@@ -1,0 +1,46 @@
+benchmark_id: crosshair_examples::icontract::correct_code::arith.py::smallest_two
+qualname: smallest_two
+file: ''
+signature: 'smallest_two(numbers: Tuple[int, ...]) -> Tuple[Optional[int], Optional[int]]'
+arg_types:
+  numbers: Tuple[int, ...]
+return_type: Tuple[Optional[int], Optional[int]]
+informal_spec: Find the two smallest numbers.
+informal_spec_raw: Find the two smallest numbers.
+function_source: "def smallest_two(numbers: Tuple[int, ...]) -> Tuple[Optional[int],\
+  \ Optional[int]]:\n    \"\"\"Find the two smallest numbers.\"\"\"\n    if len(numbers)\
+  \ == 1:\n        return (numbers[0], None)\n    (smallest, second) = smallest_two(numbers[1:])\n\
+  \    n = numbers[0]\n    if smallest is None or n < smallest:\n        return (n,\
+  \ smallest)\n    elif second is None or n < second:\n        return (smallest, n)\n\
+  \    else:\n        return (smallest, second)"
+profile: 'In scope: arithmetic mapping from a non-empty tuple of integers to a pair
+  whose first element is the smallest value in the input. Out of scope: the second-position
+  handling involving Optional/None semantics for length-1 inputs and the exact tie-breaking
+  that ensures distinct indices. Observable: the two returned tuple components ret[0]
+  and ret[1].'
+in_fragment: false
+reference_pre:
+- Length(numbers) > 0
+reference_post: And(Exists([i], And(0 <= i, i < Length(numbers), ret[0] == numbers[i])),
+  ForAll([k], Implies(And(0 <= k, k < Length(numbers)), ret[0] <= numbers[k])), Implies(Length(numbers)
+  == 1, ret[1] == None), Implies(Length(numbers) > 1, And(Exists([j], And(0 <= j,
+  j < Length(numbers), ret[1] == numbers[j])), ret[0] <= ret[1])))
+notes: 'ai-review: The draft used `min(numbers)`, which is not in the allowed function
+  set; rewrote ret[0] as "exists index i with ret[0] == numbers[i]" plus "ret[0] <=
+  numbers[k] for all k" via ForAll/Exists.
+
+  ai-review: The second component is Optional[int] — for Length(numbers) == 1 the
+  implementation returns None, and for longer inputs ret[1] is the second-smallest.
+  Comparison against None / Optional semantics is not really in the fragment, so I
+  kept an Implies(..., ret[1] == None) clause as best-effort but flagged the spec
+  as out-of-fragment.
+
+  ai-review: The "second smallest" requirement — that ret[1] equals the minimum of
+  the multiset with one occurrence of ret[0] removed — cannot be expressed without
+  subtracting an index, which the fragment doesn''t support; only the weaker "ret[1]
+  is some element of numbers and ret[0] <= ret[1]" is encoded.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized: null

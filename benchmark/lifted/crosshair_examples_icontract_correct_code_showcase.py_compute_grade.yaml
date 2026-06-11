@@ -1,0 +1,43 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::compute_grade
+qualname: compute_grade
+file: ''
+signature: 'compute_grade(homework_scores: List[float], exam_scores: List[float])
+  -> float'
+arg_types:
+  homework_scores: List[float]
+  exam_scores: List[float]
+return_type: float
+informal_spec: Behavior of compute_grade
+informal_spec_raw: Behavior of compute_grade
+function_source: "def compute_grade(homework_scores: List[float], exam_scores: List[float])\
+  \ -> float:\n    # Make exams matter more by counting them twice:\n    all_scores\
+  \ = homework_scores + exam_scores + exam_scores\n    return sum(all_scores) / len(all_scores)"
+profile: 'In scope: arithmetic mapping from two non-empty float lists (with values
+  bounded in [0, 1]) to a weighted average grade. Out of scope: exact equality with
+  the weighted-sum formula (no Sum primitive in the fragment) and floating-point rounding.
+  Observable: the returned float lies in [0, 1].'
+in_fragment: true
+reference_pre:
+- Or(Length(homework_scores) > 0, Length(exam_scores) > 0)
+- ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(homework_scores)), And(0.0 <= homework_scores[_k0],
+  homework_scores[_k0] <= 1.0)))
+- ForAll([_k1], Implies(And(0 <= _k1, _k1 < Length(exam_scores)), And(0.0 <= exam_scores[_k1],
+  exam_scores[_k1] <= 1.0)))
+reference_post: And(0.0 <= ret, ret <= 1.0)
+notes: 'ai-review: Rewrote `homework_scores or exam_scores` into explicit `Or(Length(...)
+  > 0, ...)`. Split the chained `0 <= x <= 1.0` comparisons into `And(...)` form.
+  Replaced the single ForAll over the concatenation `homework_scores + exam_scores`
+  with two separate ForAlls (concatenation is allowed by the fragment but the per-list
+  form is clearer and avoids any ambiguity around indexing a constructed list). Postcondition
+  only captures the bound [0, 1]; the exact weighted-average value isn''t expressible
+  without a Sum primitive.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Or(Length(homework_scores) > 0, Length(exam_scores) > 0)
+  - ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(homework_scores)), And(0.0 <=
+    homework_scores[_k0], homework_scores[_k0] <= 1.0)))
+  - ForAll([_k1], Implies(And(0 <= _k1, _k1 < Length(exam_scores)), And(0.0 <= exam_scores[_k1],
+    exam_scores[_k1] <= 1.0)))
+  post: And(0.0 <= ret, ret <= 1.0)

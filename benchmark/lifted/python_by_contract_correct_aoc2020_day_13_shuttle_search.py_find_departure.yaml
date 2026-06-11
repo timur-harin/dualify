@@ -1,0 +1,29 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_13_shuttle_search.py::find_departure
+qualname: find_departure
+file: ''
+signature: 'find_departure(start_time: int, bus_ids: Set[int]) -> Tuple[int, int]'
+arg_types:
+  start_time: int
+  bus_ids: Set[int]
+return_type: Tuple[int, int]
+informal_spec: Find the earliest bus to catch after ``start_time``.
+informal_spec_raw: Find the earliest bus to catch after ``start_time``.
+function_source: "def find_departure(start_time: int, bus_ids: Set[int]) -> Tuple[int,\
+  \ int]:\n    \"\"\"Find the earliest bus to catch after ``start_time``.\"\"\"\n\
+  \    return min([(next_departure(bid, start_time), bid) for bid in bus_ids])"
+profile: ''
+in_fragment: true
+reference_pre:
+- start_time >= 0
+- Length(bus_ids) > 0
+- ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(bus_ids)), bus_ids[_k0] > 0))
+reference_post: ret[0] >= start_time and ret[0] % ret[1] == 0
+notes: ''
+reference_normalized:
+  pre:
+  - start_time >= 0
+  - Length(bus_ids) > 0
+  - ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(bus_ids)), bus_ids[_k0] > 0))
+  post: ret[0] >= start_time and ret[0] % ret[1] == 0
+status: confirmed
+needs_attention: false
