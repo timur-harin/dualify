@@ -6,7 +6,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-import yaml
+import yaml  # type: ignore[import-untyped]
 
 from dualify.formula_parser import normalize_formula
 from dualify.phases.p03_smt_checking import CaseSpec, check_equivalence

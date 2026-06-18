@@ -298,8 +298,8 @@ Rules:
   4) Output ONE boolean expression in `postcondition`.
   5) Return JSON only, without markdown or comments.
 - Use Z3/Python-style expressions.
-- Allowed operators: And, Or, Not, Implies, If, ForAll, Exists, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs,
-  Length, Contains, PrefixOf, SuffixOf, Concat
+- Allowed operators: And, Or, Not, Implies, If, ForAll, Exists, ==, !=, <, <=, >, >=,
+  +, -, *, /, %, Abs, Length, Contains, PrefixOf, SuffixOf, Concat
 - Quantifiers: write ForAll([k], body) and Exists([k], body); bind every index in the list.
 - `ret` means the return value.
 - Use only argument names from signature and normalized object fields like `self_code`.

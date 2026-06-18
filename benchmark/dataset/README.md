@@ -4,9 +4,15 @@ This folder contains all dataset-related assets for contract parsing and evaluat
 
 ## Structure
 
-- `sources/` - downloaded upstream datasets
+- `sources/` - upstream datasets (not vendored; fetch on demand)
   - `python-by-contract-corpus/`
   - `CrossHair/`
+
+Fetch the latest versions:
+
+```bash
+./scripts/fetch_dataset_sources.sh
+```
 - `docs/` - dataset sources table and pipeline guide
   - `benchmark-dataset-sources.md`
   - `dataset-pipeline.md`

@@ -36,7 +36,11 @@ def _sequence_element_sort(inner_type: str) -> z3.SortRef:
     inner = _normalize_type_name(inner_type).lower()
     tuple_match = re.fullmatch(r"tuple\[(.+)\]", inner)
     if tuple_match:
-        parts = [part.strip() for part in tuple_match.group(1).replace("...", "").split(",") if part.strip()]
+        parts = [
+            part.strip()
+            for part in tuple_match.group(1).replace("...", "").split(",")
+            if part.strip()
+        ]
         elem_type = parts[0] if parts else "int"
         return z3.SeqSort(_element_sort_for_generic(elem_type))
     if inner.startswith("list["):
@@ -194,12 +198,15 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
                 if isinstance(elem, str):
                     return z3.Contains(seq, elem)
                 return z3.Contains(seq, elem)
-            if hasattr(elem, "sort") and elem.sort().kind() == z3.Z3_INT_SORT:
-                if seq.sort().kind() == z3.Z3_SEQ_SORT:
-                    try:
-                        return z3.Contains(seq, z3.Unit(elem))
-                    except z3.Z3Exception:
-                        return z3.And(elem >= 0, elem < z3.Length(seq))
+            if (
+                hasattr(elem, "sort")
+                and elem.sort().kind() == z3.Z3_INT_SORT
+                and seq.sort().kind() == z3.Z3_SEQ_SORT
+            ):
+                try:
+                    return z3.Contains(seq, z3.Unit(elem))
+                except z3.Z3Exception:
+                    return z3.And(elem >= 0, elem < z3.Length(seq))
         if isinstance(elem, str):
             return z3.Contains(seq, elem)
         if hasattr(elem, "sort"):
@@ -502,10 +509,16 @@ def check_equivalence(
 
     try:
         clean_spec_constraints = _strip_exhaustive_zero_split_constraints(
-            [_canonicalize_expression(c, case_spec.benchmark_id) for c in spec_logic.domain_constraints]
+            [
+                _canonicalize_expression(c, case_spec.benchmark_id)
+                for c in spec_logic.domain_constraints
+            ]
         )
         clean_code_constraints = _strip_exhaustive_zero_split_constraints(
-            [_canonicalize_expression(c, case_spec.benchmark_id) for c in code_logic.domain_constraints]
+            [
+                _canonicalize_expression(c, case_spec.benchmark_id)
+                for c in code_logic.domain_constraints
+            ]
         )
         _augment_scope_from_formulas(
             scope,

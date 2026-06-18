@@ -14,12 +14,25 @@ It produces:
 - lineage/manifests for reproducibility
 - Dualify-compatible case export and evaluation index
 
+## Fetch upstream sources
+
+Sources are not vendored in git. Clone or update the latest versions:
+
+```bash
+./scripts/fetch_dataset_sources.sh
+```
+
+Default paths after fetch:
+
+- `benchmark/dataset/sources/python-by-contract-corpus`
+- `benchmark/dataset/sources/CrossHair/crosshair/examples`
+
 ## Run (preview checkpoint only)
 
 ```bash
 PYTHONPATH=src python -m dualify.dataset_pipeline \
-  --python-by-contract-path /path/to/python-by-contract-corpus \
-  --crosshair-examples-path /path/to/CrossHair/crosshair/examples \
+  --python-by-contract-path benchmark/dataset/sources/python-by-contract-corpus \
+  --crosshair-examples-path benchmark/dataset/sources/CrossHair/crosshair/examples \
   --output-dir benchmark/dataset/runs
 ```
 
@@ -27,8 +40,8 @@ PYTHONPATH=src python -m dualify.dataset_pipeline \
 
 ```bash
 PYTHONPATH=src python -m dualify.dataset_pipeline \
-  --python-by-contract-path /path/to/python-by-contract-corpus \
-  --crosshair-examples-path /path/to/CrossHair/crosshair/examples \
+  --python-by-contract-path benchmark/dataset/sources/python-by-contract-corpus \
+  --crosshair-examples-path benchmark/dataset/sources/CrossHair/crosshair/examples \
   --output-dir benchmark/dataset/runs \
   --apply-cleaning
 ```

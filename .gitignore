@@ -17,6 +17,11 @@ benchmark/dataset/runs/**/lineage.json
 
 # Curated dataset stays tracked: benchmark/dataset/docs/, benchmark/dataset/runs/**/clean/
 
+# Upstream dataset sources (fetch with scripts/fetch_dataset_sources.sh)
+benchmark/dataset/sources/CrossHair/
+benchmark/dataset/sources/python-by-contract-corpus/
+benchmark/repos/
+
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/

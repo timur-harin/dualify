@@ -67,7 +67,11 @@ class _NormalizeTransformer(ast.NodeTransformer):
 
     def visit_Call(self, node: ast.Call) -> ast.AST:
         self.generic_visit(node)
-        if isinstance(node.func, ast.Name) and node.func.id in {"And", "Or"} and len(node.args) == 1:
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id in {"And", "Or"}
+            and len(node.args) == 1
+        ):
             return ast.copy_location(node.args[0], node)
         if (
             isinstance(node.func, ast.Name)
@@ -106,7 +110,11 @@ class _NormalizeTransformer(ast.NodeTransformer):
                     keywords=[],
                 )
             return ast.copy_location(
-                ast.Call(func=ast.Name(id="Contains", ctx=ast.Load()), args=[seq, elem], keywords=[]),
+                ast.Call(
+                    func=ast.Name(id="Contains", ctx=ast.Load()),
+                    args=[seq, elem],
+                    keywords=[],
+                ),
                 node,
             )
         if (
@@ -297,7 +305,11 @@ class _NormalizeTransformer(ast.NodeTransformer):
                     ),
                     node,
                 )
-            if isinstance(op, ast.NotEq) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
+            if (
+                isinstance(op, ast.NotEq)
+                and isinstance(node.comparators[0], ast.Constant)
+                and node.comparators[0].value is None
+            ):
                 if isinstance(node.left, ast.Subscript):
                     return node
                 length_target: ast.expr = node.left
@@ -313,7 +325,11 @@ class _NormalizeTransformer(ast.NodeTransformer):
                     ),
                     node,
                 )
-            if isinstance(op, ast.Eq) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
+            if (
+                isinstance(op, ast.Eq)
+                and isinstance(node.comparators[0], ast.Constant)
+                and node.comparators[0].value is None
+            ):
                 if isinstance(node.left, ast.Subscript):
                     return node
                 return ast.copy_location(
