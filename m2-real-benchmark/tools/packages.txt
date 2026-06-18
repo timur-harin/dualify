@@ -1,0 +1,17 @@
+# PyPI packages sampled for benchmark/real/
+# Curated from the PyPI top-1000 by download count, restricted to pure-Python,
+# permissively-licensed packages with inline type annotations and a high
+# density of small, self-contained utility functions.
+# One package per line; blank lines and # comments ignored.
+packaging
+more-itertools
+semver
+humanize
+inflection
+python-slugify
+jmespath
+pathspec
+tomli
+url-normalize
+boltons
+wcwidth
