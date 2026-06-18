@@ -295,8 +295,8 @@ Rules:
   5) Return JSON only, without markdown/comments.
 - Capture actual behavior implied by code.
 - Use Z3/Python-style expressions over args and ret.
-- Allowed operators: And, Or, Not, Implies, If, ForAll, Exists, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs,
-  Length, Contains, PrefixOf, SuffixOf, Concat
+- Allowed operators: And, Or, Not, Implies, If, ForAll, Exists, ==, !=, <, <=, >, >=,
+  +, -, *, /, %, Abs, Length, Contains, PrefixOf, SuffixOf, Concat
 - Quantifiers: write ForAll([k], body) and Exists([k], body); bind every index in the list.
 - `ret` means return value.
 - Use only argument names that appear in the provided signature.

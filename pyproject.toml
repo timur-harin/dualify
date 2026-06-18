@@ -32,6 +32,12 @@ dualify-run = "dualify.runner:main"
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [
+    "benchmark/dataset/sources",
+    "benchmark/repos",
+    "benchmark/lifted_auto_eval",
+    "conferences",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
