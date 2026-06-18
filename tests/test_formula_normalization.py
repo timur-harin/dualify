@@ -25,7 +25,8 @@ def test_not_in_rewritten_to_not_contains_unit() -> None:
 
 def test_tuple_not_in_rewritten() -> None:
     out = normalize_formula("(i, j) not in ret")
-    assert out == "Not(Contains(ret, Unit((i, j))))"
+    assert "Exists" in out
+    assert "Unit((i, j))" not in out
 
 
 def test_in_rewrite_passes_validator() -> None:
@@ -81,6 +82,59 @@ def test_step_slice_left_alone_and_rejected() -> None:
 def test_duplicate_list_postcondition_validates_after_rewrite() -> None:
     expr = "Length(ret) == 2 * Length(a) and ret[:Length(a)] == a and (ret[-Length(a):] == a)"
     normalized = normalize_formula(expr)
+    assert "And(" in normalized
     assert "Extract(ret, 0, Length(a))" in normalized
     assert "Extract(ret, Length(ret) - Length(a), Length(a))" in normalized
     assert validate_formula(normalized, {"a", "ret"}) == []
+
+
+def test_python_and_or_not_normalize_to_prefix_calls() -> None:
+    expr = "ret >= min_time and ret < min_time + bus_id and ret % bus_id == 0"
+    normalized = normalize_formula(expr)
+    assert normalized.startswith("And(")
+    assert validate_formula(normalized, {"ret", "min_time", "bus_id"}) == []
+
+
+def test_chained_comparison_normalizes_to_and() -> None:
+    expr = "0 <= x < 8 and 0 <= y < 8"
+    normalized = normalize_formula(expr)
+    assert normalized.startswith("And(")
+    assert validate_formula(normalized, {"x", "y"}) == []
+
+
+def test_contains_scalar_second_argument_is_wrapped_in_unit() -> None:
+    assert normalize_formula("Contains(chars, chars[i])") == "Contains(chars, Unit(chars[i]))"
+
+
+def test_tuple_equality_expands_to_subscript_conjunction() -> None:
+    normalized = normalize_formula("ret[k] == (a[k], b[k])")
+    assert normalized == "And(ret[k][0] == a[k], ret[k][1] == b[k])"
+    assert validate_formula(normalized, {"ret", "a", "b", "k"}) == []
+
+
+def test_optional_none_equality_becomes_empty_length() -> None:
+    assert normalize_formula("ret == None") == "Length(ret) == 0"
+
+
+def test_string_literal_compare_rewrites_to_char_for_subscript() -> None:
+    normalized = normalize_formula("expr[i] == '('")
+    assert normalized == "expr[i] == Char('(')"
+    assert validate_formula(normalized, {"expr", "i"}) == []
+
+
+def test_subscript_optional_none_compare_is_not_rewritten() -> None:
+    assert normalize_formula("ret[0] != None") == "ret[0] != None"
+
+
+def test_nested_subscript_equality_does_not_rewrite_int_name() -> None:
+    normalized = normalize_formula("ret[0][0] == i")
+    assert normalized == "ret[0][0] == i"
+
+
+def test_quantifier_binders_are_allowed() -> None:
+    from dualify.formula_parser import extract_quantifier_binders
+
+    expr = "ForAll([k], Implies(And(0 <= k, k < Length(ret)), ret[k] > 0))"
+    binders = extract_quantifier_binders(expr)
+    assert binders == {"k"}
+    assert validate_formula(expr, {"ret"} | binders) == []

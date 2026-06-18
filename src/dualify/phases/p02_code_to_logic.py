@@ -1,13 +1,40 @@
+import ast
 import json
 import re
 from typing import TypedDict
 
-from dualify.formula_parser import normalize_formula, validate_formula
+from dualify.formula_parser import extract_quantifier_binders, normalize_formula, validate_formula
 from dualify.ollama_client import LLMClient
+from dualify.phases.formula_prompt_rules import REPAIR_FORMULA_RULES, SAFE_SUBSET_EXTRA_RULES
 from dualify.types import ExtractionResult
 
 _INFIX_BOOL_PATTERN = re.compile(r"\s(And|Or)\s")
-_LOWER_BOOL_PATTERN = re.compile(r"\b(and|or|not)\b")
+_RET_SELF_EQ_PATTERN = re.compile(r"^\s*ret\s*==\s*ret\s*$")
+_RET_QUANTIFIER_EQ_PATTERN = re.compile(r"^\s*ret\s*==\s*(ForAll|Exists)\s*\(")
+_QUANTIFIER_IN_CONCAT_PATTERN = re.compile(r"Concat\s*\(\s*(ForAll|Exists)\s*\(")
+_ALLOWED_CALLS = {
+    "And",
+    "Or",
+    "Not",
+    "Implies",
+    "If",
+    "Abs",
+    "Length",
+    "Contains",
+    "PrefixOf",
+    "SuffixOf",
+    "Concat",
+    "Extract",
+    "Unit",
+    "ForAll",
+    "Exists",
+    "floor",
+    "sqrt",
+    "pow",
+    "max",
+    "min",
+    "IsDigitString",
+}
 
 
 class _ExtractionPayload(TypedDict):
@@ -69,9 +96,19 @@ def _validate_expression(expr: str, allowed_names: set[str]) -> list[str]:
     errors: list[str] = []
     if _INFIX_BOOL_PATTERN.search(normalized):
         errors.append("uses infix And/Or")
-    if _LOWER_BOOL_PATTERN.search(normalized):
-        errors.append("uses python and/or/not")
-    errors.extend(validate_formula(normalized, allowed_names))
+    try:
+        call_names = {
+            node.func.id
+            for node in ast.walk(ast.parse(normalized, mode="eval"))
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
+        }
+        unsupported = sorted(name for name in call_names if name not in _ALLOWED_CALLS)
+        if unsupported:
+            errors.append(f"unsupported function calls: {', '.join(unsupported)}")
+    except Exception:
+        pass
+    extended = allowed_names | extract_quantifier_binders(normalized)
+    errors.extend(validate_formula(normalized, extended))
     return errors
 
 
@@ -111,11 +148,26 @@ def _validate_payload(
     else:
         post_errors = _validate_expression(postcondition, allowed_names)
         errors.extend([f"postcondition {item}" for item in post_errors])
+        errors.extend([f"postcondition {item}" for item in _post_quality_issues(postcondition)])
 
     for constraint in payload["domain_constraints"]:
         constraint_errors = _validate_expression(constraint, allowed_names)
         errors.extend([f"domain constraint {item}" for item in constraint_errors])
     return errors
+
+
+def _post_quality_issues(postcondition: str) -> list[str]:
+    issues: list[str] = []
+    normalized = normalize_formula(postcondition)
+    if _RET_SELF_EQ_PATTERN.fullmatch(normalized):
+        issues.append("must not be tautology `ret == ret`")
+    if "ret" not in normalized:
+        issues.append("must reference `ret`")
+    if _RET_QUANTIFIER_EQ_PATTERN.match(normalized):
+        issues.append("must not assign quantifier directly to ret")
+    if _QUANTIFIER_IN_CONCAT_PATTERN.search(normalized):
+        issues.append("must not pass quantifier into Concat")
+    return issues
 
 
 def _repair_payload(
@@ -142,12 +194,12 @@ Rules:
 - args must match signature args exactly (same names/order), never include ret.
 - postcondition must use only signature args and ret.
 - domain_constraints/postcondition must be SMT-compatible.
-- Use explicit boolean combinators: And(...), Or(...), Not(...), Implies(...).
 - Avoid language-specific shorthand (`and/or/not`, infix `A And B`).
 - domain_constraints must include only true input guards from code.
 - Never use `&` or `|`; use `And(...)` / `Or(...)`.
 - Never output natural-language sentences in formulas.
 - Do not use `all(...)`, `any(...)`, comprehensions, generator expressions, or `is`.
+{REPAIR_FORMULA_RULES}
 
 Signature:
 {signature}
@@ -183,15 +235,19 @@ Return strict JSON with keys:
 
 Hard safety constraints:
 - Use only this safe subset in expressions:
-  And(...), Or(...), Not(...), If(...),
-  ==, !=, <, <=, >, >=, +, -, *, /, %, Length(...), Contains(...).
-- Do not use quantifiers (ForAll/Exists), lambdas, comprehensions, or free index variables.
+  And(...), Or(...), Not(...), Implies(...), If(...),
+  ForAll([i], ...), Exists([i], ...),
+  ==, !=, <, <=, >, >=, +, -, *, /, %, Length(...), Contains(...), Concat(...).
+- Quantifier binders must be declared in the list argument, e.g. ForAll([k], ...).
+- Do not use lambdas, comprehensions, or undeclared index variables.
 - Do not introduce helper predicates.
 - Use only signature args, normalized self fields (self_x), and ret.
 - Prefer partial-but-valid constraints over invalid syntax.
 - Never use `&` or `|`; use `And(...)` / `Or(...)`.
 - Never output natural-language sentences in formulas.
 - Do not use `all(...)`, `any(...)`, comprehensions, generator expressions, or `is`.
+{REPAIR_FORMULA_RULES}
+{SAFE_SUBSET_EXTRA_RULES}
 
 Signature:
 {signature}
@@ -239,8 +295,9 @@ Rules:
   5) Return JSON only, without markdown/comments.
 - Capture actual behavior implied by code.
 - Use Z3/Python-style expressions over args and ret.
-- Allowed operators: And, Or, Not, Implies, If, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs,
+- Allowed operators: And, Or, Not, Implies, If, ForAll, Exists, ==, !=, <, <=, >, >=, +, -, *, /, %, Abs,
   Length, Contains, PrefixOf, SuffixOf, Concat
+- Quantifiers: write ForAll([k], body) and Exists([k], body); bind every index in the list.
 - `ret` means return value.
 - Use only argument names that appear in the provided signature.
 - Normalize object attributes: `self.code` -> `self_code`.

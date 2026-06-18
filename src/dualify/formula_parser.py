@@ -11,11 +11,102 @@ class _NormalizeTransformer(ast.NodeTransformer):
             )
         return node
 
+    def _membership_for_tuple_unit(self, seq: ast.expr, elements: list[ast.expr]) -> ast.expr:
+        idx = ast.Name(id="_idx", ctx=ast.Load())
+        bounds = ast.Call(
+            func=ast.Name(id="And", ctx=ast.Load()),
+            args=[
+                ast.Compare(
+                    left=ast.Constant(value=0),
+                    ops=[ast.LtE()],
+                    comparators=[idx],
+                ),
+                ast.Compare(
+                    left=idx,
+                    ops=[ast.Lt()],
+                    comparators=[
+                        ast.Call(
+                            func=ast.Name(id="Length", ctx=ast.Load()),
+                            args=[seq],
+                            keywords=[],
+                        )
+                    ],
+                ),
+            ],
+            keywords=[],
+        )
+        conjuncts: list[ast.expr] = [bounds]
+        for pos, element in enumerate(elements):
+            conjuncts.append(
+                ast.Compare(
+                    left=ast.Subscript(
+                        value=ast.Subscript(
+                            value=seq,
+                            slice=idx,
+                            ctx=ast.Load(),
+                        ),
+                        slice=ast.Constant(value=pos),
+                        ctx=ast.Load(),
+                    ),
+                    ops=[ast.Eq()],
+                    comparators=[element],
+                )
+            )
+        body = conjuncts[0]
+        for conjunct in conjuncts[1:]:
+            body = ast.Call(
+                func=ast.Name(id="And", ctx=ast.Load()),
+                args=[body, conjunct],
+                keywords=[],
+            )
+        return ast.Call(
+            func=ast.Name(id="Exists", ctx=ast.Load()),
+            args=[ast.List(elts=[idx], ctx=ast.Load()), body],
+            keywords=[],
+        )
+
     def visit_Call(self, node: ast.Call) -> ast.AST:
         self.generic_visit(node)
+        if isinstance(node.func, ast.Name) and node.func.id in {"And", "Or"} and len(node.args) == 1:
+            return ast.copy_location(node.args[0], node)
+        if (
+            isinstance(node.func, ast.Name)
+            and node.func.id == "Contains"
+            and len(node.args) == 2
+            and isinstance(node.args[1], ast.Call)
+            and isinstance(node.args[1].func, ast.Name)
+            and node.args[1].func.id == "Unit"
+            and len(node.args[1].args) == 1
+            and isinstance(node.args[1].args[0], ast.Tuple)
+            and node.args[1].args[0].elts
+        ):
+            return ast.copy_location(
+                self._membership_for_tuple_unit(node.args[0], node.args[1].args[0].elts),
+                node,
+            )
         if isinstance(node.func, ast.Name) and node.func.id == "len":
             return ast.copy_location(
                 ast.Call(func=ast.Name(id="Length", ctx=ast.Load()), args=node.args, keywords=[]),
+                node,
+            )
+        if isinstance(node.func, ast.Name) and node.func.id == "Contains" and len(node.args) == 2:
+            seq, elem = node.args
+            if isinstance(elem, ast.Constant) and isinstance(elem.value, str):
+                return node
+            if isinstance(elem, ast.Name):
+                return node
+            if not (
+                isinstance(elem, ast.Call)
+                and isinstance(elem.func, ast.Name)
+                and elem.func.id == "Unit"
+            ):
+                elem = ast.Call(
+                    func=ast.Name(id="Unit", ctx=ast.Load()),
+                    args=[elem],
+                    keywords=[],
+                )
+            return ast.copy_location(
+                ast.Call(func=ast.Name(id="Contains", ctx=ast.Load()), args=[seq, elem], keywords=[]),
                 node,
             )
         if (
@@ -25,6 +116,31 @@ class _NormalizeTransformer(ast.NodeTransformer):
         ):
             # Unsupported comprehensions in formulas: keep surrounding formula parseable.
             return ast.copy_location(ast.Constant(value=True), node)
+        return node
+
+    def visit_BoolOp(self, node: ast.BoolOp) -> ast.AST:
+        self.generic_visit(node)
+        op_name = "And" if isinstance(node.op, ast.And) else "Or"
+        result: ast.expr = node.values[0]
+        for value in node.values[1:]:
+            result = ast.Call(
+                func=ast.Name(id=op_name, ctx=ast.Load()),
+                args=[result, value],
+                keywords=[],
+            )
+        return ast.copy_location(result, node)
+
+    def visit_UnaryOp(self, node: ast.UnaryOp) -> ast.AST:
+        self.generic_visit(node)
+        if isinstance(node.op, ast.Not):
+            return ast.copy_location(
+                ast.Call(
+                    func=ast.Name(id="Not", ctx=ast.Load()),
+                    args=[node.operand],
+                    keywords=[],
+                ),
+                node,
+            )
         return node
 
     def visit_BinOp(self, node: ast.BinOp) -> ast.AST:
@@ -110,39 +226,186 @@ class _NormalizeTransformer(ast.NodeTransformer):
             node,
         )
 
+    @staticmethod
+    def _tuple_equality_to_and(left: ast.expr, elements: list[ast.expr]) -> ast.expr:
+        conjuncts: list[ast.expr] = []
+        for index, element in enumerate(elements):
+            conjuncts.append(
+                ast.Compare(
+                    left=ast.Subscript(
+                        value=left,
+                        slice=ast.Constant(value=index),
+                        ctx=ast.Load(),
+                    ),
+                    ops=[ast.Eq()],
+                    comparators=[element],
+                )
+            )
+        result: ast.expr = conjuncts[0]
+        for conjunct in conjuncts[1:]:
+            result = ast.Call(
+                func=ast.Name(id="And", ctx=ast.Load()),
+                args=[result, conjunct],
+                keywords=[],
+            )
+        return result
+
     def visit_Compare(self, node: ast.Compare) -> ast.AST:
         self.generic_visit(node)
-        # Only rewrite the simple single-op `x in seq` / `x not in seq` form.
-        # Chained comparisons that mix `in` with arithmetic ops (e.g. `0 <= x in s`)
-        # fall through untouched -- the validator will then reject them and the
-        # operator can rewrite by hand.
-        if len(node.ops) != 1:
-            return node
-        op = node.ops[0]
-        if not isinstance(op, (ast.In, ast.NotIn)):
-            return node
-        elem = node.left
-        seq = node.comparators[0]
-        unit_call = ast.Call(
-            func=ast.Name(id="Unit", ctx=ast.Load()),
-            args=[elem],
-            keywords=[],
-        )
-        contains_call = ast.Call(
-            func=ast.Name(id="Contains", ctx=ast.Load()),
-            args=[seq, unit_call],
-            keywords=[],
-        )
-        if isinstance(op, ast.In):
-            return ast.copy_location(contains_call, node)
-        return ast.copy_location(
-            ast.Call(
-                func=ast.Name(id="Not", ctx=ast.Load()),
-                args=[contains_call],
+        if len(node.ops) == 1:
+            op = node.ops[0]
+            if isinstance(op, ast.Eq) and isinstance(node.comparators[0], ast.Tuple):
+                return ast.copy_location(
+                    self._tuple_equality_to_and(node.left, node.comparators[0].elts),
+                    node,
+                )
+            if (
+                isinstance(node.comparators[0], ast.Constant)
+                and isinstance(node.comparators[0].value, str)
+            ):
+                helper = "Char" if isinstance(node.left, ast.Subscript) else "String"
+                str_cmp = ast.copy_location(
+                    ast.Call(
+                        func=ast.Name(id=helper, ctx=ast.Load()),
+                        args=[node.comparators[0]],
+                        keywords=[],
+                    ),
+                    node.comparators[0],
+                )
+                return ast.copy_location(
+                    ast.Compare(left=node.left, ops=node.ops, comparators=[str_cmp]),
+                    node,
+                )
+            if (
+                isinstance(op, ast.Eq)
+                and isinstance(node.left, ast.Subscript)
+                and not isinstance(node.left.value, ast.Subscript)
+                and not isinstance(node.left.slice, ast.Constant)
+                and isinstance(node.comparators[0], ast.Name)
+            ):
+                return ast.copy_location(
+                    ast.Compare(
+                        left=node.left,
+                        ops=[ast.Eq()],
+                        comparators=[
+                            ast.Subscript(
+                                value=node.comparators[0],
+                                slice=ast.Constant(value=0),
+                                ctx=ast.Load(),
+                            )
+                        ],
+                    ),
+                    node,
+                )
+            if isinstance(op, ast.NotEq) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
+                if isinstance(node.left, ast.Subscript):
+                    return node
+                length_target: ast.expr = node.left
+                return ast.copy_location(
+                    ast.Compare(
+                        left=ast.Call(
+                            func=ast.Name(id="Length", ctx=ast.Load()),
+                            args=[length_target],
+                            keywords=[],
+                        ),
+                        ops=[ast.Gt()],
+                        comparators=[ast.Constant(value=0)],
+                    ),
+                    node,
+                )
+            if isinstance(op, ast.Eq) and isinstance(node.comparators[0], ast.Constant) and node.comparators[0].value is None:
+                if isinstance(node.left, ast.Subscript):
+                    return node
+                return ast.copy_location(
+                    ast.Compare(
+                        left=ast.Call(
+                            func=ast.Name(id="Length", ctx=ast.Load()),
+                            args=[node.left],
+                            keywords=[],
+                        ),
+                        ops=[ast.Eq()],
+                        comparators=[ast.Constant(value=0)],
+                    ),
+                    node,
+                )
+            if not isinstance(op, (ast.In, ast.NotIn)):
+                return node
+            elem = node.left
+            seq = node.comparators[0]
+            if isinstance(elem, ast.Tuple) and elem.elts:
+                membership = self._membership_for_tuple_unit(seq, elem.elts)
+                if isinstance(op, ast.NotIn):
+                    return ast.copy_location(
+                        ast.Call(
+                            func=ast.Name(id="Not", ctx=ast.Load()),
+                            args=[membership],
+                            keywords=[],
+                        ),
+                        node,
+                    )
+                return ast.copy_location(membership, node)
+            unit_call = ast.Call(
+                func=ast.Name(id="Unit", ctx=ast.Load()),
+                args=[elem],
                 keywords=[],
-            ),
-            node,
-        )
+            )
+            contains_call = ast.Call(
+                func=ast.Name(id="Contains", ctx=ast.Load()),
+                args=[seq, unit_call],
+                keywords=[],
+            )
+            if isinstance(op, ast.In):
+                return ast.copy_location(contains_call, node)
+            return ast.copy_location(
+                ast.Call(
+                    func=ast.Name(id="Not", ctx=ast.Load()),
+                    args=[contains_call],
+                    keywords=[],
+                ),
+                node,
+            )
+        if any(isinstance(op, (ast.In, ast.NotIn)) for op in node.ops):
+            return node
+        conjuncts: list[ast.expr] = []
+        left: ast.expr = node.left
+        for op, right in zip(node.ops, node.comparators, strict=True):
+            conjuncts.append(ast.Compare(left=left, ops=[op], comparators=[right]))
+            left = right
+        result = conjuncts[0]
+        for conjunct in conjuncts[1:]:
+            result = ast.Call(
+                func=ast.Name(id="And", ctx=ast.Load()),
+                args=[result, conjunct],
+                keywords=[],
+            )
+        return ast.copy_location(result, node)
+
+
+def extract_quantifier_binders(expr: str) -> set[str]:
+    """Return names bound by ForAll([...], ...) / Exists([...], ...) in *expr*."""
+    try:
+        tree = ast.parse(expr, mode="eval")
+    except Exception:
+        return set()
+    binders: set[str] = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not isinstance(node.func, ast.Name):
+            continue
+        if node.func.id not in {"ForAll", "Exists"}:
+            continue
+        if not node.args:
+            continue
+        head = node.args[0]
+        if isinstance(head, ast.Name):
+            binders.add(head.id)
+            continue
+        if isinstance(head, (ast.List, ast.Tuple)):
+            for element in head.elts:
+                if isinstance(element, ast.Name):
+                    binders.add(element.id)
+    return binders
 
 
 def normalize_formula(expr: str) -> str:
@@ -164,6 +427,9 @@ def validate_formula(expr: str, allowed_names: set[str]) -> list[str]:
         tree = ast.parse(expr, mode="eval")
     except Exception as exc:
         return [f"invalid expression syntax: {exc}"]
+
+    if isinstance(tree.body, ast.Tuple):
+        return ["expression is a tuple, not a single boolean"]
 
     called_names = {
         node.func.id

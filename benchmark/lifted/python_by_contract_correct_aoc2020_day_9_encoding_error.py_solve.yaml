@@ -35,14 +35,14 @@ reference_pre:
 reference_post: Or(And(ret == None, ForAll([k], Implies(And(preamble_length <= k,
   k < Length(puzzle_input)), Exists([i], And(0 <= i, i < preamble_length, Exists([j],
   And(0 <= j, j < preamble_length, i != j, puzzle_input[k - preamble_length + i] +
-  puzzle_input[k - preamble_length + j] == puzzle_input[k])))))))), And(Not(ret ==
+  puzzle_input[k - preamble_length + j] == puzzle_input[k]))))))), And(Not(ret ==
   None), preamble_length <= ret[0], ret[0] < Length(puzzle_input), ret[1] == puzzle_input[ret[0]],
   Not(Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
   i != j, puzzle_input[ret[0] - preamble_length + i] + puzzle_input[ret[0] - preamble_length
   + j] == ret[1]))))), ForAll([k], Implies(And(preamble_length <= k, k < ret[0]),
   Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
   i != j, puzzle_input[k - preamble_length + i] + puzzle_input[k - preamble_length
-  + j] == puzzle_input[k])))))))
+  + j] == puzzle_input[k]))))))))
 notes: 'ai-review: Rewrote auto-seed post (which used a list comprehension and Python
   `not`/`or`) into nested ForAll/Exists in Z3 form. Two cases: (a) ret is None and
   every post-preamble index has a distinct pair in its window summing to it; (b) ret
@@ -53,27 +53,20 @@ notes: 'ai-review: Rewrote auto-seed post (which used a list comprehension and P
   that, reviewer should adjust. Nested Exists/ForAll over a single bound variable
   each was used to express the pair search.
 
-  apply_reviews: reference_post still fails validation -> invalid expression syntax:
-  unmatched '')'' (<unknown>, line 1)
-
-  apply_reviews: overrode in_fragment from True to False after re-validating the merged
-  formulas.
-
   apply_reviews: agent flagged needs_attention=True.
 
-
-  manual-fix: dropped one unmatched trailing ")" in reference_post; re-validated as
-  in_fragment.'
-needs_attention: true
+  manual-fix: fixed parenthesis so reference_post is one Or(And(...), And(...)) formula,
+  not a top-level tuple.'
+needs_attention: false
 status: confirmed
 reference_normalized:
   pre:
   - Length(puzzle_input) > preamble_length
   - preamble_length > 0
-  post: (Or(And(ret == None, ForAll([k], Implies(And(preamble_length <= k, k < Length(puzzle_input)),
+  post: Or(And(ret == None, ForAll([k], Implies(And(preamble_length <= k, k < Length(puzzle_input)),
     Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
     i != j, puzzle_input[k - preamble_length + i] + puzzle_input[k - preamble_length
-    + j] == puzzle_input[k])))))))), And(Not(ret == None), preamble_length <= ret[0],
+    + j] == puzzle_input[k]))))))), And(Not(ret == None), preamble_length <= ret[0],
     ret[0] < Length(puzzle_input), ret[1] == puzzle_input[ret[0]], Not(Exists([i],
     And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
     i != j, puzzle_input[ret[0] - preamble_length + i] + puzzle_input[ret[0] - preamble_length

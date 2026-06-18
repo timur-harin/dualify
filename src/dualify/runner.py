@@ -12,6 +12,12 @@ from pathlib import Path
 from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
 from dualify.formula_parser import normalize_formula
+from dualify.gold_scoring import (
+    load_gold_benchmark,
+    score_case_against_gold,
+    score_run_results,
+    summarize_gold_scores,
+)
 from dualify.health import summarize_extraction, summarize_run
 from dualify.io_utils import write_json
 from dualify.ollama_client import LLMClient, create_llm_client
@@ -189,7 +195,12 @@ def _print_targets(repo_root: Path, cases: list[BenchmarkCase]) -> None:
         )
 
 
-def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict], int, int]:
+def _run_cases(
+    client: LLMClient,
+    cases: list[BenchmarkCase],
+    *,
+    gold_by_qualname: dict | None = None,
+) -> tuple[list[dict], int, int]:
     case_results: list[dict] = []
     fallback_spec_count = 0
     fallback_code_count = 0
@@ -251,6 +262,7 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
             fallback_code_count += 1
 
         smt_result = check_equivalence(case_spec, spec_logic, code_logic)
+
         spec_weak = _is_weak_postcondition(spec_logic.postcondition)
         code_weak = _is_weak_postcondition(code_logic.postcondition)
         if spec_weak or code_weak:
@@ -281,11 +293,12 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
         spec_payload["extractor_health"] = summarize_extraction(spec_payload)
         code_payload = {**asdict(code_logic), "used_fallback": used_code_fallback}
         code_payload["extractor_health"] = summarize_extraction(code_payload)
-        case_results.append(
-            {
+        case_result: dict = {
                 "benchmark_id": benchmark_id,
                 "file": case.file,
                 "signature": signature,
+                "arg_types": case.arg_types,
+                "return_type": return_type,
                 "informal_spec": informal_spec,
                 "extra_context": extra_context,
                 "spec_to_logic": spec_payload,
@@ -293,7 +306,16 @@ def _run_cases(client: LLMClient, cases: list[BenchmarkCase]) -> tuple[list[dict
                 "smt_checking": asdict(smt_result),
                 "action_planning": action_plan_payload,
             }
-        )
+        if gold_by_qualname:
+            gold_entry = score_case_against_gold(
+                benchmark_id=benchmark_id,
+                spec_extraction=spec_logic,
+                code_extraction=code_logic,
+                gold_by_qualname=gold_by_qualname,
+            )
+            if gold_entry is not None:
+                case_result["gold_scoring"] = gold_entry
+        case_results.append(case_result)
     return case_results, fallback_spec_count, fallback_code_count
 
 
@@ -311,6 +333,8 @@ def _build_report(
     run_stamp = _utc_timestamp_for_filename()
     equivalent_count = sum(1 for result in case_results if result["smt_checking"]["equivalent"])
     run_health = summarize_run(case_results)
+    gold_entries = [result.get("gold_scoring") for result in case_results]
+    gold_summary = summarize_gold_scores(gold_entries)
     report: dict[str, object] = {
         "run_id": f"{run_id_prefix}_{run_stamp}",
         "mode": mode_name,
@@ -319,6 +343,11 @@ def _build_report(
         "base_url": base_url,
         "summary": {
             "total_cases": len(case_results),
+            "gold_scoring": gold_summary,
+            "cross_check": {
+                "equivalent_cases": equivalent_count,
+                "non_equivalent_cases": len(case_results) - equivalent_count,
+            },
             "equivalent_cases": equivalent_count,
             "non_equivalent_cases": len(case_results) - equivalent_count,
             "spec_fallback_count": fallback_spec_count,
@@ -352,7 +381,10 @@ def run_experiment(
             provider=provider, model=model, base_url=base_url, api_key=api_key
         )
     client.healthcheck()
-    case_results, fallback_spec_count, fallback_code_count = _run_cases(client, cases)
+    gold_by_qualname = load_gold_benchmark()
+    case_results, fallback_spec_count, fallback_code_count = _run_cases(
+        client, cases, gold_by_qualname=gold_by_qualname or None
+    )
 
     report = _build_report(
         run_id_prefix=benchmark_name,
@@ -408,6 +440,7 @@ def run_repo_scan(
         )
     client.healthcheck()
 
+    gold_by_qualname = load_gold_benchmark() or None
     history: list[dict[str, object]] = []
     previous_inconsistent: set[str] | None = None
     case_results: list[dict] = []
@@ -415,7 +448,9 @@ def run_repo_scan(
     fallback_code_count = 0
 
     for iteration in range(1, max(1, iterations) + 1):
-        case_results, fallback_spec_count, fallback_code_count = _run_cases(client, cases)
+        case_results, fallback_spec_count, fallback_code_count = _run_cases(
+            client, cases, gold_by_qualname=gold_by_qualname
+        )
         inconsistent = {
             result["benchmark_id"]
             for result in case_results
@@ -503,13 +538,16 @@ def run_repo_cli(
     final_results: list[dict] = []
     fallback_spec_total = 0
     fallback_code_total = 0
+    gold_by_qualname = load_gold_benchmark() or None
     stop_all = False
 
     for case in ordered_cases:
         rerun_budget = max(1, iterations)
         last_result: dict | None = None
         while rerun_budget > 0:
-            case_results, spec_fb, code_fb = _run_cases(client, [case])
+            case_results, spec_fb, code_fb = _run_cases(
+                client, [case], gold_by_qualname=gold_by_qualname
+            )
             fallback_spec_total += spec_fb
             fallback_code_total += code_fb
             case_result = case_results[0]
@@ -636,11 +674,26 @@ def _print_run_health_banner(summary: object) -> None:
         _label("Cases:"),
         _style(
             f"total={summary.get('total_cases', 0)}  "
-            f"equivalent={summary.get('equivalent_cases', 0)}  "
-            f"non_equivalent={summary.get('non_equivalent_cases', 0)}",
+            f"cross_check_equiv={summary.get('equivalent_cases', 0)}  "
+            f"cross_check_non_equiv={summary.get('non_equivalent_cases', 0)}",
             _ANSI_WHITE,
         ),
     )
+    gold = summary.get("gold_scoring")
+    if isinstance(gold, dict) and gold.get("scorable_cases", 0):
+        print(
+            _label("Gold benchmark:"),
+            _style(
+                f"scorable={gold.get('scorable_cases', 0)}  "
+                f"spec_pre={gold.get('spec_pre_exact', 0)}  "
+                f"spec_post={gold.get('spec_post_exact', 0)}  "
+                f"spec_equiv={gold.get('spec_contract_equivalent', 0)}  "
+                f"code_pre={gold.get('code_pre_exact', 0)}  "
+                f"code_post={gold.get('code_post_exact', 0)}  "
+                f"code_equiv={gold.get('code_contract_equivalent', 0)}",
+                _ANSI_GREEN,
+            ),
+        )
     extractor = summary.get("extractor_health")
     if isinstance(extractor, dict):
         for side in ("spec", "code"):
@@ -728,7 +781,23 @@ def main() -> None:
             "Mutually exclusive with --replay and --record-transcript."
         ),
     )
+    parser.add_argument(
+        "--score-gold-json",
+        default="",
+        help="Re-score an existing run JSON against benchmark/lifted gold (no LLM calls).",
+    )
     args = parser.parse_args()
+    score_gold_path = (args.score_gold_json or "").strip()
+    if score_gold_path:
+        input_path = Path(score_gold_path).expanduser().resolve()
+        run = json.loads(input_path.read_text())
+        report = score_run_results(run)
+        output_path = input_path.with_name(f"{input_path.stem}_gold_scored.json")
+        write_json(output_path, report)
+        print(json.dumps(report.get("summary", {}), indent=2, ensure_ascii=False))
+        print(f"Wrote {output_path}", file=sys.stderr)
+        return
+
     api_key = (args.api_key or os.environ.get("GROQ_API_KEY", "")).strip()
 
     client_override = _build_client_override(args, api_key)
