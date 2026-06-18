@@ -1,0 +1,40 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_5_binary_boarding.py::determine_row
+qualname: determine_row
+file: ''
+signature: 'determine_row(identifier: str) -> int'
+arg_types:
+  identifier: str
+return_type: int
+informal_spec: Compute the row of the seat identified by ``identifier``.
+informal_spec_raw: Compute the row of the seat identified by the ``identifier``.
+function_source: "def determine_row(identifier: str) -> int:\n    \"\"\"Compute the\
+  \ row of the seat identified by the ``identifier``.\"\"\"\n    first = 0\n    last\
+  \ = 127\n\n    for directive in identifier:\n        first, last = apply(first=first,\
+  \ last=last, directive=directive)\n\n    assert first == last, \"The last step should\
+  \ have completely defined the row.\"\n    return first"
+profile: 'In scope: deterministic mapping from a 7-character boarding-pass row directive
+  string (''F''/''B'') to the integer row number it encodes via binary partition.
+  Out of scope: how the partition is performed or which intermediate `first`/`last`
+  values arise. Observable: the returned row number as an integer in [0, 127].'
+in_fragment: true
+reference_pre:
+- Length(identifier) == 7
+- ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(identifier[k] == 'F',
+  identifier[k] == 'B')))
+reference_post: And(0 <= ret, ret <= 127)
+notes: 'ai-review: Replaced the draft''s `re_match(''^[FB]{7}\Z'', identifier)` (forbidden
+  user-defined helper) with the equivalent in-fragment constraints: explicit length-7
+  check plus a ForAll over the characters restricting each to ''F'' or ''B''. Rewrote
+  chained `0 <= ret <= 127` postcondition as `And(0 <= ret, ret <= 127)`. The full
+  row-decoding semantics (mapping the F/B bits to the integer row) is not encoded
+  here — only the well-typed range invariant; capturing the exact bit-decoding would
+  require modeling a 7-bit summation over indexed characters, which is expressible
+  but heavier than the spec''s "compute the row" warrants.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(identifier) == 7
+  - ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(identifier[k] == 'F',
+    identifier[k] == 'B')))
+  post: And(0 <= ret, ret <= 127)

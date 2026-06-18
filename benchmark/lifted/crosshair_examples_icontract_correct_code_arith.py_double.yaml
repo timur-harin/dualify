@@ -1,0 +1,32 @@
+benchmark_id: crosshair_examples::icontract::correct_code::arith.py::double
+qualname: double
+file: ''
+signature: 'double(items: List[str]) -> List[str]'
+arg_types:
+  items: List[str]
+return_type: List[str]
+informal_spec: Return a new list that is the input list, repeated twice.
+informal_spec_raw: Return a new list that is the input list, repeated twice.
+function_source: "def double(items: List[str]) -> List[str]:\n    \"\"\"\n    Return\
+  \ a new list that is the input list, repeated twice.\n    \"\"\"\n    return items\
+  \ + items"
+profile: 'In scope: the returned list equals the concatenation of the input list with
+  itself, element-wise. Out of scope: aliasing/identity of the returned list versus
+  the input. Observable: the length of ret and each element ret[k] compared to items[k
+  mod Length(items)].'
+in_fragment: true
+reference_pre: []
+reference_post: And(Length(ret) == Length(items) * 2, ForAll([k], Implies(And(0 <=
+  k, k < Length(items)), ret[k] == items[k])), ForAll([k], Implies(And(Length(items)
+  <= k, k < Length(items) * 2), ret[k] == items[k - Length(items)])))
+notes: 'ai-review: Strengthened postcondition beyond the length-only check to capture
+  that ret is the element-wise concatenation items + items, using two ForAll clauses
+  (first half mirrors items, second half mirrors items shifted by Length(items)).
+  No precondition needed since the implementation works for any list (including empty).'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: And(Length(ret) == Length(items) * 2, ForAll([k], Implies(And(0 <= k, k <
+    Length(items)), ret[k] == items[k])), ForAll([k], Implies(And(Length(items) <=
+    k, k < Length(items) * 2), ret[k] == items[k - Length(items)])))

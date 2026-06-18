@@ -1,0 +1,47 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_03::problem_01.py::compute
+qualname: compute
+file: ''
+signature: 'compute(n: int) -> float'
+arg_types:
+  n: int
+return_type: float
+informal_spec: "Compute the recursive sum ``s = 1 / (1**2) + 1 / (2**2) + … + 1 /\
+  \ (n**2)``.\n\n\n  >>> compute(0)\n\n  0\n\n\n  >>> compute(4)\n\n  1.4236111111111112"
+informal_spec_raw: 'Compute the recursive sum ``s = 1 / (1**2) + 1 / (2**2) + … +
+  1 / (n**2)``.
+
+
+  >>> compute(0)
+
+  0
+
+
+  >>> compute(4)
+
+  1.4236111111111112'
+function_source: "def compute(n: int) -> float:\n    \"\"\"\n    Compute the recursive\
+  \ sum ``s = 1 / (1**2) + 1 / (2**2) + … + 1 / (n**2)``.\n\n    >>> compute(0)\n\
+  \    0\n\n    >>> compute(4)\n    1.4236111111111112\n    \"\"\"\n    if n == 0:\n\
+  \        return 0\n\n    return sum(1 / (i**2) for i in range(1, n + 1))"
+profile: 'In scope: arithmetic upper/lower bound on the partial sum 1/1^2 + 1/2^2
+  + ... + 1/n^2 for non-negative integer n. Out of scope: exact floating-point value
+  of the sum and accumulation order. Observable: the returned float (0 when n == 0,
+  strictly positive and bounded above by pi^2/6 < 2 otherwise).'
+in_fragment: true
+reference_pre:
+- n >= 0
+reference_post: And(ret >= 0, ret < 2, Implies(n == 0, ret == 0), Implies(n >= 1,
+  ret > 0))
+notes: 'ai-review: Rewrote the draft postcondition `ret < 2 and ret >= 0` into the
+  fragment using And(...). Strengthened it slightly with the obvious exact boundary
+  cases: when n == 0 the function returns 0, and when n >= 1 the sum is strictly positive.
+  The upper bound 2 is safe because the infinite series sum 1/k^2 = pi^2/6 ~= 1.6449,
+  so any finite prefix is < 2. Exact equality with the partial sum cannot be expressed
+  in the fragment without a recursive helper, so this bound-based postcondition is
+  the strongest expressible contract.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - n >= 0
+  post: And(ret >= 0, ret < 2, Implies(n == 0, ret == 0), Implies(n >= 1, ret > 0))

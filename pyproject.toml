@@ -19,12 +19,25 @@ mypy = "^1.18.2"
 pre-commit = "^4.3.0"
 types-requests = "^2.32.4.20260107"
 
+[tool.poetry.group.tools]
+optional = true
+
+[tool.poetry.group.tools.dependencies]
+streamlit = "^1.40"
+PyYAML = "^6.0"
+
 [tool.poetry.scripts]
 dualify-run = "dualify.runner:main"
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+exclude = [
+    "benchmark/dataset/sources",
+    "benchmark/repos",
+    "benchmark/lifted_auto_eval",
+    "conferences",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
@@ -45,4 +58,3 @@ files = ["src", "tests"]
 [build-system]
 requires = ["poetry-core>=1.9.0"]
 build-backend = "poetry.core.masonry.api"
-

@@ -1,0 +1,47 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_18_operation_order.py::extract_expression
+qualname: extract_expression
+file: ''
+signature: 'extract_expression(expr: str) -> str'
+arg_types:
+  expr: str
+return_type: str
+informal_spec: Extract the sub-expression surrounded by parentheses in ``expr``.
+informal_spec_raw: Extract the sub-expression surrounded by parentheses in ``expr``.
+function_source: "def extract_expression(expr: str) -> str:\n    \"\"\"Extract the\
+  \ sub-expression surrounded by parentheses in ``expr``.\"\"\"\n    parenthesis_balance\
+  \ = 0\n    result = \"\"\n\n    for c in expr:\n        if c == \"(\":\n       \
+  \     parenthesis_balance += 1\n        elif c == \")\":\n            parenthesis_balance\
+  \ -= 1\n\n        if parenthesis_balance == 0:\n            return result[1:]\n\
+  \        else:\n            result += c\n    raise Exception(\"I should never end\
+  \ up here!\")"
+profile: 'In scope: structural relation between an input string containing a balanced
+  parenthesized prefix and the substring returned (the inside of that first balanced
+  parenthesized group). Out of scope: exception-raising path when no balanced prefix
+  exists, exact parsing of nested operators, and the specific characters between the
+  parentheses. Observable: the returned string is a substring of expr.'
+in_fragment: true
+reference_pre:
+- PrefixOf("(", expr)
+- Contains(expr, ")")
+- Length(expr) >= 2
+reference_post: Contains(expr, ret)
+notes: 'ai-review: The original draft used out-of-fragment helpers re_match(''^\\(.+\\)'',
+  expr) and expr_count(''('') == expr_count('')''). Rewrote these into fragment-legal
+  approximations: PrefixOf("(", expr) captures the leading "(", Contains(expr, ")")
+  captures the presence of a closing ")", and Length(expr) >= 2 ensures the parenthesized
+  block has at least the two delimiters. The full "balanced-parenthesis prefix" property
+  is not expressible in the fragment without quantified arithmetic over a running
+  counter, so the precondition is a strict under-approximation of the true domain.
+  Postcondition Contains(expr, ret) replaces the Python "ret in expr" form; it captures
+  that the returned string is a substring of the input, which is the strongest observable
+  property without unbounded substring-extraction semantics.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - PrefixOf('(', expr)
+  - Contains(expr, ')')
+  - Length(expr) >= 2
+  post: Contains(expr, ret)

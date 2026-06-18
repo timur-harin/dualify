@@ -1,0 +1,37 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::zip_exact
+qualname: zip_exact
+file: ''
+signature: 'zip_exact(a: Iterable[T], b: Iterable[U]) -> List[Tuple[T, U]]'
+arg_types:
+  a: Iterable[T]
+  b: Iterable[U]
+return_type: List[Tuple[T, U]]
+informal_spec: Return the pairwise zip of two iterables that must have equal length;
+  each output element pairs the k-th element of a with the k-th element of b, and
+  the result length equals the common input length.
+informal_spec_raw: Behavior of zip_exact
+function_source: "def zip_exact(a: Iterable[T], b: Iterable[U]) -> List[Tuple[T, U]]:\n\
+  \    return list(zip(a, b))"
+profile: 'In scope: result is the pairwise zip of two equal-length iterables, length
+  matches the inputs, and each pair holds the corresponding elements. Out of scope:
+  iterable laziness/exhaustion semantics, behavior when lengths differ (icontract
+  precondition rules it out), element types T/U beyond positional identity. Observable:
+  the returned list of (a[k], b[k]) tuples and its length.'
+in_fragment: true
+reference_pre:
+- Length(a) == Length(b)
+reference_post: And(Length(ret) == Length(a), Length(ret) == Length(b), ForAll([k],
+  Implies(And(0 <= k, k < Length(ret)), And(ret[k][0] == a[k], ret[k][1] == b[k]))))
+notes: 'ai-review: Rewrote the chained comparison `Length(ret) == Length(a) == Length(b)`
+  into prefix `And(...)` form since Z3 does not support Python-style chained equality.
+  Strengthened the postcondition with a ForAll quantifier asserting element-wise equality
+  of each pair `ret[k]` with `(a[k], b[k])`, since the prior post only constrained
+  length. Assumes Iterable[T]/Iterable[U] support Length and positional indexing in
+  the fragment''s collection model.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(a) == Length(b)
+  post: And(Length(ret) == Length(a), Length(ret) == Length(b), ForAll([k], Implies(And(0
+    <= k, k < Length(ret)), And(ret[k][0] == a[k], ret[k][1] == b[k]))))

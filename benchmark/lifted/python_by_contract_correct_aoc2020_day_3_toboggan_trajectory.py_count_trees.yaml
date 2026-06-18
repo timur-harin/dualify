@@ -1,0 +1,50 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_3_toboggan_trajectory.py::count_trees
+qualname: count_trees
+file: ''
+signature: 'count_trees(width: int, height: int, input_string: str) -> int'
+arg_types:
+  width: int
+  height: int
+  input_string: str
+return_type: int
+informal_spec: Count the trees in the ``input_string``.
+informal_spec_raw: Count the trees in the ``input_string``.
+function_source: "def count_trees(width: int, height: int, input_string: str) -> int:\n\
+  \    \"\"\"Count the trees in the ``input_string``.\"\"\"\n    count: int = 0\n\
+  \    current_x: int = 0\n    current_y: int = 0\n\n    while current_y < height:\n\
+  \        if input_string[current_y * width + current_x] == \"#\":\n            count\
+  \ += 1\n        current_x = (current_x + STEP_SIZE_HORIZONTAL) % width\n       \
+  \ current_y += STEP_SIZE_VERTICAL\n\n    return count"
+profile: 'In scope: counting ''#'' characters along a fixed-slope toboggan path through
+  a width-by-height grid encoded as a flat string. Out of scope: the exact slope (governed
+  by module-level STEP_SIZE_* constants not in the signature) and any wrapping semantics
+  beyond the count bound. Observable: the returned non-negative integer count, bounded
+  by the number of rows traversed.'
+in_fragment: true
+reference_pre:
+- width > 0
+- height > 0
+- Length(input_string) == width * height
+- ForAll([k], Implies(And(0 <= k, k < Length(input_string)), Or(input_string[k] ==
+  '.', input_string[k] == '#')))
+reference_post: And(ret >= 0, ret <= height)
+notes: 'ai-review: The exact count depends on module-level constants STEP_SIZE_HORIZONTAL
+  and STEP_SIZE_VERTICAL that are not in the function signature, so the precise functional
+  contract is not expressible in the fragment. Reference_post weakened to the observable
+  bound ret in [0, height] (at most one increment per row visited, and at most height
+  rows are visited regardless of step size >= 1). Replaced draft `width > 0 and height
+  > 0` with separate clauses, dropped the forbidden `re_match(...)` helper in favor
+  of an explicit ForAll over the allowed alphabet {''.'', ''#''}, and dropped the
+  `ret <= height / STEP_SIZE_VERTICAL` clause that referenced an unknown identifier.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - width > 0
+  - height > 0
+  - Length(input_string) == width * height
+  - ForAll([k], Implies(And(0 <= k, k < Length(input_string)), Or(input_string[k]
+    == '.', input_string[k] == '#')))
+  post: And(ret >= 0, ret <= height)

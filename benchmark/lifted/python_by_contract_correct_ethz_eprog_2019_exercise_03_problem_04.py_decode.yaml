@@ -1,0 +1,42 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_03::problem_04.py::decode
+qualname: decode
+file: ''
+signature: 'decode(text: str) -> int'
+arg_types:
+  text: str
+return_type: int
+informal_spec: Decode the given ``text``, representing segment identifiers, as a digit.
+informal_spec_raw: Decode the given ``text``, representing segment identifiers, as
+  a digit.
+function_source: "def decode(text: str) -> int:\n    \"\"\"Decode the given ``text``,\
+  \ representing segment identifiers, as a digit.\"\"\"\n    signature = \"\".join(sorted(text))\n\
+  \n    return TO_NUMBER[signature]"
+profile: 'In scope: arithmetic relationship between an input string of 7-segment identifier
+  letters and the decoded digit. Out of scope: the exact mapping table (TO_NUMBER)
+  and the alphabet of valid segment letters. Observable: the returned integer digit
+  (0-9) and any precondition implied by lookup success.'
+in_fragment: false
+reference_pre:
+- Length(text) >= 2
+- Length(text) <= 7
+- ForAll([_k0, _k1], Implies(And(0 <= _k0, _k0 < Length(text), 0 <= _k1, _k1 < Length(text),
+  _k0 != _k1), text[_k0] != text[_k1]))
+- ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(text)), Or(text[_k0] == 'a', text[_k0]
+  == 'b', text[_k0] == 'c', text[_k0] == 'd', text[_k0] == 'e', text[_k0] == 'f',
+  text[_k0] == 'g')))
+reference_post: And(0 <= ret, ret <= 9)
+notes: 'ai-review: The function relies on an external TO_NUMBER dictionary that maps
+  sorted 7-segment letter combinations to digits 0-9. The exact mapping cannot be
+  expressed in the fragment without enumerating all 10 cases as a giant disjunction.
+  Rewrote the auto-seed `Length(set(text)) == Length(text)` uniqueness clause as a
+  ForAll over index pairs, and rewrote the `text[_k0] in VALID_LETTERS` clause as
+  an explicit disjunction over the 7-segment letters a-g (the standard segment identifiers
+  for a seven-segment display). Length bounds 2..7 are derived from the fact that
+  the smallest digit (1) uses 2 segments and the largest (8) uses 7 segments. The
+  postcondition only captures the digit range; the precise digit value as a function
+  of the input letter set is not expressible without a lookup table.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized: null

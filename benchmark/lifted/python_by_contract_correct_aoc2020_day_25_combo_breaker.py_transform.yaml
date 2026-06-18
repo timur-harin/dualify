@@ -1,0 +1,38 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_25_combo_breaker.py::transform
+qualname: transform
+file: ''
+signature: 'transform(subject: int, loop_size: int) -> int'
+arg_types:
+  subject: int
+  loop_size: int
+return_type: int
+informal_spec: Transform the ``subject`` in ``loop_size`` steps of a hard-coded algorithm.
+informal_spec_raw: Transform the ``subject`` in ``loop_size`` steps of a hard-coded
+  algorithm.
+function_source: "def transform(subject: int, loop_size: int) -> int:\n    \"\"\"\
+  Transform the ``subject`` in ``loop_size`` steps of a hard-coded algorithm.\"\"\"\
+  \n    value = 1\n    for _ in range(loop_size):\n        value *= subject\n    \
+  \    value %= 20201227\n    return value"
+profile: 'In scope: arithmetic mapping from non-negative integers (subject, loop_size)
+  to the value of subject raised to loop_size, reduced modulo 20201227. Out of scope:
+  the iterative loop structure and intermediate accumulator state. Observable: the
+  returned integer in [0, 20201227).'
+in_fragment: true
+reference_pre:
+- loop_size >= 0
+- subject >= 0
+reference_post: And(0 <= ret, ret < 20201227)
+notes: 'ai-review: Rewrote chained comparison "0 <= ret < 20201227" into And(0 <=
+  ret, ret < 20201227) for fragment compliance. The full functional behavior (ret
+  == subject**loop_size mod 20201227) is not expressible in the fragment without quantified
+  arithmetic / pow, so the postcondition only captures the modulus range, which is
+  a strict invariant of the implementation.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - loop_size >= 0
+  - subject >= 0
+  post: And(0 <= ret, ret < 20201227)

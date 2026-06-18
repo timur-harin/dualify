@@ -18,10 +18,10 @@ jobs:
         run: pipx install poetry
 
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --with tools
 
       - name: Ruff
-        run: poetry run ruff check .
+        run: poetry run ruff check src tests tools
 
       - name: Mypy
         run: poetry run mypy

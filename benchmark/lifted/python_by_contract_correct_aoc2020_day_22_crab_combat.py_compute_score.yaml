@@ -1,0 +1,39 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_22_crab_combat.py::compute_score
+qualname: compute_score
+file: ''
+signature: 'compute_score(deck: Deck) -> int'
+arg_types:
+  deck: Deck
+return_type: int
+informal_spec: 'Compute the score for the given deck by summing each card multiplied
+  by its positional weight: for index i, the card contributes (len(deck) - i) * deck[i].
+  Return the total as an integer.'
+informal_spec_raw: Compute the score for the given deck based on its cards.
+function_source: "def compute_score(deck: Deck) -> int:\n    \"\"\"Compute the score\
+  \ for the given deck based on its cards.\"\"\"\n    score = 0\n    for i, card in\
+  \ enumerate(deck):\n        score += (len(deck) - i) * card\n\n    return score"
+profile: 'In scope: relating the integer return value to a weighted positional sum
+  over a non-empty deck of non-negative cards. Out of scope: expressing the exact
+  summation formula (no summation operator in the fragment) and the Deck container''s
+  concrete type. Observable: the returned score is a non-negative integer, equals
+  0 on an empty deck, and equals the lone card on a singleton deck.'
+in_fragment: true
+reference_pre:
+- ForAll([k], Implies(And(0 <= k, k < Length(deck)), deck[k] >= 0))
+reference_post: And(ret >= 0, Implies(Length(deck) == 0, ret == 0), Implies(Length(deck)
+  == 1, ret == deck[0]))
+notes: 'ai-review: The exact closed-form score (a summation over deck indices) is
+  not expressible in the Dualify fragment; captured observable consequences instead
+  — non-negativity (under the precondition that cards are non-negative), empty-deck
+  zero, and singleton-deck identity. Precondition assumes non-negative cards, which
+  matches the AoC 2020 Day 22 Crab Combat setting where deck values are positive integers;
+  weakened to >= 0 to also cover the empty-deck case cleanly.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre:
+  - ForAll([k], Implies(And(0 <= k, k < Length(deck)), deck[k] >= 0))
+  post: And(ret >= 0, Implies(Length(deck) == 0, ret == 0), Implies(Length(deck) ==
+    1, ret == deck[0]))

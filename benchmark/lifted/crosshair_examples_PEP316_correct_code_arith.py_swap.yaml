@@ -1,0 +1,27 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::arith.py::swap
+qualname: swap
+file: ''
+signature: 'swap(things: Tuple[int, int]) -> Tuple[int, int]'
+arg_types:
+  things: Tuple[int, int]
+return_type: Tuple[int, int]
+informal_spec: Swap the arguments.
+informal_spec_raw: 'Swap the arguments.
+
+
+  post: _[0] == things[1]
+
+  post: _[1] == things[0]'
+function_source: "def swap(things: Tuple[int, int]) -> Tuple[int, int]:\n    \"\"\"\
+  \n    Swap the arguments.\n\n    post: _[0] == things[1]\n    post: _[1] == things[0]\n\
+  \    \"\"\"\n    return (things[1], things[0])"
+profile: ''
+in_fragment: true
+reference_pre: []
+reference_post: ret[0] == things[1] and ret[1] == things[0]
+notes: ''
+reference_normalized:
+  pre: []
+  post: ret[0] == things[1] and ret[1] == things[0]
+status: confirmed
+needs_attention: false
