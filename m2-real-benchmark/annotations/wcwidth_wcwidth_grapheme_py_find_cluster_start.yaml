@@ -1,0 +1,66 @@
+benchmark_id: wcwidth::wcwidth::grapheme.py::_find_cluster_start
+package: wcwidth
+stratum: numeric
+signature: '_find_cluster_start(text: str, pos: int) -> int'
+informal_spec: 'Find the start of the grapheme cluster containing the character before pos.
+
+
+  Scans backwards from pos to find a safe starting point, then iterates forward using standard
+
+  break rules to find the actual cluster boundary.
+
+
+  :param text: The Unicode string.
+
+  :param pos: Position to search before (exclusive).
+
+  :returns: Start position of the grapheme cluster.'
+function_source: "def _find_cluster_start(text: str, pos: int) -> int:\n    \"\"\"\n    Find the start\
+  \ of the grapheme cluster containing the character before pos.\n\n    Scans backwards from pos to find\
+  \ a safe starting point, then iterates forward using standard\n    break rules to find the actual cluster\
+  \ boundary.\n\n    :param text: The Unicode string.\n    :param pos: Position to search before (exclusive).\n\
+  \    :returns: Start position of the grapheme cluster.\n    \"\"\"\n    target_cp = ord(text[pos - 1])\n\
+  \n    # GB3: CR x LF - LF after CR is part of same cluster\n    if target_cp == 0x0A and pos >= 2 and\
+  \ text[pos - 2] == '\\r':\n        return pos - 2\n\n    # Fast path: ASCII (except LF) starts its own\
+  \ cluster\n    if target_cp < 0x80:\n        # GB9b: Check for preceding PREPEND (rare: Arabic/Brahmic)\n\
+  \        if pos >= 2 and target_cp >= 0x20:\n            prev_cp = ord(text[pos - 2])\n            if\
+  \ prev_cp >= 0x80 and _grapheme_cluster_break(prev_cp) == GCB.PREPEND:\n                return _find_cluster_start(text,\
+  \ pos - 1)\n        return pos - 1\n\n    # Scan backward to find a safe starting point\n    safe_start\
+  \ = pos - 1\n    while safe_start > 0 and (pos - safe_start) < MAX_GRAPHEME_SCAN:\n        cp = ord(text[safe_start])\n\
+  \        if 0x20 <= cp < 0x80:  # ASCII always starts a cluster\n            break\n        if _grapheme_cluster_break(cp)\
+  \ == GCB.CONTROL:  # GB4\n            break\n        safe_start -= 1\n\n    # Verify forward to find\
+  \ the actual cluster boundary\n    cluster_start = safe_start\n    left_gcb = _grapheme_cluster_break(ord(text[safe_start]))\n\
+  \    ri_count = 1 if left_gcb == GCB.REGIONAL_INDICATOR else 0\n\n    for i in range(safe_start + 1,\
+  \ pos):\n        right_gcb = _grapheme_cluster_break(ord(text[i]))\n        result = _should_break(left_gcb,\
+  \ right_gcb, text, i, ri_count)\n        ri_count = result.ri_count\n        if result.should_break:\n\
+  \            cluster_start = i\n        left_gcb = right_gcb\n\n    return cluster_start"
+reference:
+  behavior_summary: 'Returns the start index of the grapheme cluster containing the character just before
+    pos, by scanning back to a safe point and re-applying UAX #29 break rules forward.'
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: ret is bounded by 0 <= ret < pos, but its exact value depends on grapheme-cluster-break
+    property lookups and break-rule evaluation over the string.'
+  difficulty: hard
+  notes: 'Uses _grapheme_cluster_break, _should_break, recursion, and codepoint-class logic (UAX #29 GB
+    rules). Helper-call and quantified-scan dependent; only loose bound 0 <= ret < pos is in-fragment,
+    not faithful. Out.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

@@ -1,0 +1,47 @@
+benchmark_id: packaging::src::packaging::_manylinux.py::_is_compatible
+package: packaging
+stratum: boolean
+signature: '_is_compatible(arch: str, version: _GLibCVersion) -> bool'
+informal_spec: From PEP 513, PEP 600
+function_source: "def _is_compatible(arch: str, version: _GLibCVersion) -> bool:\n    sys_glibc = _get_glibc_version()\n\
+  \    if sys_glibc < version:\n        return False\n    # Check for presence of _manylinux module.\n\
+  \    try:\n        import _manylinux  # noqa: PLC0415\n    except ImportError:\n        return True\n\
+  \    if hasattr(_manylinux, \"manylinux_compatible\"):\n        result = _manylinux.manylinux_compatible(version[0],\
+  \ version[1], arch)\n        if result is not None:\n            return bool(result)\n        return\
+  \ True\n    if version == _GLibCVersion(2, 5) and hasattr(_manylinux, \"manylinux1_compatible\"):\n\
+  \        return bool(_manylinux.manylinux1_compatible)\n    if version == _GLibCVersion(2, 12) and hasattr(\n\
+  \        _manylinux, \"manylinux2010_compatible\"\n    ):\n        return bool(_manylinux.manylinux2010_compatible)\n\
+  \    if version == _GLibCVersion(2, 17) and hasattr(\n        _manylinux, \"manylinux2014_compatible\"\
+  \n    ):\n        return bool(_manylinux.manylinux2014_compatible)\n    return True"
+reference:
+  behavior_summary: Returns False if the system glibc version is older than the requested version; otherwise
+    consults an optional external _manylinux module (its hooks) and defaults to True when no overriding
+    hook is present.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: the result depends on runtime system state (_get_glibc_version()), import availability
+    of the _manylinux module, and external callback hooks; none of this is a function of the declared
+    arguments alone, so Dualify cannot meaningfully check it.'
+  difficulty: hard
+  notes: 'Out of fragment: calls helper _get_glibc_version(), dynamic import, hasattr/attribute lookups,
+    and external callbacks manylinux_compatible/manylinuxN_compatible. Behaviour depends on environment
+    and on the opaque _GLibCVersion tuple, not just on arch/version.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

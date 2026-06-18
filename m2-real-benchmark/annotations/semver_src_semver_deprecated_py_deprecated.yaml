@@ -1,0 +1,60 @@
+benchmark_id: semver::src::semver::_deprecated.py::deprecated
+package: semver
+stratum: structured
+signature: 'deprecated(func: Optional[F]) -> Decorator'
+informal_spec: "Decorates a function to output a deprecation warning.\n\n:param func: the function to\
+  \ decorate\n:param replace: the function to replace (use the full qualified\n    name like ``semver.version.Version.bump_major``.\n\
+  :param version: the first version when this function was deprecated.\n:param category: allow you to\
+  \ specify the deprecation warning class\n    of your choice. By default, it's  :class:`DeprecationWarning`,\
+  \ but\n    you can choose :class:`PendingDeprecationWarning` or a custom class.\n:return: decorated\
+  \ function which is marked as deprecated"
+function_source: "def deprecated(\n    func: Optional[F] = None,\n    *,\n    replace: Optional[str] =\
+  \ None,\n    version: Optional[str] = None,\n    remove: Optional[str] = None,\n    category: Type[Warning]\
+  \ = DeprecationWarning,\n) -> Decorator:\n    \"\"\"\n    Decorates a function to output a deprecation\
+  \ warning.\n\n    :param func: the function to decorate\n    :param replace: the function to replace\
+  \ (use the full qualified\n        name like ``semver.version.Version.bump_major``.\n    :param version:\
+  \ the first version when this function was deprecated.\n    :param category: allow you to specify the\
+  \ deprecation warning class\n        of your choice. By default, it's  :class:`DeprecationWarning`,\
+  \ but\n        you can choose :class:`PendingDeprecationWarning` or a custom class.\n    :return: decorated\
+  \ function which is marked as deprecated\n    \"\"\"\n\n    if func is None:\n        return partial(\n\
+  \            deprecated,\n            replace=replace,\n            version=version,\n            remove=remove,\n\
+  \            category=category,\n        )\n\n    @wraps(func)\n    def wrapper(*args, **kwargs) ->\
+  \ Callable[..., F]:\n        msg_list = [\"Function 'semver.{f}' is deprecated.\"]\n\n        if version:\n\
+  \            msg_list.append(\"Deprecated since version {v}. \")\n\n        if not remove:\n       \
+  \     msg_list.append(\"This function will be removed in semver 3.\")\n        else:\n            msg_list.append(str(remove))\n\
+  \n        if replace:\n            msg_list.append(\"Use {r!r} instead.\")\n        else:\n        \
+  \    msg_list.append(\"Use the respective 'semver.Version.{r}' instead.\")\n\n        f = cast(F, func).__qualname__\n\
+  \        r = replace or f\n\n        frame = cast(FrameType, cast(FrameType, inspect.currentframe()).f_back)\n\
+  \n        msg = \" \".join(msg_list)\n        warnings.warn_explicit(\n            msg.format(f=f, r=r,\
+  \ v=version),\n            category=category,\n            filename=inspect.getfile(frame.f_code),\n\
+  \            lineno=frame.f_lineno,\n        )\n        # As recommended in the Python documentation\n\
+  \        # https://docs.python.org/3/library/inspect.html#the-interpreter-stack\n        # better remove\
+  \ the interpreter stack:\n        del frame\n        return func(*args, **kwargs)  # type: ignore\n\n\
+  \    return wrapper"
+reference:
+  behavior_summary: 'A decorator: with func given it returns a wrapper that warns then delegates to func;
+    with func None it returns a partial of itself binding the keyword options.'
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: returns a closure/partial (a callable), constructed via functools.wraps/partial.'
+  difficulty: hard
+  notes: Purely higher-order; the return is a function object, nothing in the fragment can describe it.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

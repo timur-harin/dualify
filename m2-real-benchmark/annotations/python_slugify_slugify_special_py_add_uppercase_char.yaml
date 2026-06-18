@@ -1,0 +1,38 @@
+benchmark_id: python-slugify::slugify::special.py::add_uppercase_char
+package: python-slugify
+stratum: structured
+signature: 'add_uppercase_char(char_list: list[tuple[str, str]]) -> list[tuple[str, str]]'
+informal_spec: Given a replacement char list, this adds uppercase chars to the list
+function_source: "def add_uppercase_char(char_list: list[tuple[str, str]]) -> list[tuple[str, str]]:\n\
+  \    \"\"\" Given a replacement char list, this adds uppercase chars to the list \"\"\"\n\n    for item\
+  \ in char_list:\n        char, xlate = item\n        upper_dict = char.upper(), xlate.capitalize()\n\
+  \        if upper_dict not in char_list and char != upper_dict[0]:\n            char_list.insert(0,\
+  \ upper_dict)\n    return char_list"
+reference:
+  behavior_summary: Mutates and returns char_list, prepending uppercased (char.upper(), xlate.capitalize())
+    entries for items whose uppercase form is new and differs from the original char.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: in-place list mutation driven by str.upper/capitalize and tuple membership tests.'
+  difficulty: medium
+  notes: Returns the same list object it received (grown in place); element-level string casing and list
+    insertion are out of fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

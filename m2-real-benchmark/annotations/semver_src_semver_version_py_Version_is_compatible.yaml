@@ -1,0 +1,62 @@
+benchmark_id: semver::src::semver::version.py::Version::is_compatible
+package: semver
+stratum: boolean
+signature: 'is_compatible(self: Any, other: ''Version'') -> bool'
+informal_spec: "Check if current version is compatible with other version.\n\nThe result is True, if either\
+  \ of the following is true:\n\n* both versions are equal, or\n* both majors are equal and higher than\
+  \ 0. Same for both minors.\n  Both pre-releases are equal, or\n* both majors are equal and higher than\
+  \ 0. The minor of b's\n  minor version is higher then a's. Both pre-releases are equal.\n\nThe algorithm\
+  \ does *not* check patches.\n\n.. versionadded:: 3.0.0\n\n:param other: the version to check for compatibility\n\
+  :return: True, if ``other`` is compatible with the old version,\n         otherwise False\n\n>>> Version(1,\
+  \ 1, 0).is_compatible(Version(1, 0, 0))\nFalse\n>>> Version(1, 0, 0).is_compatible(Version(1, 1, 0))\n\
+  True"
+function_source: "def is_compatible(self, other: \"Version\") -> bool:\n        \"\"\"\n        Check\
+  \ if current version is compatible with other version.\n\n        The result is True, if either of the\
+  \ following is true:\n\n        * both versions are equal, or\n        * both majors are equal and higher\
+  \ than 0. Same for both minors.\n          Both pre-releases are equal, or\n        * both majors are\
+  \ equal and higher than 0. The minor of b's\n          minor version is higher then a's. Both pre-releases\
+  \ are equal.\n\n        The algorithm does *not* check patches.\n\n        .. versionadded:: 3.0.0\n\
+  \n        :param other: the version to check for compatibility\n        :return: True, if ``other``\
+  \ is compatible with the old version,\n                 otherwise False\n\n        >>> Version(1, 1,\
+  \ 0).is_compatible(Version(1, 0, 0))\n        False\n        >>> Version(1, 0, 0).is_compatible(Version(1,\
+  \ 1, 0))\n        True\n        \"\"\"\n        if not isinstance(other, Version):\n            raise\
+  \ TypeError(f\"Expected a Version type but got {type(other)}\")\n\n        # All major-0 versions should\
+  \ be incompatible with anything but itself\n        if (0 == self.major == other.major) and (self[:4]\
+  \ != other[:4]):\n            return False\n\n        return (\n            (self.major == other.major)\n\
+  \            and (other.minor >= self.minor)\n            and (self.prerelease == other.prerelease)\n\
+  \        )"
+reference:
+  behavior_summary: Returns True iff other is a Version with the same major, an equal-or-greater minor,
+    and an equal prerelease, with the special case that when both majors are 0 only an exactly-equal version
+    (major, minor, patch, prerelease) is compatible.
+  fragment_fit: near
+  reference_pre: []
+  reference_post: If(And(self_major == 0, other_major == 0), ret == And(self_major == other_major, self_minor
+    == other_minor, self_patch == other_patch, self_prerelease == other_prerelease), ret == And(self_major
+    == other_major, other_minor >= self_minor, self_prerelease == other_prerelease))
+  profile: In-scope for the integer/string-equality comparison of version components held in object state
+    (self_major/minor/patch/prerelease vs other_*); out-of-scope is the isinstance type guard that raises
+    TypeError on non-Version inputs.
+  difficulty: medium
+  notes: 'Near: the major-0 branch in code is self[:4] != other[:4] (slice of major,minor,patch,prerelease);
+    the approximation expands it to component-wise equality, which is faithful. Treats prerelease equality
+    as opaque string equality. Depends on object state of both self and other; the TypeError guard is
+    not modelled.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

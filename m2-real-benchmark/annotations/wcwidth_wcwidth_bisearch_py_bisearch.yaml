@@ -1,0 +1,45 @@
+benchmark_id: wcwidth::wcwidth::bisearch.py::bisearch
+package: wcwidth
+stratum: numeric
+signature: 'bisearch(ucs: int, table: tuple[tuple[int, int], ...]) -> int'
+informal_spec: "Binary search in interval table.\n\n:param ucs: Ordinal value of unicode character.\n\
+  :param table: Tuple of starting and ending ranges of ordinal values, in form of ``((start, end),\n \
+  \   ...)``.\n:returns: 1 if ordinal value ucs is found within lookup table, else 0."
+function_source: "def bisearch(ucs: int, table: tuple[tuple[int, int], ...]) -> int:\n    \"\"\"\n   \
+  \ Binary search in interval table.\n\n    :param ucs: Ordinal value of unicode character.\n    :param\
+  \ table: Tuple of starting and ending ranges of ordinal values, in form of ``((start, end),\n      \
+  \  ...)``.\n    :returns: 1 if ordinal value ucs is found within lookup table, else 0.\n    \"\"\"\n\
+  \    lbound = 0\n    ubound = len(table) - 1\n\n    if ucs < table[0][0] or ucs > table[ubound][1]:\n\
+  \        return 0\n\n    while ubound >= lbound:\n        mid = (lbound + ubound) // 2\n        if ucs\
+  \ > table[mid][1]:\n            lbound = mid + 1\n        elif ucs < table[mid][0]:\n            ubound\
+  \ = mid - 1\n        else:\n            return 1\n\n    return 0"
+reference:
+  behavior_summary: Returns 1 if ucs falls within any [start,end] interval of the sorted interval table,
+    else 0, via binary search.
+  fragment_fit: near
+  reference_pre: []
+  reference_post: Or(ret == 0, ret == 1)
+  profile: 'Observable boundary: ret is always 0 or 1, but the precise membership predicate quantifies
+    over the interval table''s rows, which the fragment cannot express.'
+  difficulty: medium
+  notes: 'Out reason: the exact result is ''exists a row i with table[i][0] <= ucs <= table[i][1]'', a
+    quantifier over the table argument (a tuple of pairs not addressable in the fragment). Near approximation
+    keeps only the codomain fact ret in {0,1}; the membership semantics are not faithfully expressible.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

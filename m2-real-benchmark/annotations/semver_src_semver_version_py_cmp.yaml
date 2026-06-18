@@ -1,0 +1,36 @@
+benchmark_id: semver::src::semver::version.py::_cmp
+package: semver
+stratum: numeric
+signature: '_cmp(a: T_cmp, b: T_cmp) -> int'
+informal_spec: Return negative if a<b, zero if a==b, positive if a>b.
+function_source: "def _cmp(a: T_cmp, b: T_cmp) -> int:\n    \"\"\"Return negative if a<b, zero if a==b,\
+  \ positive if a>b.\"\"\"\n    return (a > b) - (a < b)"
+reference:
+  behavior_summary: Returns -1 if a<b, 0 if a==b, and 1 if a>b via the expression (a>b)-(a<b).
+  fragment_fit: in
+  reference_pre: []
+  reference_post: And(Implies(a < b, ret == -1), Implies(a == b, ret == 0), Implies(a > b, ret == 1))
+  profile: 'In scope: a pure three-way comparison whose result is fully determined by the ordering of
+    the two comparable arguments.'
+  difficulty: easy
+  notes: 'Faithful exactly: the implementation yields precisely -1/0/+1 (not just sign), so equalities
+    are tight. Assumes a and b are mutually comparable (total order); for incomparable inputs the comparison
+    would raise, but for valid numeric/tuple inputs the post holds exactly.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

@@ -1,0 +1,36 @@
+benchmark_id: humanize::src::humanize::i18n.py::_gettext
+package: humanize
+stratum: string
+signature: '_gettext(message: str) -> str'
+informal_spec: "Get translation.\n\nArgs:\n    message (str): Text to translate.\n\nReturns:\n    str:\
+  \ Translated text."
+function_source: "def _gettext(message: str) -> str:\n    \"\"\"Get translation.\n\n    Args:\n      \
+  \  message (str): Text to translate.\n\n    Returns:\n        str: Translated text.\n    \"\"\"\n  \
+  \  return get_translation().gettext(message)"
+reference:
+  behavior_summary: Returns the translation of message obtained from the current translation object.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: delegates to external translation-catalog lookup.'
+  difficulty: medium
+  notes: Output is get_translation().gettext(message); fully determined by runtime locale/catalog state,
+    so no in-fragment relation between message and ret holds (identity is not guaranteed).
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

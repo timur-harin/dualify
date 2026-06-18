@@ -1,0 +1,36 @@
+benchmark_id: wcwidth::wcwidth::grapheme.py::_is_incb_extend
+package: wcwidth
+stratum: boolean
+signature: '_is_incb_extend(ucs: int) -> bool'
+informal_spec: Check if codepoint has InCB=Extend property.
+function_source: "def _is_incb_extend(ucs: int) -> bool:\n    \"\"\"Check if codepoint has InCB=Extend\
+  \ property.\"\"\"\n    return bool(_bisearch(ucs, INCB_EXTEND))"
+reference:
+  behavior_summary: Returns True iff the integer codepoint ucs lies in one of the InCB=Extend Unicode
+    codepoint ranges (looked up by binary search over a static table).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: membership is decided by _bisearch over the opaque INCB_EXTEND range table;
+    no closed-form predicate over ucs is expressible without that table.'
+  difficulty: medium
+  notes: 'Out of fragment: calls helper _bisearch against a constant range table. True predicate is a
+    finite union of interval tests not recoverable from the source text.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

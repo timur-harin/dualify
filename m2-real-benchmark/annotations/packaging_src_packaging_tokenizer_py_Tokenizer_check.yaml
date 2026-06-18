@@ -1,0 +1,53 @@
+benchmark_id: packaging::src::packaging::_tokenizer.py::Tokenizer::check
+package: packaging
+stratum: boolean
+signature: 'check(self: Any, name: str) -> bool'
+informal_spec: 'Check whether the next token has the provided name.
+
+
+  By default, if the check succeeds, the token *must* be read before
+
+  another check. If `peek` is set to `True`, the token is not loaded and
+
+  would need to be checked again.'
+function_source: "def check(self, name: str, *, peek: bool = False) -> bool:\n        \"\"\"Check whether\
+  \ the next token has the provided name.\n\n        By default, if the check succeeds, the token *must*\
+  \ be read before\n        another check. If `peek` is set to `True`, the token is not loaded and\n \
+  \       would need to be checked again.\n        \"\"\"\n        assert self.next_token is None, (\n\
+  \            f\"Cannot check for {name!r}, already have {self.next_token!r}\"\n        )\n        assert\
+  \ name in self.rules, f\"Unknown token name: {name!r}\"\n\n        expression = self.rules[name]\n\n\
+  \        match = expression.match(self.source, self.position)\n        if match is None:\n         \
+  \   return False\n        if not peek:\n            self.next_token = Token(name, match[0], self.position)\n\
+  \        return True"
+reference:
+  behavior_summary: Returns True iff the rule regex named name matches the source string at the current
+    position; on a non-peek success it also caches the matched token, and it asserts that no token is
+    already buffered and that name is a known rule.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: the result is a regex match of self.rules[name] against self.source at self.position;
+    it is governed by instance state and regular-expression matching, and the method has side effects
+    (sets self.next_token).'
+  difficulty: hard
+  notes: 'Out of fragment: regex match, dict lookup self.rules[name], dependence on self.source/self.position,
+    and side-effecting mutation of self.next_token. The peek parameter is keyword-only and absent from
+    the captured signature.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

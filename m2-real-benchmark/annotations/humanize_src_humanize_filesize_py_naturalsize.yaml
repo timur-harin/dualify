@@ -1,0 +1,64 @@
+benchmark_id: humanize::src::humanize::filesize.py::naturalsize
+package: humanize
+stratum: string
+signature: 'naturalsize(value: float | str, binary: bool, gnu: bool, format: str) -> str'
+informal_spec: "Format a number of bytes like a human-readable filesize (e.g. 10 kB).\n\nBy default, decimal\
+  \ suffixes (kB, MB) are used.\n\nNon-GNU modes are compatible with jinja2's `filesizeformat` filter.\n\
+  \nExamples:\n    ```pycon\n    >>> naturalsize(3000000)\n    '3.0 MB'\n    >>> naturalsize(300, False,\
+  \ True)\n    '300B'\n    >>> naturalsize(3000, False, True)\n    '2.9K'\n    >>> naturalsize(3000, False,\
+  \ True, \"%.3f\")\n    '2.930K'\n    >>> naturalsize(3000, True)\n    '2.9 KiB'\n    >>> naturalsize(10**28)\n\
+  \    '10.0 RB'\n    >>> naturalsize(10**34 * 3)\n    '30000.0 QB'\n    >>> naturalsize(-4096, True)\n\
+  \    '-4.0 KiB'\n\n    ```\n\nArgs:\n    value (int, float, str): Integer to convert.\n    binary (bool):\
+  \ If `True`, uses binary suffixes (KiB, MiB) with base\n        2<sup>10</sup> instead of 10<sup>3</sup>.\n\
+  \    gnu (bool): If `True`, the binary argument is ignored and GNU-style\n        (`ls -sh` style) prefixes\
+  \ are used (K, M) with the 2**10 definition.\n    format (str): Custom formatter.\n\nReturns:\n    str:\
+  \ Human readable representation of a filesize."
+function_source: "def naturalsize(\n    value: float | str,\n    binary: bool = False,\n    gnu: bool\
+  \ = False,\n    format: str = \"%.1f\",\n) -> str:\n    \"\"\"Format a number of bytes like a human-readable\
+  \ filesize (e.g. 10 kB).\n\n    By default, decimal suffixes (kB, MB) are used.\n\n    Non-GNU modes\
+  \ are compatible with jinja2's `filesizeformat` filter.\n\n    Examples:\n        ```pycon\n       \
+  \ >>> naturalsize(3000000)\n        '3.0 MB'\n        >>> naturalsize(300, False, True)\n        '300B'\n\
+  \        >>> naturalsize(3000, False, True)\n        '2.9K'\n        >>> naturalsize(3000, False, True,\
+  \ \"%.3f\")\n        '2.930K'\n        >>> naturalsize(3000, True)\n        '2.9 KiB'\n        >>> naturalsize(10**28)\n\
+  \        '10.0 RB'\n        >>> naturalsize(10**34 * 3)\n        '30000.0 QB'\n        >>> naturalsize(-4096,\
+  \ True)\n        '-4.0 KiB'\n\n        ```\n\n    Args:\n        value (int, float, str): Integer to\
+  \ convert.\n        binary (bool): If `True`, uses binary suffixes (KiB, MiB) with base\n          \
+  \  2<sup>10</sup> instead of 10<sup>3</sup>.\n        gnu (bool): If `True`, the binary argument is\
+  \ ignored and GNU-style\n            (`ls -sh` style) prefixes are used (K, M) with the 2**10 definition.\n\
+  \        format (str): Custom formatter.\n\n    Returns:\n        str: Human readable representation\
+  \ of a filesize.\n    \"\"\"\n    if gnu:\n        suffix = suffixes[\"gnu\"]\n    elif binary:\n  \
+  \      suffix = suffixes[\"binary\"]\n    else:\n        suffix = suffixes[\"decimal\"]\n\n    base\
+  \ = 1024 if (gnu or binary) else 1000\n    bytes_ = float(value)\n    abs_bytes = abs(bytes_)\n\n  \
+  \  if abs_bytes == 1 and not gnu:\n        return f\"{int(bytes_)} Byte\"\n\n    if abs_bytes < base:\n\
+  \        return f\"{int(bytes_)}B\" if gnu else f\"{int(bytes_)} Bytes\"\n\n    exp = int(min(log(abs_bytes,\
+  \ base), len(suffix)))\n    ret: str = format % (bytes_ / (base**exp)) + suffix[exp - 1]\n    return\
+  \ ret"
+reference:
+  behavior_summary: Formats a numeric byte count into a human-readable filesize string with a unit suffix
+    chosen by magnitude and the binary/gnu flags.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: float arithmetic, log-based exponent selection, printf formatting and suffix
+    table lookups.'
+  difficulty: hard
+  notes: Output depends on log(value, base), float division, '%'-format strings and module-level suffix
+    tables; none expressible. Only trivial facts (ret is non-empty) hold, not faithful as a postcondition.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

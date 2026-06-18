@@ -1,0 +1,43 @@
+benchmark_id: humanize::src::humanize::i18n.py::_ngettext_noop
+package: humanize
+stratum: structured
+signature: '_ngettext_noop(singular: str, plural: str) -> tuple[str, str]'
+informal_spec: "Mark two strings as pluralized translations without translating them.\n\nExample usage:\n\
+  ```python\nCONSTANTS = [ngettext_noop('first', 'firsts'), ngettext_noop('second', 'seconds')]\ndef num_name(n):\n\
+  \    return _ngettext(*CONSTANTS[n])\n```\n\nArgs:\n    singular (str): Singular text to translate in\
+  \ the future.\n    plural (str): Plural text to translate in the future.\n\nReturns:\n    tuple: Original\
+  \ text, unchanged."
+function_source: "def _ngettext_noop(singular: str, plural: str) -> tuple[str, str]:\n    \"\"\"Mark two\
+  \ strings as pluralized translations without translating them.\n\n    Example usage:\n    ```python\n\
+  \    CONSTANTS = [ngettext_noop('first', 'firsts'), ngettext_noop('second', 'seconds')]\n    def num_name(n):\n\
+  \        return _ngettext(*CONSTANTS[n])\n    ```\n\n    Args:\n        singular (str): Singular text\
+  \ to translate in the future.\n        plural (str): Plural text to translate in the future.\n\n   \
+  \ Returns:\n        tuple: Original text, unchanged.\n    \"\"\"\n    return singular, plural"
+reference:
+  behavior_summary: Returns the two input strings unchanged as a 2-tuple (singular, plural).
+  fragment_fit: near
+  reference_pre: []
+  reference_post: ret == (singular, plural)
+  profile: 'Observable boundary: the body is an identity pairing, but the return value is a tuple, which
+    the Z3 fragment cannot construct or compare element-wise.'
+  difficulty: easy
+  notes: True behaviour is ret[0]==singular and ret[1]==plural; tuple equality is not faithfully expressible
+    in the fragment, so this is near, not in.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

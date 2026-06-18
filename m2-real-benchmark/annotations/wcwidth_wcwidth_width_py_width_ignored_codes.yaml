@@ -1,0 +1,43 @@
+benchmark_id: wcwidth::wcwidth::_width.py::_width_ignored_codes
+package: wcwidth
+stratum: numeric
+signature: '_width_ignored_codes(text: str, ambiguous_width: int, term_program: bool | str) -> int'
+informal_spec: 'Fast path for width() with control_codes=''ignore''.
+
+
+  Strips escape sequences and control characters, then measures remaining text.'
+function_source: "def _width_ignored_codes(text: str, ambiguous_width: int = 1,\n                    \
+  \     term_program: bool | str = False) -> int:\n    \"\"\"\n    Fast path for width() with control_codes='ignore'.\n\
+  \n    Strips escape sequences and control characters, then measures remaining text.\n    \"\"\"\n  \
+  \  if term_program is False:\n        return wcswidth(\n            strip_sequences(text).translate(_CONTROL_CHAR_TABLE),\n\
+  \            ambiguous_width=ambiguous_width,\n        )\n    return wcstwidth(\n        strip_sequences(text).translate(_CONTROL_CHAR_TABLE),\n\
+  \        ambiguous_width=ambiguous_width,\n        term_program=term_program,\n    )"
+reference:
+  behavior_summary: Strips escape sequences and control characters from text, then returns the wcswidth/wcstwidth
+    of the remainder depending on whether term_program override is requested.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: delegates to strip_sequences, str.translate, and wcswidth/wcstwidth (helper
+    calls plus Unicode-table width measurement) to produce the count.'
+  difficulty: medium
+  notes: Composed entirely of helper calls (strip_sequences, .translate, wcswidth/wcstwidth); the width
+    is grapheme/Unicode-table dependent. Branches on term_program is False. No faithful in-fragment postcondition.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

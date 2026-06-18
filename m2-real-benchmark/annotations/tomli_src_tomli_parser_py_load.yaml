@@ -1,0 +1,36 @@
+benchmark_id: tomli::src::tomli::_parser.py::load
+package: tomli
+stratum: structured
+signature: 'load(__fp: IO[bytes]) -> dict[str, Any]'
+informal_spec: Parse TOML from a binary file object.
+function_source: "def load(__fp: IO[bytes], *, parse_float: ParseFloat = float) -> dict[str, Any]:\n \
+  \   \"\"\"Parse TOML from a binary file object.\"\"\"\n    b = __fp.read()\n    try:\n        s = b.decode()\n\
+  \    except AttributeError:\n        raise TypeError(\n            \"File must be opened in binary mode,\
+  \ e.g. use `open('foo.toml', 'rb')`\"\n        ) from None\n    return loads(s, parse_float=parse_float)"
+reference:
+  behavior_summary: Reads all bytes from the binary file object, decodes to str, and returns the parsed
+    TOML document as a dict (raising TypeError if not opened in binary mode).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: performs IO, decoding and full TOML parsing, returning a nested dict.'
+  difficulty: hard
+  notes: Delegates to loads after reading; result is a parsed dict, unrepresentable in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

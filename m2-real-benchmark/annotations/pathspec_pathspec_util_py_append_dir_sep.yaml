@@ -1,0 +1,48 @@
+benchmark_id: pathspec::pathspec::util.py::append_dir_sep
+package: pathspec
+stratum: string
+signature: 'append_dir_sep(path: pathlib.Path) -> str'
+informal_spec: 'Appends the path separator to the path if the path is a directory. This can be
+
+  used to aid in distinguishing between directories and files on the file-system
+
+  by relying on the presence of a trailing path separator.
+
+
+  *path* (:class:`pathlib.Path`) is the path to use.
+
+
+  Returns the path (:class:`str`).'
+function_source: "def append_dir_sep(path: pathlib.Path) -> str:\n\t\"\"\"\n\tAppends the path separator\
+  \ to the path if the path is a directory. This can be\n\tused to aid in distinguishing between directories\
+  \ and files on the file-system\n\tby relying on the presence of a trailing path separator.\n\n\t*path*\
+  \ (:class:`pathlib.Path`) is the path to use.\n\n\tReturns the path (:class:`str`).\n\t\"\"\"\n\tstr_path\
+  \ = str(path)\n\tif path.is_dir():\n\t\tstr_path += os.sep\n\n\treturn str_path"
+reference:
+  behavior_summary: Returns the string form of path, with the OS path separator appended when path is
+    an existing directory.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: depends on filesystem state via path.is_dir().'
+  difficulty: medium
+  notes: Result branches on path.is_dir(), an effectful filesystem query, and on str(path)/os.sep; the
+    Path argument is not a fragment string and the directory test is unobservable in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

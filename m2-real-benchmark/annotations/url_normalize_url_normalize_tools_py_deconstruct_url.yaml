@@ -1,0 +1,40 @@
+benchmark_id: url_normalize::url_normalize::tools.py::deconstruct_url
+package: url_normalize
+stratum: structured
+signature: 'deconstruct_url(url: str) -> URL'
+informal_spec: "Transform the url into URL structure.\n\nParams:\n    url : string : the URL\n\nReturns:\n\
+  \    URL"
+function_source: "def deconstruct_url(url: str) -> URL:\n    \"\"\"Transform the url into URL structure.\n\
+  \n    Params:\n        url : string : the URL\n\n    Returns:\n        URL\n\n    \"\"\"\n    scheme,\
+  \ auth, path, query, fragment = urlsplit(url.strip())\n    match = re.search(r\"([^@]*@)?([^:]*):?(.*)\"\
+  , auth)\n    (userinfo, host, port) = match.groups()  # type: ignore  # noqa: PGH003\n    return URL(\n\
+  \        fragment=fragment,\n        host=host,\n        path=path,\n        port=port or \"\",\n  \
+  \      query=query,\n        scheme=scheme,\n        userinfo=userinfo or \"\",\n    )"
+reference:
+  behavior_summary: Splits the (stripped) url into scheme/auth/path/query/fragment, further regex-splits
+    auth into userinfo/host/port, and returns these as a URL namedtuple (empty strings for missing port/userinfo).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: uses urlsplit and a regex to populate and return a URL namedtuple.'
+  difficulty: medium
+  notes: Parsing via urlsplit/re plus namedtuple construction; the structured result is unrepresentable
+    in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

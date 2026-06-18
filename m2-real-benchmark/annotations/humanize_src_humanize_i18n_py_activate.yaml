@@ -1,0 +1,51 @@
+benchmark_id: humanize::src::humanize::i18n.py::activate
+package: humanize
+stratum: structured
+signature: 'activate(locale: str | None, path: str | os.PathLike[str] | None) -> gettext_module.NullTranslations'
+informal_spec: "Activate internationalisation.\n\nSet `locale` as current locale. Search for locale in\
+  \ directory `path`.\n\nArgs:\n    locale (str | None): Language name, e.g. `en_GB`. If `None`, defaults\
+  \ to no\n        transaltion. Similar to calling ``deactivate()``.\n    path (str | pathlib.Path): Path\
+  \ to search for locales.\n\nReturns:\n    dict: Translations.\n\nRaises:\n    FileNotFoundError: If\
+  \ humanize cannot find the locale folder."
+function_source: "def activate(\n    locale: str | None, path: str | os.PathLike[str] | None = None\n\
+  ) -> gettext_module.NullTranslations:\n    \"\"\"Activate internationalisation.\n\n    Set `locale`\
+  \ as current locale. Search for locale in directory `path`.\n\n    Args:\n        locale (str | None):\
+  \ Language name, e.g. `en_GB`. If `None`, defaults to no\n            transaltion. Similar to calling\
+  \ ``deactivate()``.\n        path (str | pathlib.Path): Path to search for locales.\n\n    Returns:\n\
+  \        dict: Translations.\n\n    Raises:\n        FileNotFoundError: If humanize cannot find the\
+  \ locale folder.\n    \"\"\"\n    if locale is None or locale.startswith(\"en\"):\n        _CURRENT.locale\
+  \ = None\n        return _TRANSLATIONS[None]\n\n    if path is None:\n        path = _get_default_locale_path()\n\
+  \n    if path is None:\n        msg = (\n            \"Humanize cannot determinate the default location\
+  \ of the 'locale' folder. \"\n            \"You need to pass the path explicitly.\"\n        )\n   \
+  \     raise FileNotFoundError(msg)\n    if locale not in _TRANSLATIONS:\n        translation = gettext_module.translation(\"\
+  humanize\", path, [locale])\n        _TRANSLATIONS[locale] = translation\n    _CURRENT.locale = locale\n\
+  \    return _TRANSLATIONS[locale]"
+reference:
+  behavior_summary: 'Activates a locale: for None or an ''en''-prefixed locale it clears the current locale
+    and returns the null translation, otherwise it resolves/loads a gettext translation for locale under
+    path, caches and returns it, raising FileNotFoundError when no path can be found.'
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: mutates module state and returns a gettext Translations object loaded from the
+    filesystem.'
+  difficulty: hard
+  notes: Side-effecting and IO-bound; return value is a translation object, unrepresentable in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

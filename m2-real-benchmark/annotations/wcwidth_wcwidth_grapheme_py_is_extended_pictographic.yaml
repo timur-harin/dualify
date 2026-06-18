@@ -1,0 +1,38 @@
+benchmark_id: wcwidth::wcwidth::grapheme.py::_is_extended_pictographic
+package: wcwidth
+stratum: boolean
+signature: '_is_extended_pictographic(ucs: int) -> bool'
+informal_spec: Check if codepoint has Extended_Pictographic property.
+function_source: "def _is_extended_pictographic(ucs: int) -> bool:\n    \"\"\"Check if codepoint has Extended_Pictographic\
+  \ property.\"\"\"\n    return bool(_bisearch(ucs, EXTENDED_PICTOGRAPHIC))"
+reference:
+  behavior_summary: Returns True iff the integer codepoint ucs lies in one of the Extended_Pictographic
+    Unicode codepoint ranges (looked up by binary search over a static table).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: membership is decided by _bisearch over the opaque EXTENDED_PICTOGRAPHIC range
+    table; without enumerating that table there is no closed-form predicate over ucs expressible in the
+    fragment.'
+  difficulty: medium
+  notes: 'Out of fragment: calls helper _bisearch against a large constant range table. The true predicate
+    is a finite union of interval membership tests, but it cannot be written without the table data and
+    would require a disjunction far beyond what an LLM can recover from the source.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

@@ -1,0 +1,133 @@
+benchmark_id: wcwidth::wcwidth::_clip.py::_clip_painter
+package: wcwidth
+stratum: structured
+signature: '_clip_painter(text: str, start: int, end: int) -> tuple[str, Optional[_SGRState]]'
+informal_spec: 'Clip text with cursor movement (painter''s algorithm path).
+
+
+  Returns ``(result, captured_style)``.  The caller applies SGR wrapping.'
+function_source: "def _clip_painter(\n    text: str,\n    start: int,\n    end: int,\n    *,\n    propagate_sgr:\
+  \ bool,\n    ambiguous_width: int,\n    term_program: bool | str,\n    fillchar: str,\n    tabsize:\
+  \ int,\n    strict: bool,\n    control_codes: Literal['parse', 'strict', 'ignore'],\n) -> tuple[str,\
+  \ Optional[_SGRState]]:\n    \"\"\"\n    Clip text with cursor movement (painter's algorithm path).\n\
+  \n    Returns ``(result, captured_style)``.  The caller applies SGR wrapping.\n    \"\"\"\n    # pylint:\
+  \ disable=too-complex,too-many-locals,too-many-branches\n    # pylint: disable=too-many-statements,too-many-nested-blocks\n\
+  \    # code length and complexity traded for performance, to allow this to be used as a \"hot path\"\
+  \n\n    cells: dict[int, tuple[str, int]] = {}\n    hyperlink_cells: set[int] = set()\n    sequences:\
+  \ list[tuple[int, int, str]] = []\n    seq_order = 0\n\n    col = 0\n    idx = 0\n    # captured_style\
+  \ is a frozen snapshot of current_style taken at the first\n    # visible character emitted within the\
+  \ clip window (start, end).  It stays\n    # None until that point.  current_style, by contrast, is\
+  \ continuously\n    # updated by SGR sequences throughout the scan.\n    #\n    # When propagate_sgr\
+  \ is False, current_style (and therefore captured_style)\n    # remain None, and SGR sequences pass\
+  \ through as literal text.\n    captured_style: Optional[_SGRState] = None\n    current_style = _SGR_STATE_DEFAULT\
+  \ if propagate_sgr else None\n\n    def _write_cells(s: str, w: int, write_col: int,\n             \
+  \        is_hyperlink: bool = False) -> None:\n        \"\"\"Write *w* cells of text *s* at *write_col*,\
+  \ handling wide-char splitting.\"\"\"\n        nonlocal captured_style\n        for offset in range(w):\n\
+  \            src_col = write_col + offset\n            if src_col > 0 and cells.get(src_col - 1, ('',\
+  \ 0))[1] == 2:\n                cells[src_col - 1] = (fillchar, 1)\n                hyperlink_cells.discard(src_col\
+  \ - 1)\n            if cells.get(src_col, ('', 0))[1] == 2:\n                cells[src_col + 1] = (fillchar,\
+  \ 1)\n                hyperlink_cells.discard(src_col + 1)\n            cells.pop(src_col, None)\n \
+  \           hyperlink_cells.discard(src_col)\n        cells[write_col] = (s, w)\n        if is_hyperlink:\n\
+  \            for offset in range(w):\n                hyperlink_cells.add(write_col + offset)\n    \
+  \    if propagate_sgr and captured_style is None:\n            captured_style = current_style\n\n  \
+  \  while idx < len(text):\n        char = text[idx]\n\n        # Early exit: past visible region, SGR\
+  \ captured, no escape ahead.\n        if col >= end and captured_style is not None and char != '\\x1b':\n\
+  \            break\n\n        if char == '\\x1b':\n            m = _SEQUENCE_CLASSIFY.match(text, idx)\n\
+  \            if not m:\n                # Record lone ESC as a zero-width sequence at current column.\n\
+  \                sequences.append((col, seq_order, char))\n                seq_order += 1\n        \
+  \        if propagate_sgr and captured_style is None:\n                    captured_style = current_style\n\
+  \                idx += 1\n                continue\n\n            # SGR: update current_style, do not\
+  \ emit.\n            if m.group('sgr_params') is not None and propagate_sgr and current_style is not\
+  \ None:\n                current_style = _sgr_state_update(current_style, m.group())\n             \
+  \   idx = m.end()\n                continue\n\n            # OSC 8 hyperlink.\n            if hl_state\
+  \ := HyperlinkParams.parse(m.group()):\n                r = _process_hyperlink(\n                  \
+  \  text, start, end, fillchar, tabsize, ambiguous_width,\n                    term_program,\n      \
+  \              control_codes,\n                    params=hl_state, match_end=m.end(), col=col,\n  \
+  \              )\n                if r.action is _HyperlinkAction.NO_CLOSE:\n                    sequences.append((col,\
+  \ seq_order, m.group()))\n                    seq_order += 1\n                    if propagate_sgr and\
+  \ captured_style is None:\n                        captured_style = current_style\n                \
+  \    idx = m.end()\n                elif r.action is _HyperlinkAction.EMPTY:\n                    idx\
+  \ = r.close_end\n                elif r.action is _HyperlinkAction.OUTSIDE:\n                    col\
+  \ += r.inner_width\n                    idx = r.close_end\n                else:\n                 \
+  \   sequences.append((col, seq_order, r.open_seq))\n                    seq_order += 1\n           \
+  \         if propagate_sgr and captured_style is None:\n                        captured_style = current_style\n\
+  \                    _write_cells(r.clipped_inner, r.clipped_width, col,\n                         \
+  \        is_hyperlink=True)\n                    col += r.clipped_width\n                    sequences.append((col,\
+  \ seq_order, r.close_seq))\n                    seq_order += 1\n                    col = r.hl_col_end\n\
+  \                    idx = r.close_end\n                continue\n\n            # OSC 66 Text Sizing.\n\
+  \            if (ts_meta := m.group('ts_meta')) is not None:\n                ts_text = m.group('ts_text')\n\
+  \                ts_term = m.group('ts_term')\n                assert ts_text is not None and ts_term\
+  \ is not None\n                ts = TextSizing(\n                    TextSizingParams.from_params(ts_meta,\
+  \ control_codes=control_codes),\n                    ts_text, ts_term)\n                col = _text_sizing_clip(\n\
+  \                    ts, col, start, end, fillchar, ambiguous_width,\n                    term_program,\n\
+  \                    _write_cells)\n                if propagate_sgr and captured_style is None:\n \
+  \                   captured_style = current_style\n                idx = m.end()\n                continue\n\
+  \n            # Indeterminate-effect sequences: raise in strict mode.\n            seq = m.group()\n\
+  \            if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):\n                raise ValueError(\n\
+  \                    f\"Indeterminate cursor sequence at position {idx}, \"\n                    f\"\
+  {seq!r}\"\n                )\n\n            # Horizontal Position Absolute (CSI n G).\n            if\
+  \ (hpa_n := m.group('hpa_n')) is not None:\n                col = int(hpa_n) - 1 if hpa_n else 0\n \
+  \               idx = m.end()\n                continue\n\n            # Cursor Forward (CSI n C).\n\
+  \            if (cforward_n := m.group('cforward_n')) is not None:\n                n_forward = int(cforward_n)\
+  \ if cforward_n else 1\n                move_end = col + n_forward\n                if col < end and\
+  \ move_end > start:\n                    for i in range(max(col, start), min(move_end, end)):\n    \
+  \                    _write_cells(fillchar, 1, i)\n                col = move_end\n                idx\
+  \ = m.end()\n                continue\n\n            # Cursor Backward (CSI n D).\n            if (cbackward_n\
+  \ := m.group('cbackward_n')) is not None:\n                n_backward = int(cbackward_n) if cbackward_n\
+  \ else 1\n                if strict and n_backward > col:\n                    raise ValueError(\n \
+  \                       f\"Cursor left movement at position {idx} would move \"\n                  \
+  \      f\"{n_backward} cells left from column {col}, \"\n                        f\"exceeding string\
+  \ start\"\n                    )\n                col -= n_backward\n                if col < 0:\n \
+  \                   col = 0\n                idx = m.end()\n                continue\n\n           \
+  \ # Any other recognized sequence: preserve as-is.\n            sequences.append((col, seq_order, m.group()))\n\
+  \            seq_order += 1\n            if propagate_sgr and captured_style is None:\n            \
+  \    captured_style = current_style\n            idx = m.end()\n            continue\n\n        # Carriage\
+  \ return.\n        if char == '\\r':\n            col = 0\n            idx += 1\n            continue\n\
+  \n        # Backspace.\n        if char == '\\x08':\n            if col > 0:\n                col -=\
+  \ 1\n            idx += 1\n            continue\n\n        # Tab expansion.\n        if char == '\\\
+  t':\n            if tabsize > 0:\n                next_tab = col + (tabsize - (col % tabsize))\n   \
+  \             while col < next_tab:\n                    if start <= col < end:\n                  \
+  \      _write_cells(fillchar, 1, col)\n                    col += 1\n            else:\n           \
+  \     sequences.append((col, seq_order, '\\t'))\n                seq_order += 1\n                if\
+  \ propagate_sgr and captured_style is None:\n                    captured_style = current_style\n  \
+  \          idx += 1\n            continue\n\n        # Grapheme cluster.\n        grapheme = next(iter_graphemes(text,\
+  \ start=idx))\n        grapheme_w = width(grapheme, ambiguous_width=ambiguous_width,\n             \
+  \              term_program=term_program)\n\n        # Emit grapheme or fillchar depending on visibility\
+  \ within clip window.\n        if grapheme_w == 0:\n            if start <= col < end:\n           \
+  \     sequences.append((col, seq_order, grapheme))\n                seq_order += 1\n               \
+  \ if propagate_sgr and captured_style is None:\n                    captured_style = current_style\n\
+  \        elif col >= start and col + grapheme_w <= end:\n            _write_cells(grapheme, grapheme_w,\
+  \ col)\n        elif col < end and col + grapheme_w > start:\n            clip_start = max(start, col)\n\
+  \            for offset in range(min(end, col + grapheme_w) - clip_start):\n                _write_cells(fillchar,\
+  \ 1, clip_start + offset)\n\n        col += grapheme_w\n        idx += len(grapheme)\n\n    return _reconstruct_painter(cells,\
+  \ sequences, start, end, fillchar), captured_style"
+reference:
+  behavior_summary: Clips text to the display-cell window [start,end) using a cell-grid painter that honours
+    cursor-movement escapes, tab expansion and SGR/hyperlink sequences, returning the reconstructed string
+    and a captured SGR style.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: a large terminal-emulator-style algorithm over escape sequences and grapheme
+    widths, returning a (str, _SGRState?) tuple.'
+  difficulty: hard
+  notes: Deeply stateful with regex sequence parsing and helper calls; no faithful in-fragment contract
+    exists.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

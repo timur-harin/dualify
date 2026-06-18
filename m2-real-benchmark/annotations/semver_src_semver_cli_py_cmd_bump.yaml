@@ -1,0 +1,53 @@
+benchmark_id: semver::src::semver::cli.py::cmd_bump
+package: semver
+stratum: string
+signature: 'cmd_bump(args: argparse.Namespace) -> str'
+informal_spec: 'Subcommand: Bumps a version.
+
+
+  Synopsis: bump <PART> <VERSION>
+
+  <PART> can be major, minor, patch, prerelease, or build
+
+
+  :param args: The parsed arguments
+
+  :return: the new, bumped version'
+function_source: "def cmd_bump(args: argparse.Namespace) -> str:\n    \"\"\"\n    Subcommand: Bumps a\
+  \ version.\n\n    Synopsis: bump <PART> <VERSION>\n    <PART> can be major, minor, patch, prerelease,\
+  \ or build\n\n    :param args: The parsed arguments\n    :return: the new, bumped version\n    \"\"\"\
+  \n    maptable = {\n        \"major\": \"bump_major\",\n        \"minor\": \"bump_minor\",\n       \
+  \ \"patch\": \"bump_patch\",\n        \"prerelease\": \"bump_prerelease\",\n        \"build\": \"bump_build\"\
+  ,\n    }\n    if args.bump is None:\n        # When bump is called without arguments,\n        # print\
+  \ the help and exit\n        args.parser.parse_args([\"bump\", \"-h\"])\n\n    ver = Version.parse(args.version)\n\
+  \    # get the respective method and call it\n    func = getattr(ver, maptable[cast(str, args.bump)])\n\
+  \    return str(func())"
+reference:
+  behavior_summary: Parses a version from the CLI args, dispatches to the bump method named by args.bump,
+    and returns the bumped version as a string.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: CLI handler with attribute access, dynamic getattr dispatch and possible help-exit
+    side effect.'
+  difficulty: hard
+  notes: Input is an argparse.Namespace; behaviour depends on Version.parse and getattr-selected bump
+    methods, none of which are signature variables in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

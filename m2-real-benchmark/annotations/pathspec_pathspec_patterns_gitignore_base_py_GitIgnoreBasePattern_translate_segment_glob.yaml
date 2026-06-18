@@ -1,0 +1,82 @@
+benchmark_id: pathspec::pathspec::patterns::gitignore::base.py::_GitIgnoreBasePattern::_translate_segment_glob
+package: pathspec
+stratum: string
+signature: '_translate_segment_glob(pattern: str, range_error: Literal[''literal'', ''raise'']) -> str'
+informal_spec: "Translates the glob pattern to a regular expression. This is used in the\nconstructor\
+  \ to translate a path segment glob pattern to its corresponding\nregular expression.\n\n*pattern* (:class:`str`)\
+  \ is the glob pattern.\n\n*range_error* (:class:`int`) is how to handle invalid range notation in the\n\
+  pattern:\n\n-       :data:`\"literal\"`: Invalid notation will be treated as a literal string.\n\n-\
+  \       :data:`\"raise\"`: Invalid notation will cause a :class:`_RangeError` to be\n        raised.\n\
+  \nReturns the regular expression (:class:`str`)."
+function_source: "def _translate_segment_glob(\n\t\tpattern: str,\n\t\trange_error: Literal['literal',\
+  \ 'raise'],\n\t) -> str:\n\t\t\"\"\"\n\t\tTranslates the glob pattern to a regular expression. This\
+  \ is used in the\n\t\tconstructor to translate a path segment glob pattern to its corresponding\n\t\t\
+  regular expression.\n\n\t\t*pattern* (:class:`str`) is the glob pattern.\n\n\t\t*range_error* (:class:`int`)\
+  \ is how to handle invalid range notation in the\n\t\tpattern:\n\n\t\t-\t:data:`\"literal\"`: Invalid\
+  \ notation will be treated as a literal string.\n\n\t\t-\t:data:`\"raise\"`: Invalid notation will cause\
+  \ a :class:`_RangeError` to be\n\t\t\traised.\n\n\t\tReturns the regular expression (:class:`str`).\n\
+  \t\t\"\"\"\n\t\t# NOTE: This is derived from `fnmatch.translate()` and is similar to the\n\t\t# POSIX\
+  \ function `fnmatch()` with the `FNM_PATHNAME` flag set.\n\n\t\tescape = False\n\t\tregex = ''\n\t\t\
+  i, end = 0, len(pattern)\n\t\twhile i < end:\n\t\t\t# Get next character.\n\t\t\tchar = pattern[i]\n\
+  \t\t\ti += 1\n\n\t\t\tif escape:\n\t\t\t\t# Escape the character.\n\t\t\t\tescape = False\n\t\t\t\t\
+  regex += re.escape(char)\n\n\t\t\telif char == '\\\\':\n\t\t\t\t# Escape character, escape next character.\n\
+  \t\t\t\tescape = True\n\n\t\t\telif char == '*':\n\t\t\t\t# Multi-character wildcard. Match any string\
+  \ (except slashes), including\n\t\t\t\t# an empty string.\n\t\t\t\tregex += '[^/]*'\n\n\t\t\telif char\
+  \ == '?':\n\t\t\t\t# Single-character wildcard. Match any single character (except a\n\t\t\t\t# slash).\n\
+  \t\t\t\tregex += '[^/]'\n\n\t\t\telif char == '[':\n\t\t\t\t# Bracket expression (range notation) wildcard.\
+  \ Except for the beginning\n\t\t\t\t# exclamation mark, the whole bracket expression can be used directly\
+  \ as\n\t\t\t\t# regex, but we have to find where the expression ends.\n\t\t\t\t# - \"[][!]\" matches\
+  \ ']', '[' and '!'.\n\t\t\t\t# - \"[]-]\" matches ']' and '-'.\n\t\t\t\t# - \"[!]a-]\" matches any character\
+  \ except ']', 'a' and '-'.\n\t\t\t\tj = i\n\n\t\t\t\t# Pass bracket expression negation.\n\t\t\t\tif\
+  \ j < end and (pattern[j] == '!' or pattern[j] == '^'):\n\t\t\t\t\tj += 1\n\n\t\t\t\t# Pass first closing\
+  \ bracket if it is at the beginning of the\n\t\t\t\t# expression.\n\t\t\t\tif j < end and pattern[j]\
+  \ == ']':\n\t\t\t\t\tj += 1\n\n\t\t\t\t# Find closing bracket. Stop once we reach the end or find it.\n\
+  \t\t\t\twhile j < end and pattern[j] != ']':\n\t\t\t\t\tj += 1\n\n\t\t\t\tif j < end:\n\t\t\t\t\t# Found\
+  \ end of bracket expression. Increment j to be one past the\n\t\t\t\t\t# closing bracket:\n\t\t\t\t\t\
+  #\n\t\t\t\t\t#  [...]\n\t\t\t\t\t#   ^   ^\n\t\t\t\t\t#   i   j\n\t\t\t\t\t#\n\t\t\t\t\tj += 1\n\t\t\
+  \t\t\texpr = '['\n\n\t\t\t\t\tif pattern[i] == '!':\n\t\t\t\t\t\t# Bracket expression needs to be negated.\n\
+  \t\t\t\t\t\texpr += '^'\n\t\t\t\t\t\ti += 1\n\t\t\t\t\telif pattern[i] == '^':\n\t\t\t\t\t\t# POSIX\
+  \ declares that the regex bracket expression negation \"[^...]\"\n\t\t\t\t\t\t# is undefined in a glob\
+  \ pattern. Python's `fnmatch.translate()`\n\t\t\t\t\t\t# escapes the caret ('^') as a literal. Git supports\
+  \ the using a\n\t\t\t\t\t\t# caret for negation. Maintain consistency with Git because that is\n\t\t\
+  \t\t\t\t# the expected behavior.\n\t\t\t\t\t\texpr += '^'\n\t\t\t\t\t\ti += 1\n\n\t\t\t\t\t# Build regex\
+  \ bracket expression. Escape slashes so they are treated\n\t\t\t\t\t# as literal slashes by regex as\
+  \ defined by POSIX.\n\t\t\t\t\texpr += pattern[i:j].replace('\\\\', '\\\\\\\\')\n\n\t\t\t\t\t# Add regex\
+  \ bracket expression to regex result.\n\t\t\t\t\tregex += expr\n\n\t\t\t\t\t# Set i to one past the\
+  \ closing bracket.\n\t\t\t\t\ti = j\n\n\t\t\t\telse:\n\t\t\t\t\t# Failed to find closing bracket.\n\t\
+  \t\t\t\tif range_error == 'literal':\n\t\t\t\t\t\t# Treat opening bracket as a bracket literal instead\
+  \ of as an\n\t\t\t\t\t\t# expression.\n\t\t\t\t\t\tregex += '\\\\['\n\t\t\t\t\telif range_error == 'raise':\n\
+  \t\t\t\t\t\t# Treat invalid range notation as an error.\n\t\t\t\t\t\traise _RangeError((\n\t\t\t\t\t\
+  \t\tf\"Invalid range notation={pattern[i:j]!r} found in pattern=\"\n\t\t\t\t\t\t\tf\"{pattern!r}.\"\n\
+  \t\t\t\t\t\t))\n\t\t\t\t\telse:\n\t\t\t\t\t\tassert_unreachable(f\"{range_error=!r} is invalid.\")\n\
+  \n\t\t\telse:\n\t\t\t\t# Regular character, escape it for regex.\n\t\t\t\tregex += re.escape(char)\n\
+  \n\t\tif escape:\n\t\t\traise ValueError((\n\t\t\t\tf\"Escape character found with no next character\
+  \ to escape: {pattern!r}\"\n\t\t\t))  # ValueError\n\n\t\treturn regex"
+reference:
+  behavior_summary: Translates a single path-segment glob pattern into an equivalent regular-expression
+    string, handling wildcards, escapes and bracket ranges.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: character-by-character glob-to-regex translation with re.escape and range parsing.'
+  difficulty: hard
+  notes: Builds regex via a stateful scan using re.escape, bracket-expression bookkeeping, and may raise
+    _RangeError/ValueError; the output string is not relatable to the input in the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

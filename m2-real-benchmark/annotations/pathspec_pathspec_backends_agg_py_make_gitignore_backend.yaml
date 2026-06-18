@@ -1,0 +1,54 @@
+benchmark_id: pathspec::pathspec::_backends::agg.py::make_gitignore_backend
+package: pathspec
+stratum: structured
+signature: 'make_gitignore_backend(name: BackendNamesHint, patterns: Sequence[Pattern]) -> _Backend'
+informal_spec: 'Create the specified backend with the supplied patterns for
+
+  :class:`~pathspec.gitignore.GitIgnoreSpec`.
+
+
+  *name* (:class:`str`) is the name of the backend.
+
+
+  *patterns* (:class:`.Iterable` of :class:`.Pattern`) contains the compiled
+
+  patterns.
+
+
+  Returns the backend (:class:`._Backend`).'
+function_source: "def make_gitignore_backend(\n\tname: BackendNamesHint,\n\tpatterns: Sequence[Pattern],\n\
+  ) -> _Backend:\n\t\"\"\"\n\tCreate the specified backend with the supplied patterns for\n\t:class:`~pathspec.gitignore.GitIgnoreSpec`.\n\
+  \n\t*name* (:class:`str`) is the name of the backend.\n\n\t*patterns* (:class:`.Iterable` of :class:`.Pattern`)\
+  \ contains the compiled\n\tpatterns.\n\n\tReturns the backend (:class:`._Backend`).\n\t\"\"\"\n\tif\
+  \ name == 'best':\n\t\tname = _BEST_BACKEND\n\n\tif name == 'hyperscan':\n\t\treturn HyperscanGiBackend(cast(Sequence[RegexPattern],\
+  \ patterns))\n\telif name == 're2':\n\t\treturn Re2GiBackend(cast(Sequence[RegexPattern], patterns))\n\
+  \telif name == 'simple':\n\t\treturn SimpleGiBackend(cast(Sequence[RegexPattern], patterns))\n\telse:\n\
+  \t\traise ValueError(f\"Backend {name=!r} is invalid.\")"
+reference:
+  behavior_summary: Dispatches on the backend name ('best' first resolved to a default) and returns the
+    matching backend instance (Hyperscan/Re2/Simple), raising ValueError for any other name.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: constructs and returns a backend object selected by a string name.'
+  difficulty: medium
+  notes: 'Observable: name outside {best,hyperscan,re2,simple} raises ValueError; the returned object
+    is unrepresentable in the fragment.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

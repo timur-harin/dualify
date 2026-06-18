@@ -1,0 +1,57 @@
+benchmark_id: pathspec::pathspec::pathspec.py::PathSpec::match_file
+package: pathspec
+stratum: boolean
+signature: 'match_file(self: Any, file: StrPath, separators: Optional[Collection[str]]) -> bool'
+informal_spec: 'Matches the file to this path-spec.
+
+
+  *file* (:class:`str` or :class:`os.PathLike`) is the file path to be matched
+
+  against :attr:`self.patterns <.PathSpec.patterns>`.
+
+
+  *separators* (:class:`~collections.abc.Collection` of :class:`str`)
+
+  optionally contains the path separators to normalize. See
+
+  :func:`.normalize_file` for more information.
+
+
+  Returns :data:`True` if *file* matched; otherwise, :data:`False`.'
+function_source: "def match_file(\n\t\tself,\n\t\tfile: StrPath,\n\t\tseparators: Optional[Collection[str]]\
+  \ = None,\n\t) -> bool:\n\t\t\"\"\"\n\t\tMatches the file to this path-spec.\n\n\t\t*file* (:class:`str`\
+  \ or :class:`os.PathLike`) is the file path to be matched\n\t\tagainst :attr:`self.patterns <.PathSpec.patterns>`.\n\
+  \n\t\t*separators* (:class:`~collections.abc.Collection` of :class:`str`)\n\t\toptionally contains the\
+  \ path separators to normalize. See\n\t\t:func:`.normalize_file` for more information.\n\n\t\tReturns\
+  \ :data:`True` if *file* matched; otherwise, :data:`False`.\n\t\t\"\"\"\n\t\tnorm_file = normalize_file(file,\
+  \ separators)\n\t\tinclude, _index = self._backend.match_file(norm_file)\n\t\treturn bool(include)"
+reference:
+  behavior_summary: Normalizes the file path (using the optional separators) and returns True iff the
+    spec's compiled pattern backend reports the file as included.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: the result is determined by self.patterns and a compiled regex/backend matcher
+    applied to a normalized path; the contract is over object state and helper calls, not over the bare
+    arguments.'
+  difficulty: hard
+  notes: 'Out of fragment: calls normalize_file() and self._backend.match_file() (regex/backend matching).
+    Behaviour depends entirely on instance state (self._backend, self.patterns).'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

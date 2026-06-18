@@ -1,0 +1,62 @@
+benchmark_id: packaging::src::packaging::specifiers.py::_operator_cost
+package: packaging
+stratum: numeric
+signature: '_operator_cost(op_entry: tuple[CallableOperator, str, str]) -> int'
+informal_spec: 'Sort key for Cost Based Ordering of specifier operators in _filter_versions.
+
+
+  Operators run sequentially on a shrinking candidate set, so operators that
+
+  reject the most versions should run first to minimize work for later ones.
+
+
+  Tier 0: Exact equality (==, ===), likely to narrow candidates to one version
+
+  Tier 1: Range checks (>=, <=, >, <), cheap and usually reject a large portion
+
+  Tier 2: Wildcard equality (==.*) and compatible release (~=), more expensive
+
+  Tier 3: Exact !=, cheap but rarely rejects
+
+  Tier 4: Wildcard !=.*, expensive and rarely rejects'
+function_source: "def _operator_cost(op_entry: tuple[CallableOperator, str, str]) -> int:\n    \"\"\"\
+  Sort key for Cost Based Ordering of specifier operators in _filter_versions.\n\n    Operators run sequentially\
+  \ on a shrinking candidate set, so operators that\n    reject the most versions should run first to\
+  \ minimize work for later ones.\n\n    Tier 0: Exact equality (==, ===), likely to narrow candidates\
+  \ to one version\n    Tier 1: Range checks (>=, <=, >, <), cheap and usually reject a large portion\n\
+  \    Tier 2: Wildcard equality (==.*) and compatible release (~=), more expensive\n    Tier 3: Exact\
+  \ !=, cheap but rarely rejects\n    Tier 4: Wildcard !=.*, expensive and rarely rejects\n    \"\"\"\n\
+  \    _, ver, op = op_entry\n    if op == \"==\":\n        return 0 if not ver.endswith(\".*\") else\
+  \ 2\n    if op in (\">=\", \"<=\", \">\", \"<\"):\n        return 1\n    if op == \"~=\":\n        return\
+  \ 2\n    if op == \"!=\":\n        return 3 if not ver.endswith(\".*\") else 4\n    if op == \"===\"\
+  :\n        return 0\n\n    raise ValueError(f\"Unknown operator: {op!r}\")"
+reference:
+  behavior_summary: Maps an (operator, version-string) entry to an integer cost tier 0..4 based on the
+    operator and whether the version ends in '.*', raising on unknown operators.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: ret depends on the operator string and on ver.endswith(''.*'') (a helper call),
+    over a tuple-typed argument whose components are not directly addressable arg names in the fragment.'
+  difficulty: medium
+  notes: Input is a 3-tuple destructured into _, ver, op; the fragment has no tuple-indexing and the result
+    branches on string equality of op plus str.endswith. Returns 0..4 for known ops, raises ValueError
+    otherwise. Not expressible.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

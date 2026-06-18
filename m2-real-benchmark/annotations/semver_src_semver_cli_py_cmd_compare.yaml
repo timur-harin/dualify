@@ -1,0 +1,42 @@
+benchmark_id: semver::src::semver::cli.py::cmd_compare
+package: semver
+stratum: string
+signature: 'cmd_compare(args: argparse.Namespace) -> str'
+informal_spec: 'Subcommand: Compare two versions.
+
+
+  Synopsis: compare <VERSION1> <VERSION2>
+
+
+  :param args: The parsed arguments'
+function_source: "def cmd_compare(args: argparse.Namespace) -> str:\n    \"\"\"\n    Subcommand: Compare\
+  \ two versions.\n\n    Synopsis: compare <VERSION1> <VERSION2>\n\n    :param args: The parsed arguments\n\
+  \    \"\"\"\n    ver1 = Version.parse(args.version1)\n    return str(ver1.compare(args.version2))"
+reference:
+  behavior_summary: Parses version1, compares it against version2, and returns the comparison result (-1,
+    0, or 1) as a string.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: CLI handler using Version.parse and Version.compare on argparse attributes.'
+  difficulty: medium
+  notes: Input is an argparse.Namespace; result is str(ver1.compare(...)) over parsed semantic versions,
+    requiring custom comparison logic absent from the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

@@ -1,0 +1,44 @@
+benchmark_id: pathspec::pathspec::util.py::_is_iterable
+package: pathspec
+stratum: boolean
+signature: '_is_iterable(value: Any) -> bool'
+informal_spec: 'Check whether the value is an iterable (excludes strings).
+
+
+  *value* is the value to check,
+
+
+  Returns whether *value* is an iterable (:class:`bool`).'
+function_source: "def _is_iterable(value: Any) -> bool:\n\t\"\"\"\n\tCheck whether the value is an iterable\
+  \ (excludes strings).\n\n\t*value* is the value to check,\n\n\tReturns whether *value* is an iterable\
+  \ (:class:`bool`).\n\t\"\"\"\n\treturn isinstance(value, Iterable) and not isinstance(value, (str, bytes))"
+reference:
+  behavior_summary: Returns True iff value is an instance of collections.abc.Iterable but is not a str
+    or bytes instance.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: the predicate is purely isinstance type introspection over an Any value; there
+    is no numeric/string/sequence property over the argument expressible in the fragment.'
+  difficulty: easy
+  notes: 'Out of fragment: relies on isinstance against the Iterable ABC and str/bytes. value has type
+    Any, so there is no usable typed variable to constrain; behaviour is a Python type test the fragment
+    cannot represent.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

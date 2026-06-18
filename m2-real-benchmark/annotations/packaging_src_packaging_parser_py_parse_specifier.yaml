@@ -1,0 +1,39 @@
+benchmark_id: packaging::src::packaging::_parser.py::_parse_specifier
+package: packaging
+stratum: string
+signature: '_parse_specifier(tokenizer: Tokenizer) -> str'
+informal_spec: "specifier = LEFT_PARENTHESIS WS? version_many WS? RIGHT_PARENTHESIS\n          | WS? version_many\
+  \ WS?"
+function_source: "def _parse_specifier(tokenizer: Tokenizer) -> str:\n    \"\"\"\n    specifier = LEFT_PARENTHESIS\
+  \ WS? version_many WS? RIGHT_PARENTHESIS\n              | WS? version_many WS?\n    \"\"\"\n    with\
+  \ tokenizer.enclosing_tokens(\n        \"LEFT_PARENTHESIS\",\n        \"RIGHT_PARENTHESIS\",\n     \
+  \   around=\"version specifier\",\n    ):\n        tokenizer.consume(\"WS\")\n        parsed_specifiers\
+  \ = _parse_version_many(tokenizer)\n        tokenizer.consume(\"WS\")\n\n    return parsed_specifiers"
+reference:
+  behavior_summary: Consumes optional whitespace and a version_many sequence from the tokenizer (optionally
+    parenthesised) and returns the parsed specifier text.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: stateful recursive-descent parser over a mutable Tokenizer.'
+  difficulty: hard
+  notes: Argument is a Tokenizer object with side-effecting consume/read; result depends on token stream
+    and a helper call. No string variables to relate; out of fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

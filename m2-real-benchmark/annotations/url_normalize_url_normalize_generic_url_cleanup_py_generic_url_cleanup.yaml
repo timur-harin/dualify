@@ -1,0 +1,40 @@
+benchmark_id: url_normalize::url_normalize::generic_url_cleanup.py::generic_url_cleanup
+package: url_normalize
+stratum: string
+signature: 'generic_url_cleanup(url: str) -> str'
+informal_spec: "Cleanup the URL from unnecessary data and convert to final form.\n\nConverts shebang urls\
+  \ to final form, removed unnecessary data from the url.\n\nParams:\n    url : string : the URL\n\nReturns:\n\
+  \    string : update url"
+function_source: "def generic_url_cleanup(url: str) -> str:\n    \"\"\"Cleanup the URL from unnecessary\
+  \ data and convert to final form.\n\n    Converts shebang urls to final form, removed unnecessary data\
+  \ from the url.\n\n    Params:\n        url : string : the URL\n\n    Returns:\n        string : update\
+  \ url\n\n    \"\"\"\n    url = url.replace(\"#!\", \"?_escaped_fragment_=\")\n    return url.rstrip(\"\
+  &? \")"
+reference:
+  behavior_summary: Replaces '#!' with '?_escaped_fragment_=' in the url and strips trailing '&', '?',
+    and space characters.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: str.replace substring rewrite plus rstrip of a character set.'
+  difficulty: medium
+  notes: Both str.replace and str.rstrip operations require substring rewriting and trailing-set stripping
+    that have no fragment counterpart; no faithful in-fragment post.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

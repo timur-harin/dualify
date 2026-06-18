@@ -1,0 +1,37 @@
+benchmark_id: packaging::src::packaging::pylock.py::is_valid_pylock_path
+package: packaging
+stratum: boolean
+signature: 'is_valid_pylock_path(path: Path) -> bool'
+informal_spec: Check if the given path is a valid pylock file path.
+function_source: "def is_valid_pylock_path(path: Path) -> bool:\n    \"\"\"Check if the given path is\
+  \ a valid pylock file path.\"\"\"\n    return path.name == \"pylock.toml\" or bool(_PYLOCK_FILE_NAME_RE.match(path.name))"
+reference:
+  behavior_summary: Returns True iff the path's base name is exactly pylock.toml or matches the _PYLOCK_FILE_NAME_RE
+    regular expression (the pylock.<name>.toml naming pattern).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: In-scope only for the literal-name disjunct (path basename == pylock.toml); out-of-scope is
+    the regex alternative _PYLOCK_FILE_NAME_RE.match, which decides the rest of the contract.
+  difficulty: easy
+  notes: 'Out of fragment: the second disjunct is a regex match (_PYLOCK_FILE_NAME_RE). Also path.name
+    is an attribute derived from a Path object, not a plain string argument. The exact-string clause alone
+    is in-fragment but does not capture the full predicate.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

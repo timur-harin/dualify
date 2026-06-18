@@ -1,0 +1,48 @@
+benchmark_id: url_normalize::url_normalize::normalize_fragment.py::normalize_fragment
+package: url_normalize
+stratum: string
+signature: 'normalize_fragment(fragment: str) -> str'
+informal_spec: "Normalize fragment part of the url.\n\nParams:\n    fragment : string : url fragment,\
+  \ e.g., 'fragment'\n\nReturns:\n    string : normalized fragment data.\n\nNotes:\n    According to RFC\
+  \ 3986, the following characters are allowed in a fragment:\n    fragment    = *( pchar / \"/\" / \"\
+  ?\" )\n    pchar       = unreserved / pct-encoded / sub-delims / \":\" / \"@\"\n    unreserved  = ALPHA\
+  \ / DIGIT / \"-\" / \".\" / \"_\" / \"~\"\n    sub-delims  = \"!\" / \"$\" / \"&\" / \"'\" / \"(\" /\
+  \ \")\" / \"*\" / \"+\" / \",\" / \";\" / \"=\"\n    We specifically allow \"~\" and \"=\" as safe characters\
+  \ during normalization.\n    Other sub-delimiters could potentially be added to the `safe` list if needed."
+function_source: "def normalize_fragment(fragment: str) -> str:\n    \"\"\"Normalize fragment part of\
+  \ the url.\n\n    Params:\n        fragment : string : url fragment, e.g., 'fragment'\n\n    Returns:\n\
+  \        string : normalized fragment data.\n\n    Notes:\n        According to RFC 3986, the following\
+  \ characters are allowed in a fragment:\n        fragment    = *( pchar / \"/\" / \"?\" )\n        pchar\
+  \       = unreserved / pct-encoded / sub-delims / \":\" / \"@\"\n        unreserved  = ALPHA / DIGIT\
+  \ / \"-\" / \".\" / \"_\" / \"~\"\n        sub-delims  = \"!\" / \"$\" / \"&\" / \"'\" / \"(\" / \"\
+  )\" / \"*\" / \"+\" / \",\" / \";\" / \"=\"\n        We specifically allow \"~\" and \"=\" as safe characters\
+  \ during normalization.\n        Other sub-delimiters could potentially be added to the `safe` list\
+  \ if needed.\n\n    \"\"\"\n    return quote(unquote(fragment), safe=\"~=\")"
+reference:
+  behavior_summary: Returns the fragment percent-decoded and then re-percent-encoded, treating '~' and
+    '=' as safe characters.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: percent-encoding round-trip via quote/unquote.'
+  difficulty: medium
+  notes: Output is quote(unquote(fragment), safe='~='); percent-encoding transformation has no representation
+    in the fragment, so no faithful in-fragment post.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

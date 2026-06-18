@@ -1,0 +1,53 @@
+benchmark_id: semver::src::semver::version.py::Version::compare
+package: semver
+stratum: numeric
+signature: 'compare(self: Any, other: Comparable) -> int'
+informal_spec: "Compare self with other.\n\n:param other: the second version\n:return: The return value\
+  \ is negative if ver1 < ver2,\n     zero if ver1 == ver2 and strictly positive if ver1 > ver2\n\n>>>\
+  \ Version.parse(\"1.0.0\").compare(\"2.0.0\")\n-1\n>>> Version.parse(\"2.0.0\").compare(\"1.0.0\")\n\
+  1\n>>> Version.parse(\"2.0.0\").compare(\"2.0.0\")\n0"
+function_source: "def compare(self, other: Comparable) -> int:\n        \"\"\"\n        Compare self with\
+  \ other.\n\n        :param other: the second version\n        :return: The return value is negative\
+  \ if ver1 < ver2,\n             zero if ver1 == ver2 and strictly positive if ver1 > ver2\n\n      \
+  \  >>> Version.parse(\"1.0.0\").compare(\"2.0.0\")\n        -1\n        >>> Version.parse(\"2.0.0\"\
+  ).compare(\"1.0.0\")\n        1\n        >>> Version.parse(\"2.0.0\").compare(\"2.0.0\")\n        0\n\
+  \        \"\"\"\n        cls = type(self)\n        if isinstance(other, String.__args__):  # type: ignore\n\
+  \            other = cls.parse(other)\n        elif isinstance(other, dict):\n            other = cls(**other)\n\
+  \        elif isinstance(other, (tuple, list)):\n            other = cls(*other)\n        elif not isinstance(other,\
+  \ cls):\n            raise TypeError(\n                f\"Expected str, bytes, dict, tuple, list, or\
+  \ {cls.__name__} instance, \"\n                f\"but got {type(other)}\"\n            )\n\n       \
+  \ v1 = self.to_tuple()[:3]\n        v2 = other.to_tuple()[:3]\n        x = _cmp(v1, v2)\n        if\
+  \ x:\n            return x\n\n        rc1, rc2 = self.prerelease, other.prerelease\n        rccmp =\
+  \ self._nat_cmp(rc1, rc2)\n\n        if not rccmp:\n            return 0\n        if not rc1:\n    \
+  \        return 1\n        elif not rc2:\n            return -1\n\n        return rccmp"
+reference:
+  behavior_summary: Compares this version with other (coercing str/dict/tuple/list to a Version) and returns
+    a negative/zero/positive int per semver precedence, including prerelease ordering, raising TypeError
+    on unsupported types.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: ret''s sign encodes semver precedence between self and a coerced other, requiring
+    tuple comparison and natural prerelease comparison helpers over object/class state.'
+  difficulty: hard
+  notes: Depends on object state (self._major/minor/patch/prerelease) and on coercing/parsing other; uses
+    _cmp and _nat_cmp helpers. Sign-trichotomy on ret is clean conceptually but the underlying comparison
+    is over structured versions, not arg-name arithmetic. Out of fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

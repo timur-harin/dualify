@@ -1,0 +1,44 @@
+benchmark_id: packaging::src::packaging::_parser.py::_parse_version_many
+package: packaging
+stratum: string
+signature: '_parse_version_many(tokenizer: Tokenizer) -> str'
+informal_spec: version_many = (SPECIFIER (WS? COMMA WS? SPECIFIER)*)?
+function_source: "def _parse_version_many(tokenizer: Tokenizer) -> str:\n    \"\"\"\n    version_many\
+  \ = (SPECIFIER (WS? COMMA WS? SPECIFIER)*)?\n    \"\"\"\n    parsed_specifiers = \"\"\n    while tokenizer.check(\"\
+  SPECIFIER\"):\n        span_start = tokenizer.position\n        parsed_specifiers += tokenizer.read().text\n\
+  \        if tokenizer.check(\"VERSION_PREFIX_TRAIL\", peek=True):\n            tokenizer.raise_syntax_error(\n\
+  \                \".* suffix can only be used with `==` or `!=` operators\",\n                span_start=span_start,\n\
+  \                span_end=tokenizer.position + 1,\n            )\n        if tokenizer.check(\"VERSION_LOCAL_LABEL_TRAIL\"\
+  , peek=True):\n            tokenizer.raise_syntax_error(\n                \"Local version label can\
+  \ only be used with `==` or `!=` operators\",\n                span_start=span_start,\n            \
+  \    span_end=tokenizer.position,\n            )\n        tokenizer.consume(\"WS\")\n        if not\
+  \ tokenizer.check(\"COMMA\"):\n            break\n        parsed_specifiers += tokenizer.read().text\n\
+  \        tokenizer.consume(\"WS\")\n\n    return parsed_specifiers"
+reference:
+  behavior_summary: Reads zero or more comma-separated SPECIFIER tokens from the tokenizer, concatenating
+    their text, and returns the accumulated specifier string.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: stateful recursive-descent loop over a mutable Tokenizer.'
+  difficulty: hard
+  notes: Operates on a Tokenizer object with side-effecting check/read/consume and may raise syntax errors;
+    no string signature variable to relate to ret.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

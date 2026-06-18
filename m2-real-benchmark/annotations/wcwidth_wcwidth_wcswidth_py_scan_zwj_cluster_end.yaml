@@ -1,0 +1,53 @@
+benchmark_id: wcwidth::wcwidth::_wcswidth.py::_scan_zwj_cluster_end
+package: wcwidth
+stratum: numeric
+signature: '_scan_zwj_cluster_end(text: str, start: int, end: int) -> int'
+informal_spec: 'Scan forward from *start* (base character) to end of a ZWJ grapheme cluster.
+
+
+  Follows the UAX #29 GB11 pattern (ExtPict Extend* ZWJ x ExtPict) chained repeatedly until no
+
+  more ZWJ joins are found.'
+function_source: "def _scan_zwj_cluster_end(text: str, start: int, end: int) -> int:\n    \"\"\"\n   \
+  \ Scan forward from *start* (base character) to end of a ZWJ grapheme cluster.\n\n    Follows the UAX\
+  \ #29 GB11 pattern (ExtPict Extend* ZWJ x ExtPict) chained repeatedly until no\n    more ZWJ joins are\
+  \ found.\n    \"\"\"\n    idx = start + 1\n    # Skip Extend characters (Fitzpatrick modifiers, etc.)\
+  \ before first ZWJ\n    while idx < end and bisearch(ord(text[idx]), GRAPHEME_EXTEND):\n        idx\
+  \ += 1\n    # Follow ZWJ chains\n    while idx < end:\n        if ord(text[idx]) != 0x200D:\n      \
+  \      break\n        idx += 1\n        # GB11: \\p{ExtPict} Extend* ZWJ × \\p{ExtPict}\n        # Extend\
+  \ modifiers (VS16, Fitzpatrick skin tones, etc.) attach to\n        # the ExtPict *before* the ZWJ,\
+  \ not after it.  After ZWJ the next\n        # codepoint is always an ExtPict directly, no Extend skip\
+  \ needed.\n        if idx < end and ord(text[idx]) in _EMOJI_ZWJ_SET:\n            idx += 1\n      \
+  \      # Skip trailing Extend (VS16, etc.) after ExtPict before next ZWJ\n            while idx < end\
+  \ and bisearch(ord(text[idx]), GRAPHEME_EXTEND):\n                idx += 1\n            continue\n \
+  \       break\n    return idx"
+reference:
+  behavior_summary: Scans forward from start over a ZWJ-joined emoji grapheme cluster (Extend marks and
+    ZWJ-ExtPict chains) and returns the index just past the cluster.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: ret is bounded by start+1 <= ret <= end, but its exact value depends on Unicode
+    property table lookups (bisearch over GRAPHEME_EXTEND, ZWJ codepoint, _EMOJI_ZWJ_SET) inside a loop.'
+  difficulty: hard
+  notes: 'Requires per-codepoint table membership checks (bisearch, set membership) and loop scanning
+    of Unicode grapheme-cluster structure (UAX #29 GB11). Fundamentally a helper-call/quantified property;
+    only loose bounds start+1 <= ret <= end are expressible, not faithful.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

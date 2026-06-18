@@ -1,0 +1,51 @@
+benchmark_id: packaging::src::packaging::_manylinux.py::_parse_glibc_version
+package: packaging
+stratum: structured
+signature: '_parse_glibc_version(version_str: str) -> _GLibCVersion'
+informal_spec: 'Parse glibc version.
+
+
+  We use a regexp instead of str.split because we want to discard any
+
+  random junk that might come after the minor version -- this might happen
+
+  in patched/forked versions of glibc (e.g. Linaro''s version of glibc
+
+  uses version strings like "2.20-2014.11"). See gh-3588.'
+function_source: "def _parse_glibc_version(version_str: str) -> _GLibCVersion:\n    \"\"\"Parse glibc\
+  \ version.\n\n    We use a regexp instead of str.split because we want to discard any\n    random junk\
+  \ that might come after the minor version -- this might happen\n    in patched/forked versions of glibc\
+  \ (e.g. Linaro's version of glibc\n    uses version strings like \"2.20-2014.11\"). See gh-3588.\n \
+  \   \"\"\"\n    m = re.match(r\"(?P<major>[0-9]+)\\.(?P<minor>[0-9]+)\", version_str)\n    if not m:\n\
+  \        warnings.warn(\n            f\"Expected glibc version with 2 components major.minor, got: {version_str}\"\
+  ,\n            RuntimeWarning,\n            stacklevel=2,\n        )\n        return _GLibCVersion(-1,\
+  \ -1)\n    return _GLibCVersion(int(m.group(\"major\")), int(m.group(\"minor\")))"
+reference:
+  behavior_summary: Regex-parses a 'major.minor' prefix from version_str, returning a _GLibCVersion(major,minor);
+    on no match it warns and returns _GLibCVersion(-1,-1).
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: relies on re.match parsing and constructs a namedtuple result, neither expressible
+    in the fragment.'
+  difficulty: medium
+  notes: 'Observable: failure to match major.minor yields the sentinel (-1,-1); regex semantics and object
+    construction are out of fragment.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

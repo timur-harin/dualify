@@ -1,0 +1,49 @@
+benchmark_id: semver::src::semver::_deprecated.py::compare
+package: semver
+stratum: numeric
+signature: 'compare(ver1: str, ver2: str) -> int'
+informal_spec: "Compare two versions strings.\n\n.. deprecated:: 3.0.0\n   The situation of this function\
+  \ is unclear and it might\n   disappear in the future.\n   If possible, use :meth:`semver.version.Version.compare`.\n\
+  \   See :gh:`258` for details.\n\n:param ver1: first version string\n:param ver2: second version string\n\
+  :return: The return value is negative if ver1 < ver2,\n         zero if ver1 == ver2 and strictly positive\
+  \ if ver1 > ver2\n\n>>> semver.compare(\"1.0.0\", \"2.0.0\")\n-1\n>>> semver.compare(\"2.0.0\", \"1.0.0\"\
+  )\n1\n>>> semver.compare(\"2.0.0\", \"2.0.0\")\n0"
+function_source: "def compare(ver1: str, ver2: str) -> int:\n    \"\"\"\n    Compare two versions strings.\n\
+  \n    .. deprecated:: 3.0.0\n       The situation of this function is unclear and it might\n       disappear\
+  \ in the future.\n       If possible, use :meth:`semver.version.Version.compare`.\n       See :gh:`258`\
+  \ for details.\n\n    :param ver1: first version string\n    :param ver2: second version string\n  \
+  \  :return: The return value is negative if ver1 < ver2,\n             zero if ver1 == ver2 and strictly\
+  \ positive if ver1 > ver2\n\n    >>> semver.compare(\"1.0.0\", \"2.0.0\")\n    -1\n    >>> semver.compare(\"\
+  2.0.0\", \"1.0.0\")\n    1\n    >>> semver.compare(\"2.0.0\", \"2.0.0\")\n    0\n    \"\"\"\n    return\
+  \ Version.parse(ver1).compare(ver2)"
+reference:
+  behavior_summary: Parses both version strings and returns a negative/zero/positive int according to
+    semver ordering of ver1 versus ver2.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: the sign of ret encodes semver comparison, but computing it requires parsing
+    version strings (Version.parse) and full semver precedence (including prerelease natural ordering),
+    which are helper calls outside the fragment.'
+  difficulty: hard
+  notes: Delegates to Version.parse(ver1).compare(ver2). The sign-trichotomy on ret is conceptually clean
+    but the comparison itself is over parsed structured versions of opaque strings; no in-fragment postcondition
+    can capture string-to-semver ordering.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

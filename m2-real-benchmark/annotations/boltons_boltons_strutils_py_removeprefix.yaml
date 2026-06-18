@@ -1,0 +1,42 @@
+benchmark_id: boltons::boltons::strutils.py::removeprefix
+package: boltons
+stratum: string
+signature: 'removeprefix(text: str, prefix: str) -> str'
+informal_spec: "Remove `prefix` from start of `text` if present.\n\nBackport of `str.removeprefix` for\
+  \ Python versions less than 3.9.\n\nArgs:\n    text: A string to remove the prefix from.\n    prefix:\
+  \ The string to remove from the beginning of `text`."
+function_source: "def removeprefix(text: str, prefix: str) -> str:\n    r\"\"\"\n    Remove `prefix` from\
+  \ start of `text` if present.\n\n    Backport of `str.removeprefix` for Python versions less than 3.9.\n\
+  \n    Args:\n        text: A string to remove the prefix from.\n        prefix: The string to remove\
+  \ from the beginning of `text`.\n    \"\"\"\n    if text.startswith(prefix):\n        return text[len(prefix):]\n\
+  \    return text"
+reference:
+  behavior_summary: Returns text with prefix removed from its start if text starts with prefix, otherwise
+    returns text unchanged.
+  fragment_fit: near
+  reference_pre: []
+  reference_post: And(Implies(PrefixOf(prefix, text), Concat(prefix, ret) == text), Implies(Not(PrefixOf(prefix,
+    text)), ret == text))
+  profile: 'in-scope: string prefix-stripping with observable PrefixOf/Concat boundary.'
+  difficulty: easy
+  notes: '''Stripped text'' is not directly nameable, so the prefix branch is approximated by Concat(prefix,
+    ret) == text, which also pins Length(ret) == Length(text) - Length(prefix); faithful since prefix
+    removal is a true prefix split.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

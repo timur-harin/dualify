@@ -1,0 +1,51 @@
+benchmark_id: url_normalize::url_normalize::param_allowlist.py::get_allowed_params
+package: url_normalize
+stratum: structured
+signature: 'get_allowed_params(host: str | None, allowlist: dict | list | None) -> set[str]'
+informal_spec: "Get allowed parameters for a given domain.\n\nParams:\n    host: Domain name to check\
+  \ (e.g. 'google.com')\n    allowlist: Optional override for default allowlist\n        If provided as\
+  \ a list, it will be used as is.\n        If provided as a dictionary, it should map domain names to\n\
+  \        lists of allowed parameters.\n        If None, the default allowlist will be used.\n\nReturns:\n\
+  \    Set of allowed parameter names for the domain"
+function_source: "def get_allowed_params(\n    host: str | None = None,\n    allowlist: dict | list |\
+  \ None = None,\n) -> set[str]:\n    \"\"\"Get allowed parameters for a given domain.\n\n    Params:\n\
+  \        host: Domain name to check (e.g. 'google.com')\n        allowlist: Optional override for default\
+  \ allowlist\n            If provided as a list, it will be used as is.\n            If provided as a\
+  \ dictionary, it should map domain names to\n            lists of allowed parameters.\n            If\
+  \ None, the default allowlist will be used.\n\n    Returns:\n        Set of allowed parameter names\
+  \ for the domain\n\n    \"\"\"\n    if isinstance(allowlist, list):\n        return set(allowlist)\n\
+  \n    if not host:\n        return set()\n\n    # Normalize host by removing www and port\n    domain\
+  \ = host.lower()\n    domain = domain.removeprefix(\"www.\")\n    domain = domain.split(\":\")[0]\n\n\
+  \    # Use default allowlist if none provided\n    if allowlist is None:\n        allowlist = DEFAULT_ALLOWLIST\n\
+  \n    # Return allowed parameters for the domain, or an empty set if not found\n    return set(allowlist.get(domain,\
+  \ []))"
+reference:
+  behavior_summary: 'Returns a set of allowed query-param names: the allowlist itself if it is a list,
+    an empty set if host is falsy, else the default/given dict''s entry for the normalised (lowercased,
+    www-stripped, port-stripped) domain (empty if absent).'
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: builds a set, branches on runtime types, and looks up a dict by a string-normalised
+    domain key.'
+  difficulty: medium
+  notes: 'Observable: list allowlist passes through as a set; empty/None host yields empty set; result
+    is a set, out of fragment.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

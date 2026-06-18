@@ -1,0 +1,43 @@
+benchmark_id: semver::src::semver::version.py::Version::is_valid
+package: semver
+stratum: boolean
+signature: 'is_valid(cls: Any, version: str) -> bool'
+informal_spec: "Check if the string is a valid semver version.\n\n.. versionadded:: 2.9.1\n\n.. versionchanged::\
+  \ 3.0.0\n   Renamed from :meth:`~semver.version.Version.isvalid`\n\n:param version: the version string\
+  \ to check\n:return: True if the version string is a valid semver version, False\n         otherwise."
+function_source: "def is_valid(cls, version: str) -> bool:\n        \"\"\"\n        Check if the string\
+  \ is a valid semver version.\n\n        .. versionadded:: 2.9.1\n\n        .. versionchanged:: 3.0.0\n\
+  \           Renamed from :meth:`~semver.version.Version.isvalid`\n\n        :param version: the version\
+  \ string to check\n        :return: True if the version string is a valid semver version, False\n  \
+  \               otherwise.\n        \"\"\"\n        try:\n            cls.parse(version)\n         \
+  \   return True\n        except ValueError:\n            return False"
+reference:
+  behavior_summary: Returns True iff the version string parses as a valid semver version (i.e. cls.parse(version)
+    does not raise ValueError), and False otherwise.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: validity is defined by whether cls.parse(version) succeeds, which is a full
+    semver regex/grammar parse; this cannot be expressed as a predicate over the string in the fragment.'
+  difficulty: easy
+  notes: 'Out of fragment: behaviour is exactly ''parse succeeds vs raises''. The underlying validity
+    is a semver regex match, which the fragment forbids. Easy to describe informally, impossible to formalise
+    faithfully here.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

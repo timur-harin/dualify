@@ -1,0 +1,58 @@
+benchmark_id: tomli::src::tomli::_parser.py::loads
+package: tomli
+stratum: structured
+signature: 'loads(__s: str) -> dict[str, Any]'
+informal_spec: Parse TOML from a string.
+function_source: "def loads(__s: str, *, parse_float: ParseFloat = float) -> dict[str, Any]:\n    \"\"\
+  \"Parse TOML from a string.\"\"\"\n\n    # The spec allows converting \"\\r\\n\" to \"\\n\", even in\
+  \ string\n    # literals. Let's do so to simplify parsing.\n    try:\n        src = __s.replace(\"\\\
+  r\\n\", \"\\n\")\n    except (AttributeError, TypeError):\n        raise TypeError(\n            f\"\
+  Expected str object, not '{type(__s).__qualname__}'\"\n        ) from None\n    pos = 0\n    out = Output()\n\
+  \    header: Key = ()\n    parse_float = make_safe_parse_float(parse_float)\n\n    # Parse one statement\
+  \ at a time\n    # (typically means one line in TOML source)\n    while True:\n        # 1. Skip line\
+  \ leading whitespace\n        pos = skip_chars(src, pos, TOML_WS)\n\n        # 2. Parse rules. Expect\
+  \ one of the following:\n        #    - end of file\n        #    - end of line\n        #    - comment\n\
+  \        #    - key/value pair\n        #    - append dict to list (and move to its namespace)\n   \
+  \     #    - create dict (and move to its namespace)\n        # Skip trailing whitespace when applicable.\n\
+  \        try:\n            char = src[pos]\n        except IndexError:\n            break\n        if\
+  \ char == \"\\n\":\n            pos += 1\n            continue\n        if char in KEY_INITIAL_CHARS:\n\
+  \            pos = key_value_rule(src, pos, out, header, parse_float)\n            pos = skip_chars(src,\
+  \ pos, TOML_WS)\n        elif char == \"[\":\n            try:\n                second_char: str | None\
+  \ = src[pos + 1]\n            except IndexError:\n                second_char = None\n            out.flags.finalize_pending()\n\
+  \            if second_char == \"[\":\n                pos, header = create_list_rule(src, pos, out)\n\
+  \            else:\n                pos, header = create_dict_rule(src, pos, out)\n            pos =\
+  \ skip_chars(src, pos, TOML_WS)\n        elif char != \"#\":\n            raise TOMLDecodeError(\"Invalid\
+  \ statement\", src, pos)\n\n        # 3. Skip comment\n        pos = skip_comment(src, pos)\n\n    \
+  \    # 4. Expect end of line or end of file\n        try:\n            char = src[pos]\n        except\
+  \ IndexError:\n            break\n        if char != \"\\n\":\n            raise TOMLDecodeError(\n\
+  \                \"Expected newline or end of document after a statement\", src, pos\n            )\n\
+  \        pos += 1\n\n    return out.data.dict"
+reference:
+  behavior_summary: Parses a TOML source string statement-by-statement (after normalising CRLF to LF)
+    and returns the resulting document as a nested dict, raising TOMLDecodeError on malformed input and
+    TypeError on a non-str argument.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: a full hand-written TOML parser returning a nested dict.'
+  difficulty: hard
+  notes: Stateful character scan with many helper rules; the parsed dict result is unrepresentable in
+    the fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

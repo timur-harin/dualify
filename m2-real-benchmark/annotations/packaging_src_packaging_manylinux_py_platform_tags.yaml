@@ -1,0 +1,59 @@
+benchmark_id: packaging::src::packaging::_manylinux.py::platform_tags
+package: packaging
+stratum: structured
+signature: 'platform_tags(archs: Sequence[str]) -> Iterator[str]'
+informal_spec: "Generate manylinux tags compatible to the current platform.\n\n:param archs: Sequence\
+  \ of compatible architectures.\n    The first one shall be the closest to the actual architecture and\
+  \ be the part of\n    platform tag after the ``linux_`` prefix, e.g. ``x86_64``.\n    The ``linux_``\
+  \ prefix is assumed as a prerequisite for the current platform to\n    be manylinux-compatible.\n\n\
+  :returns: An iterator of compatible manylinux tags."
+function_source: "def platform_tags(archs: Sequence[str]) -> Iterator[str]:\n    \"\"\"Generate manylinux\
+  \ tags compatible to the current platform.\n\n    :param archs: Sequence of compatible architectures.\n\
+  \        The first one shall be the closest to the actual architecture and be the part of\n        platform\
+  \ tag after the ``linux_`` prefix, e.g. ``x86_64``.\n        The ``linux_`` prefix is assumed as a prerequisite\
+  \ for the current platform to\n        be manylinux-compatible.\n\n    :returns: An iterator of compatible\
+  \ manylinux tags.\n    \"\"\"\n    if not _have_compatible_abi(sys.executable, archs):\n        return\n\
+  \    # Oldest glibc to be supported regardless of architecture is (2, 17).\n    too_old_glibc2 = _GLibCVersion(2,\
+  \ 16)\n    if set(archs) & {\"x86_64\", \"i686\"}:\n        # On x86/i686 also oldest glibc to be supported\
+  \ is (2, 5).\n        too_old_glibc2 = _GLibCVersion(2, 4)\n    current_glibc = _GLibCVersion(*_get_glibc_version())\n\
+  \    glibc_max_list = [current_glibc]\n    # We can assume compatibility across glibc major versions.\n\
+  \    # https://sourceware.org/bugzilla/show_bug.cgi?id=24636\n    #\n    # Build a list of maximum glibc\
+  \ versions so that we can\n    # output the canonical list of all glibc from current_glibc\n    # down\
+  \ to too_old_glibc2, including all intermediary versions.\n    for glibc_major in range(current_glibc.major\
+  \ - 1, 1, -1):\n        glibc_minor = _LAST_GLIBC_MINOR[glibc_major]\n        glibc_max_list.append(_GLibCVersion(glibc_major,\
+  \ glibc_minor))\n    for arch in archs:\n        for glibc_max in glibc_max_list:\n            if glibc_max.major\
+  \ == too_old_glibc2.major:\n                min_minor = too_old_glibc2.minor\n            else:\n  \
+  \              # For other glibc major versions oldest supported is (x, 0).\n                min_minor\
+  \ = -1\n            for glibc_minor in range(glibc_max.minor, min_minor, -1):\n                glibc_version\
+  \ = _GLibCVersion(glibc_max.major, glibc_minor)\n                if _is_compatible(arch, glibc_version):\n\
+  \                    yield \"manylinux_{}_{}_{}\".format(*glibc_version, arch)\n\n                 \
+  \   # Handle the legacy manylinux1, manylinux2010, manylinux2014 tags.\n                    if legacy_tag\
+  \ := _LEGACY_MANYLINUX_MAP.get(glibc_version):\n                        yield f\"{legacy_tag}_{arch}\""
+reference:
+  behavior_summary: A generator yielding manylinux platform tag strings compatible with the running interpreter
+    for the given archs, descending through glibc versions and emitting legacy aliases; yields nothing
+    if the ABI is incompatible.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: a generator depending on host glibc/ABI probing and module-level tables.'
+  difficulty: hard
+  notes: Output depends on the runtime platform, not just inputs; lazily yields strings, out of fragment.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

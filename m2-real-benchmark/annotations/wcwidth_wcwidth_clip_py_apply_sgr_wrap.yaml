@@ -1,0 +1,45 @@
+benchmark_id: wcwidth::wcwidth::_clip.py::_apply_sgr_wrap
+package: wcwidth
+stratum: string
+signature: '_apply_sgr_wrap(result: str, captured_style: Optional[_SGRState]) -> str'
+informal_spec: 'Apply SGR prefix/suffix around *result*.
+
+
+  If an SGR state was captured at the first visible character, prefix the result with the
+
+  corresponding SGR sequence and suffix with a reset if any styles are active.'
+function_source: "def _apply_sgr_wrap(result: str, captured_style: Optional[_SGRState]) -> str:\n    \"\
+  \"\"\n    Apply SGR prefix/suffix around *result*.\n\n    If an SGR state was captured at the first\
+  \ visible character, prefix the result with the\n    corresponding SGR sequence and suffix with a reset\
+  \ if any styles are active.\n    \"\"\"\n    if captured_style is not None:\n        if prefix := _sgr_state_to_sequence(captured_style):\n\
+  \            result = prefix + result\n        if _sgr_state_is_active(captured_style):\n          \
+  \  result += '\\x1b[0m'\n    return result"
+reference:
+  behavior_summary: If a captured SGR style exists, prefixes result with its SGR sequence and appends
+    a reset when any style is active, otherwise returns result unchanged.
+  fragment_fit: near
+  reference_pre: []
+  reference_post: Implies(captured_style == None, ret == result)
+  profile: 'observable boundary: the None branch is exact; the wrapping branch needs helper calls.'
+  difficulty: medium
+  notes: 'When captured_style is None the result is returned verbatim (faithful: ret == result). The non-None
+    branch depends on _sgr_state_to_sequence and _sgr_state_is_active helpers and prefix/suffix concatenation
+    that are out of fragment.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

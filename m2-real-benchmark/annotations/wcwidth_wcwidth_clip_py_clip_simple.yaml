@@ -1,0 +1,108 @@
+benchmark_id: wcwidth::wcwidth::_clip.py::_clip_simple
+package: wcwidth
+stratum: structured
+signature: '_clip_simple(text: str, start: int, end: int) -> tuple[str, Optional[_SGRState]]'
+informal_spec: 'Clip text without cursor movement (simple append-to-output path).
+
+
+  Returns ``(result, captured_style)``.  The caller applies SGR wrapping.'
+function_source: "def _clip_simple(\n    text: str,\n    start: int,\n    end: int,\n    *,\n    propagate_sgr:\
+  \ bool,\n    ambiguous_width: int,\n    term_program: bool | str,\n    fillchar: str,\n    tabsize:\
+  \ int,\n    strict: bool,\n    control_codes: Literal['parse', 'strict', 'ignore'],\n) -> tuple[str,\
+  \ Optional[_SGRState]]:\n    \"\"\"\n    Clip text without cursor movement (simple append-to-output\
+  \ path).\n\n    Returns ``(result, captured_style)``.  The caller applies SGR wrapping.\n    \"\"\"\n\
+  \    # pylint: disable=too-complex,too-many-locals,too-many-branches,too-many-statements\n    # pylint:\
+  \ disable=too-many-nested-blocks\n    # code length and complexity traded for performance, to allow\
+  \ this to be used as a \"hot path\"\n\n    output: list[str] = []\n    col = 0\n    idx = 0\n    # captured_style\
+  \ is a frozen snapshot of current_style taken at the first\n    # visible character emitted within the\
+  \ clip window (start, end).  It stays\n    # None until that point.  current_style, by contrast, is\
+  \ continuously\n    # updated by SGR sequences throughout the scan.  The snapshot is what the\n    #\
+  \ caller uses to wrap the result in the correct SGR state.\n    #\n    # When propagate_sgr is False,\
+  \ current_style (and therefore captured_style)\n    # remain None, and SGR sequences pass through as\
+  \ literal text.\n    captured_style: Optional[_SGRState] = None\n    current_style = _SGR_STATE_DEFAULT\
+  \ if propagate_sgr else None\n\n    while idx < len(text):\n        char = text[idx]\n\n        # Early\
+  \ exit: past visible region.\n        if col >= end and char not in '\\r\\x08\\t\\x1b':\n          \
+  \  if captured_style is not None:\n                break\n            # propagate_sgr is always False\
+  \ here: with propagate_sgr=True,\n            # captured_style is set on the first visible emission\
+  \ in the\n            # clip window and we would have broken above.  The skip-ahead\n            # optimization\
+  \ is only needed (and safe) when SGR tracking is off.\n            next_esc = text.find('\\x1b', idx\
+  \ + 1)\n            if next_esc == -1:\n                break\n            idx = next_esc\n        \
+  \    continue\n\n        if char == '\\x1b':\n            m = _SEQUENCE_CLASSIFY.match(text, idx)\n\
+  \            if not m:\n                output.append(char)\n                idx += 1\n            \
+  \    continue\n\n            # SGR: update current_style, do not emit.\n            if m.group('sgr_params')\
+  \ is not None and propagate_sgr and current_style is not None:\n                current_style = _sgr_state_update(current_style,\
+  \ m.group())\n                idx = m.end()\n                continue\n\n            # OSC 8 hyperlink.\n\
+  \            if hl_state := HyperlinkParams.parse(m.group()):\n                r = _process_hyperlink(\n\
+  \                    text, start, end, fillchar, tabsize, ambiguous_width,\n                    term_program,\n\
+  \                    control_codes,\n                    params=hl_state, match_end=m.end(), col=col,\n\
+  \                )\n                if r.action is _HyperlinkAction.NO_CLOSE:\n                    output.append(m.group())\n\
+  \                    idx = m.end()\n                elif r.action is _HyperlinkAction.EMPTY:\n     \
+  \               idx = r.close_end\n                elif r.action is _HyperlinkAction.OUTSIDE:\n    \
+  \                col += r.inner_width\n                    idx = r.close_end\n                else:\n\
+  \                    output.append(r.open_seq)\n                    output.append(r.clipped_inner)\n\
+  \                    output.append(r.close_seq)\n                    if propagate_sgr and captured_style\
+  \ is None:\n                        captured_style = current_style\n                    col += r.inner_width\n\
+  \                    idx = r.close_end\n                continue\n\n            # OSC 66 Text Sizing.\n\
+  \            if (ts_meta := m.group('ts_meta')) is not None:\n                ts_text = m.group('ts_text')\n\
+  \                ts_term = m.group('ts_term')\n                assert ts_text is not None and ts_term\
+  \ is not None\n                ts = TextSizing(\n                    TextSizingParams.from_params(ts_meta,\
+  \ control_codes=control_codes),\n                    ts_text, ts_term)\n                ts_width = ts.display_width(ambiguous_width)\n\
+  \n                if col >= start and col + ts_width <= end:\n                    output.append(ts.make_sequence())\n\
+  \                    if propagate_sgr and captured_style is None:\n                        captured_style\
+  \ = current_style\n                    col += ts_width\n                elif col < end and col + ts_width\
+  \ > start:\n                    ts_parts: list[str] = []\n\n                    def _ts_write(s: str,\
+  \ _w: int, _col: int) -> None:\n                        ts_parts.append(s)\n                    col\
+  \ = _text_sizing_clip(\n                        ts, col, start, end, fillchar, ambiguous_width,\n  \
+  \                      term_program,\n                        _ts_write)\n                    output.extend(ts_parts)\n\
+  \                    if propagate_sgr and captured_style is None:\n                        captured_style\
+  \ = current_style\n                else:\n                    col += ts_width\n                idx =\
+  \ m.end()\n                continue\n\n            # Indeterminate-effect sequences: raise in strict\
+  \ mode.\n            seq = m.group()\n            if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):\n\
+  \                raise ValueError(\n                    f\"Indeterminate cursor sequence at position\
+  \ {idx}, \"\n                    f\"{seq!r}\"\n                )\n\n            # Any other recognized\
+  \ sequence: preserve as-is.\n            output.append(seq)\n            idx = m.end()\n           \
+  \ continue\n\n        if char == '\\t':\n            # Expand tab, filling clip window with spaces.\n\
+  \            if tabsize > 0:\n                next_tab = col + (tabsize - (col % tabsize))\n       \
+  \         while col < next_tab:\n                    if start <= col < end:\n                      \
+  \  output.append(' ')\n                        if propagate_sgr and captured_style is None:\n      \
+  \                      captured_style = current_style\n                    col += 1\n            else:\n\
+  \                output.append('\\t')\n            idx += 1\n            continue\n\n        grapheme\
+  \ = next(iter_graphemes(text, start=idx))\n        grapheme_w = width(grapheme, ambiguous_width=ambiguous_width,\n\
+  \                           term_program=term_program)\n\n        # Emit grapheme or fillchar depending\
+  \ on visibility within clip window.\n        if grapheme_w == 0:\n            if start <= col < end:\n\
+  \                output.append(grapheme)\n        elif col >= start and col + grapheme_w <= end:\n \
+  \           output.append(grapheme)\n            if propagate_sgr and captured_style is None:\n    \
+  \            captured_style = current_style\n        elif col < end and col + grapheme_w > start:\n\
+  \            output.append(fillchar * (min(end, col + grapheme_w) - max(start, col)))\n            if\
+  \ propagate_sgr and captured_style is None:\n                captured_style = current_style\n\n    \
+  \    col += grapheme_w\n        idx += len(grapheme)\n\n    return ''.join(output), captured_style"
+reference:
+  behavior_summary: Clips text to the display-cell window [start,end) by appending visible graphemes/escapes
+    to an output buffer (no cursor-movement handling), expanding tabs and tracking SGR state, returning
+    the joined string and a captured SGR style.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: append-path terminal clipping over escape sequences and grapheme widths, returning
+    a (str, _SGRState?) tuple.'
+  difficulty: hard
+  notes: Stateful scan with regex sequence classification and helper calls; no faithful in-fragment contract
+    exists.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

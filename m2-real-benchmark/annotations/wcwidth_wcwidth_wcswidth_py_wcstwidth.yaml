@@ -1,0 +1,153 @@
+benchmark_id: wcwidth::wcwidth::_wcswidth.py::wcstwidth
+package: wcwidth
+stratum: numeric
+signature: 'wcstwidth(pwcs: str, n: Optional[int], unicode_version: str, ambiguous_width: int, term_program:
+  bool | str) -> int'
+informal_spec: "Given a unicode string, return its printable length on a terminal given by ``term_program``.\n\
+  \nSee :ref:`Specification` for details of cell measurement.\n\nUnlike :func:`wcswidth`, this function\
+  \ applies per-terminal correction tables for\nemoji presentation and grapheme clusters.\n\n:param pwcs:\
+  \ Measure width of given unicode string.\n:param n: When ``n`` is None (default), return the length\
+  \ of the entire\n    string, otherwise only the first ``n`` characters are measured.\n:param unicode_version:\
+  \ Ignored. Retained for backwards compatibility.\n:param ambiguous_width: Width to use for East Asian\
+  \ Ambiguous (A)\n    characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.\n:param term_program:\
+  \ Terminal software identifier for table correction.\n    ``True`` (default) reads the ``TERM_PROGRAM``\
+  \ or ``TERM`` environment\n    variable for auto-detection.  ``False`` disables override lookup.\n \
+  \   Accepts a canonical terminal name matching :func:`list_term_programs`,\n    such as from XTVERSION_,\
+  \ ENQ_, or ``TERM_PROGRAM``.\n\n    .. versionadded:: 0.8.0\n:returns: The width, in cells, needed to\
+  \ display the first ``n`` characters\n    of the unicode string ``pwcs``.  Returns ``-1`` for C0 and\
+  \ C1 control\n    characters!"
+function_source: "def wcstwidth(\n    pwcs: str,\n    n: Optional[int] = None,\n    unicode_version: str\
+  \ = 'auto',\n    ambiguous_width: int = 1,\n    term_program: bool | str = True,\n) -> int:\n    \"\"\
+  \"\n    Given a unicode string, return its printable length on a terminal given by ``term_program``.\n\
+  \n    See :ref:`Specification` for details of cell measurement.\n\n    Unlike :func:`wcswidth`, this\
+  \ function applies per-terminal correction tables for\n    emoji presentation and grapheme clusters.\n\
+  \n    :param pwcs: Measure width of given unicode string.\n    :param n: When ``n`` is None (default),\
+  \ return the length of the entire\n        string, otherwise only the first ``n`` characters are measured.\n\
+  \    :param unicode_version: Ignored. Retained for backwards compatibility.\n    :param ambiguous_width:\
+  \ Width to use for East Asian Ambiguous (A)\n        characters. Default is ``1`` (narrow). Set to ``2``\
+  \ for CJK contexts.\n    :param term_program: Terminal software identifier for table correction.\n \
+  \       ``True`` (default) reads the ``TERM_PROGRAM`` or ``TERM`` environment\n        variable for\
+  \ auto-detection.  ``False`` disables override lookup.\n        Accepts a canonical terminal name matching\
+  \ :func:`list_term_programs`,\n        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.\n\n     \
+  \   .. versionadded:: 0.8.0\n    :returns: The width, in cells, needed to display the first ``n`` characters\n\
+  \        of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control\n        characters!\n\
+  \    \"\"\"\n    # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type\n\
+  \    # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks\n    # This\
+  \ function intentionally keeps all logic inline for performance.\n\n    # Fast path: pure ASCII printable\
+  \ strings are always width == length\n    if n is None and pwcs.isascii() and pwcs.isprintable():\n\
+  \        return len(pwcs)\n\n    # Resolve terminal software for override lookup\n    term_canonical\
+  \ = resolve_terminal(term_program)\n\n    # Skip override lookup when no terminal detected (avoids lru_cache\
+  \ call overhead).\n    # Extract locals for hot-loop performance (NamedTuple attribute access is slow).\n\
+  \    if term_canonical:\n        overrides = get_term_overrides(term_canonical)\n        _narrower =\
+  \ overrides.narrower\n        _vs16_narrower = overrides.vs16_narrower\n        _vs15_wider = overrides.vs15_wider\n\
+  \        _zeroer = overrides.zeroer\n        _narrow_wider = overrides.narrow_wider\n        _narrow_zeroer\
+  \ = overrides.narrow_zeroer\n        _grapheme_overrides = table_grapheme_overrides.get(term_canonical)\n\
+  \    else:\n        _narrower = ()\n        _vs16_narrower = ()\n        _vs15_wider = ()\n        _zeroer\
+  \ = ()\n        _narrow_wider = ()\n        _narrow_zeroer = ()\n        _grapheme_overrides = {}\n\n\
+  \    # Select wcwidth call pattern for best lru_cache performance\n    _wcwidth = wcwidth if ambiguous_width\
+  \ == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)\n\n    end = len(pwcs) if n is None else n\n\
+  \    total_width = 0\n    idx = 0\n\n    # grapheme-clustering state and local re-binding for performance.\n\
+  \    # Widths accumulate in cluster_width and flush at boundaries.  A cluster is a base character\n\
+  \    # plus combining marks, deferring the flush lets grapheme overrides replace the measured width\n\
+  \    # retrospectively.\n    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no base available)\n\
+  \    last_measured_ucs = -1\n    last_measured_w = 0\n    prev_was_virama = False\n    cluster_start\
+  \ = -1\n    total_before_cluster = 0\n    cluster_width = 0\n    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']\n\
+  \    vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']\n    _bisearch = bisearch\n\n    while idx < end:\n\
+  \        char = pwcs[idx]\n        ucs = ord(char)\n\n        #\n        # Much of the logic below matches\
+  \ the logic in width(), but is repeated for improved\n        # performance, they are given matching\
+  \ index reference numbers (starting at #5).\n        #\n        # 5. ZWJ (U+200D): consumed without\
+  \ contributing width.\n        # Virama codepoints are treated as zero-width combining marks (Mn). When\
+  \ a\n        # virama+consonant sequence forms a conjunct, its width is capped at 2 cells\n        #\
+  \ matching behavior of popular terminals (PR #224)\n\n        # ZWJ (U+200D)\n        if ucs == 0x200D:\n\
+  \            if prev_was_virama:\n                idx += 1\n            elif idx + 1 < end:\n      \
+  \          # Check for terminal grapheme override when base char is ExtPict/RI\n                if (_grapheme_overrides\n\
+  \                        and last_measured_idx >= 0\n                        and last_measured_ucs in\
+  \ _EMOJI_ZWJ_SET):\n                    cluster_end = _scan_zwj_cluster_end(pwcs, last_measured_idx,\
+  \ end)\n                    cluster = pwcs[last_measured_idx:cluster_end]\n                    override_w\
+  \ = _grapheme_overrides.get(cluster)\n                    if override_w is not None:\n             \
+  \           total_width += (override_w - last_measured_w)\n                        last_measured_idx\
+  \ = -2\n                        last_measured_ucs = -1\n                        last_measured_w = 0\n\
+  \                        prev_was_virama = False\n                        cluster_start = -1\n     \
+  \                   idx = cluster_end\n                        continue\n                # No override;\
+  \ ZWJ breaks VS adjacency.\n                # VS16 already set last_measured_idx = -2, blocking further\
+  \ VS16.\n                last_measured_w = 0\n                prev_was_virama = False\n            \
+  \    idx += 2\n            else:\n                prev_was_virama = False\n                idx += 1\n\
+  \            continue\n\n        # 6. VS16 (U+FE0F): converts preceding narrow character to wide.\n\
+  \        if ucs == 0xFE0F and last_measured_idx >= 0:\n            if _vs16_narrower and _bisearch(last_measured_ucs,\
+  \ _vs16_narrower):\n                pass\n            elif _bisearch(last_measured_ucs, vs16_nw_table):\n\
+  \                cluster_width = 2\n            last_measured_idx = -2  # prevent double application\n\
+  \            idx += 1\n            continue\n\n        # VS15 (U+FE0E): text variation selector, requests\
+  \ narrow presentation.\n        if ucs == 0xFE0E and last_measured_idx >= 0:\n            base_ucs =\
+  \ last_measured_ucs\n            vs15_narrow = bisearch(base_ucs, vs15_wn_table)\n            if _vs15_wider\
+  \ and bisearch(base_ucs, _vs15_wider):\n                vs15_narrow = False\n            if vs15_narrow\
+  \ and last_measured_w == 2:\n                total_width -= 1\n            idx += 1\n            continue\n\
+  \n        # 7. Regional Indicator & Fitzpatrick (both above BMP)\n        if ucs > 0xFFFF:\n       \
+  \     if ucs in _REGIONAL_INDICATOR_SET:\n                ri_before = 0\n                j = idx - 1\n\
+  \                while j >= 0 and ord(pwcs[j]) in _REGIONAL_INDICATOR_SET:\n                    ri_before\
+  \ += 1\n                    j -= 1\n                if ri_before % 2 == 1:\n                    last_measured_ucs\
+  \ = ucs\n                    idx += 1\n                    continue\n            elif (_FITZPATRICK_RANGE[0]\
+  \ <= ucs <= _FITZPATRICK_RANGE[1]\n                  and last_measured_ucs in _EMOJI_ZWJ_SET):\n   \
+  \             idx += 1\n                continue\n\n        # 8. Normal character: measure with wcwidth\n\
+  \        w = _wcwidth(char)\n        if w < 0:\n            # C0/C1 control character\n            return\
+  \ -1\n        # Apply single-codepoint terminal overrides (pre-merged tuples)\n        if w == 2 and\
+  \ _narrower and bisearch(ucs, _narrower):\n            w = 1\n        elif w == 2 and _zeroer and bisearch(ucs,\
+  \ _zeroer):\n            w = 0\n        if w == 1 and _narrow_wider and bisearch(ucs, _narrow_wider):\n\
+  \            w = 2\n        elif w == 1 and _narrow_zeroer and bisearch(ucs, _narrow_zeroer):\n    \
+  \        w = 0\n        if w > 0:\n            # virama+consonant extends current cluster; otherwise\
+  \ start new\n            if prev_was_virama:\n                cluster_width = 2\n            elif cluster_width:\n\
+  \                # flush previous cluster, check for grapheme overrides\n                flushed = False\n\
+  \                if _grapheme_overrides and cluster_start >= 0:\n                    # Two-phase override\
+  \ lookup: candidate (cluster+current) catches Lo+Lo pairs\n                    # where both chars bear\
+  \ width (Thai KO KAI + SARA AM).  cluster_text (cluster\n                    # alone) catches C+Mc clusters\
+  \ where the override key is shorter.\n                    candidate = pwcs[cluster_start:idx + 1]\n\
+  \                    override_w = _grapheme_overrides.get(candidate)\n                    if override_w\
+  \ is not None:\n                        total_width = total_before_cluster + override_w\n          \
+  \              flushed = True\n                        cluster_width = 0\n                    else:\n\
+  \                        cluster_text = pwcs[cluster_start:idx]\n                        override_w\
+  \ = _grapheme_overrides.get(cluster_text)\n                        if override_w is not None:\n    \
+  \                        total_width = total_before_cluster + override_w\n                        else:\n\
+  \                            total_width += cluster_width\n                else:\n                 \
+  \   total_width += cluster_width\n                if not flushed:\n                    cluster_width\
+  \ = w\n                    cluster_start = idx\n                    total_before_cluster = total_width\n\
+  \            else:\n                cluster_width = w\n                cluster_start = idx\n       \
+  \         total_before_cluster = total_width\n            last_measured_idx = idx\n            last_measured_ucs\
+  \ = ucs\n            last_measured_w = w\n            prev_was_virama = False\n        elif ucs in _ISC_VIRAMA_SET:\n\
+  \            prev_was_virama = True\n        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):\n\
+  \            # Spacing Combining Mark (Mc) following a base character\n            cluster_width = 2\n\
+  \            last_measured_idx = -2\n            prev_was_virama = False\n        else:\n          \
+  \  prev_was_virama = False\n        idx += 1\n\n    if cluster_width:\n        if _grapheme_overrides\
+  \ and cluster_start >= 0:\n            cluster_text = pwcs[cluster_start:end]\n            override_w\
+  \ = _grapheme_overrides.get(cluster_text)\n            if override_w is not None:\n                total_width\
+  \ = total_before_cluster + override_w\n            else:\n                total_width += cluster_width\n\
+  \        else:\n            total_width += cluster_width\n    return total_width"
+reference:
+  behavior_summary: Computes the terminal display width in cells of the first n characters of a string,
+    applying grapheme clustering and per-terminal correction tables, returning -1 if a C0/C1 control character
+    is encountered.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: width is accumulated over a complex grapheme-clustering loop driven by large
+    Unicode tables and per-terminal override tables; not expressible in the fragment.'
+  difficulty: hard
+  notes: Depends on extensive Unicode tables (bisearch), ZWJ/VS16/VS15/Fitzpatrick/Regional-Indicator
+    handling, and terminal override tables plus environment lookup. The pure-ASCII fast path gives ret==Length(pwcs)
+    only when n is None, but the general contract is fundamentally out. Returns -1 for control chars.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

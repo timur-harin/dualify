@@ -1,0 +1,274 @@
+benchmark_id: wcwidth::wcwidth::_width.py::width
+package: wcwidth
+stratum: numeric
+signature: 'width(text: str) -> int'
+informal_spec: "Return printable width of text containing many kinds of control codes and sequences.\n\
+  \nUnlike :func:`wcswidth`, this function handles most control characters and many popular terminal\n\
+  output sequences.  Never returns -1.\n\n:param text: String to measure.\n:param control_codes: How to\
+  \ handle control characters and sequences:\n\n    - ``'parse'`` (default): Track horizontal cursor movement\
+  \ like BS ``\\b``, CR ``\\r``, TAB\n      ``\\t``, cursor left and right movement sequences.  Vertical\
+  \ movement (LF, VT, FF) and\n      indeterminate terminal sequences are zero-width. OSC 66 Kitty Text\
+  \ Sizing protocol, OSC 8\n      Hyperlink, and many other kinds of output sequences are parsed for displayed\
+  \ measurements.\n    - ``'strict'``: Like parse, but raises :exc:`ValueError` on control characters\
+  \ with\n      indeterminate results of the screen or cursor, like clear or vertical movement. Generally,\n\
+  \      these should be handled with a virtual terminal emulator (like 'pyte').\n    - ``'ignore'``:\
+  \ All C0 and C1 control characters and escape sequences are measured as\n      width 0. This is the\
+  \ fastest measurement for text already filtered or known not to contain\n      any kinds of control\
+  \ codes or sequences. TAB ``\\t`` is zero-width; to ensure\n      tab expansion, pre-process text using\
+  \ :func:`str.expandtabs`.\n\n:param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes.\
+  \ Default is 8.  Must be\n    positive. Has no effect when ``control_codes='ignore'``.\n:param ambiguous_width:\
+  \ Width to use for East Asian Ambiguous (A) characters. Default is ``1``\n    (narrow). Set to ``2``\
+  \ for CJK contexts.\n:param term_program: Terminal software identifier for table correction.\n    ``False``\
+  \ (default) disables override lookup.  ``True`` reads the\n    ``TERM_PROGRAM`` or ``TERM`` environment\
+  \ variable for auto-detection.\n    Accepts a canonical terminal name matching :func:`list_term_programs`,\n\
+  \    such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.\n\n    .. versionadded:: 0.8.0\n:returns: Maximum\
+  \ cursor position reached, \"extent\", accounting for cursor movement sequences\n    present in ``text``\
+  \ according to given parameters.  This represents the rightmost column the\n    cursor reaches.  Always\
+  \ a non-negative integer.\n:raises ValueError: If ``control_codes='strict'`` and control characters\
+  \ with indeterminate\n    effects, such as vertical movement or clear sequences are encountered, or\
+  \ on unexpected\n    C0 or C1 control code. Also raised when ``control_codes`` is not one of the valid\
+  \ values.\n\n.. versionadded:: 0.3.0\n\n.. versionchanged:: 0.7.0\n   Expanded strict-mode to raise\
+  \ :exc:`ValueError` when cursor-left movement\n   (CSI D) would move beyond the beginning of the string.\
+  \ Previously, cursor-left\n   was silently clamped to column 0 in all modes.\n\n   Support horizontal\
+  \ cursor sequences (``cub``, ``cuf``, ``hpa``). Cursor-left (``cub``) or\n   backspace (``\\b``) now\
+  \ overwrites text.  ``column_address`` (``hpa``) and carriage return\n   (``\\r``) are now parsed, and\
+  \ some values conditionally raise ``ValueError`` when\n   ``control_codes='parse'``.\n\nExamples::\n\
+  \n    >>> width('hello')\n    5\n    >>> width('コンニチハ')\n    10\n    >>> width('\\x1b[31mred\\x1b[0m')\n\
+  \    3\n    >>> width('\\x1b[31mred\\x1b[0m', control_codes='ignore')  # same result (ignored)\n   \
+  \ 3\n    >>> width('123\\b4')     # backspace overwrites previous cell (outputs '124')\n    3\n    >>>\
+  \ width('abc\\t')      # tab caused cursor to move to column 8\n    8\n    >>> width('1\\x1b[10C') \
+  \ # '1' + cursor right 10, cursor ends on column 11\n    11\n    >>> width('1\\x1b[10C', control_codes='ignore')\
+  \   # faster but wrong in this case\n    1"
+function_source: "def width(\n    text: str,\n    *,\n    control_codes: Literal['parse', 'strict', 'ignore']\
+  \ = 'parse',\n    tabsize: int = 8,\n    ambiguous_width: int = 1,\n    term_program: bool | str = False,\n\
+  ) -> int:\n    r\"\"\"\n    Return printable width of text containing many kinds of control codes and\
+  \ sequences.\n\n    Unlike :func:`wcswidth`, this function handles most control characters and many\
+  \ popular terminal\n    output sequences.  Never returns -1.\n\n    :param text: String to measure.\n\
+  \    :param control_codes: How to handle control characters and sequences:\n\n        - ``'parse'``\
+  \ (default): Track horizontal cursor movement like BS ``\\b``, CR ``\\r``, TAB\n          ``\\t``, cursor\
+  \ left and right movement sequences.  Vertical movement (LF, VT, FF) and\n          indeterminate terminal\
+  \ sequences are zero-width. OSC 66 Kitty Text Sizing protocol, OSC 8\n          Hyperlink, and many\
+  \ other kinds of output sequences are parsed for displayed measurements.\n        - ``'strict'``: Like\
+  \ parse, but raises :exc:`ValueError` on control characters with\n          indeterminate results of\
+  \ the screen or cursor, like clear or vertical movement. Generally,\n          these should be handled\
+  \ with a virtual terminal emulator (like 'pyte').\n        - ``'ignore'``: All C0 and C1 control characters\
+  \ and escape sequences are measured as\n          width 0. This is the fastest measurement for text\
+  \ already filtered or known not to contain\n          any kinds of control codes or sequences. TAB ``\\\
+  t`` is zero-width; to ensure\n          tab expansion, pre-process text using :func:`str.expandtabs`.\n\
+  \n    :param tabsize: Tab stop width for ``'parse'`` and ``'strict'`` modes. Default is 8.  Must be\n\
+  \        positive. Has no effect when ``control_codes='ignore'``.\n    :param ambiguous_width: Width\
+  \ to use for East Asian Ambiguous (A) characters. Default is ``1``\n        (narrow). Set to ``2`` for\
+  \ CJK contexts.\n    :param term_program: Terminal software identifier for table correction.\n     \
+  \   ``False`` (default) disables override lookup.  ``True`` reads the\n        ``TERM_PROGRAM`` or ``TERM``\
+  \ environment variable for auto-detection.\n        Accepts a canonical terminal name matching :func:`list_term_programs`,\n\
+  \        such as from XTVERSION_, ENQ_, or ``TERM_PROGRAM``.\n\n        .. versionadded:: 0.8.0\n  \
+  \  :returns: Maximum cursor position reached, \"extent\", accounting for cursor movement sequences\n\
+  \        present in ``text`` according to given parameters.  This represents the rightmost column the\n\
+  \        cursor reaches.  Always a non-negative integer.\n    :raises ValueError: If ``control_codes='strict'``\
+  \ and control characters with indeterminate\n        effects, such as vertical movement or clear sequences\
+  \ are encountered, or on unexpected\n        C0 or C1 control code. Also raised when ``control_codes``\
+  \ is not one of the valid values.\n\n    .. versionadded:: 0.3.0\n\n    .. versionchanged:: 0.7.0\n\
+  \       Expanded strict-mode to raise :exc:`ValueError` when cursor-left movement\n       (CSI D) would\
+  \ move beyond the beginning of the string. Previously, cursor-left\n       was silently clamped to column\
+  \ 0 in all modes.\n\n       Support horizontal cursor sequences (``cub``, ``cuf``, ``hpa``). Cursor-left\
+  \ (``cub``) or\n       backspace (``\\b``) now overwrites text.  ``column_address`` (``hpa``) and carriage\
+  \ return\n       (``\\r``) are now parsed, and some values conditionally raise ``ValueError`` when\n\
+  \       ``control_codes='parse'``.\n\n    Examples::\n\n        >>> width('hello')\n        5\n    \
+  \    >>> width('コンニチハ')\n        10\n        >>> width('\\x1b[31mred\\x1b[0m')\n        3\n        >>>\
+  \ width('\\x1b[31mred\\x1b[0m', control_codes='ignore')  # same result (ignored)\n        3\n      \
+  \  >>> width('123\\b4')     # backspace overwrites previous cell (outputs '124')\n        3\n      \
+  \  >>> width('abc\\t')      # tab caused cursor to move to column 8\n        8\n        >>> width('1\\\
+  x1b[10C')  # '1' + cursor right 10, cursor ends on column 11\n        11\n        >>> width('1\\x1b[10C',\
+  \ control_codes='ignore')   # faster but wrong in this case\n        1\n    \"\"\"\n    # pylint: disable=too-complex,too-many-branches,too-many-statements,too-many-locals,redefined-variable-type,too-many-nested-blocks\n\
+  \    # This could be broken into sub-functions (#1, #3, and #6 especially), but for reduced overhead\n\
+  \    # in consideration of this function a likely \"hot path\", they are inline, breaking many pylint\n\
+  \    # complexity rules.\n\n    # Fast path for ASCII printable (no tabs, escapes, or control chars)\n\
+  \    if text.isascii() and text.isprintable():\n        return len(text)\n\n    # Fast parse: if no\
+  \ horizontal cursor movements are possible, switch to 'ignore' mode.\n    # Only check longer strings\
+  \ - the detection overhead hurts short string performance.\n    if control_codes == 'parse' and len(text)\
+  \ > _WIDTH_FAST_PATH_MIN_LEN:\n        # Check for cursor-affecting control characters\n        if '\\\
+  b' not in text and '\\t' not in text and '\\r' not in text:\n            # Check for escape sequences,\
+  \ if none contain cursor movement or\n            # text sizing, downgrade to 'ignore'\n           \
+  \ if '\\x1b' not in text or (\n                not CURSOR_MOVEMENT_SEQUENCE.search(text)\n         \
+  \       and not TEXT_SIZING_PATTERN.search(text)\n            ):\n                control_codes = 'ignore'\n\
+  \n    # Fast path for ignore mode, useful if you know the text is already free of control codes\n  \
+  \  if control_codes == 'ignore':\n        return _width_ignored_codes(text, ambiguous_width, term_program=term_program)\n\
+  \n    # Resolve terminal software for override lookup\n    term_canonical = resolve_terminal(term_program)\n\
+  \n    # Skip override lookup when no terminal detected (avoids lru_cache call overhead).\n    # Extract\
+  \ locals for hot-loop performance (NamedTuple attribute access is slow).\n    if term_canonical:\n \
+  \       overrides = get_term_overrides(term_canonical)\n        _narrower = overrides.narrower\n   \
+  \     _vs16_narrower = overrides.vs16_narrower\n        _vs15_wider = overrides.vs15_wider\n       \
+  \ _zeroer = overrides.zeroer\n        _narrow_wider = overrides.narrow_wider\n        _narrow_zeroer\
+  \ = overrides.narrow_zeroer\n        _grapheme_overrides = table_grapheme_overrides.get(term_canonical)\n\
+  \    else:\n        _narrower = ()\n        _vs16_narrower = ()\n        _vs15_wider = ()\n        _zeroer\
+  \ = ()\n        _narrow_wider = ()\n        _narrow_zeroer = ()\n        _grapheme_overrides = {}\n\n\
+  \    strict = control_codes == 'strict'\n    # Track absolute positions: tab stops need modulo on absolute\
+  \ column, CR resets to 0.\n    # Initialize max_extent to 0 so backward movement (CR, BS) won't yield\
+  \ negative width.\n    current_col = 0\n    max_extent = 0\n    idx = 0\n    text_len = len(text)\n\n\
+  \    # Select wcwidth call pattern for best lru_cache performance:\n    # - ambiguous_width=1 (default):\
+  \ single-arg calls share cache with direct wcwidth() calls\n    # - ambiguous_width=2: full positional\
+  \ args needed (results differ, separate cache is correct)\n    _wcwidth = wcwidth if ambiguous_width\
+  \ == 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)\n\n    # grapheme-clustering state and local\
+  \ re-binding for performance.\n    # Widths accumulate in cluster_width and flush at boundaries (see\
+  \ _wcswidth.py)\n    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no base available)\n  \
+  \  last_measured_ucs = -1\n    last_measured_w = 0\n    prev_was_virama = False\n    _max_extent_before\
+  \ = 0\n    cluster_start = -1\n    col_before_cluster = 0\n    max_extent_before_cluster = 0\n    cluster_width\
+  \ = 0\n    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']\n    vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']\n\
+  \    _bisearch = bisearch\n\n    while idx < text_len:\n        char = text[idx]\n\n        # 1. ESC\
+  \ sequences\n        if char == '\\x1b':\n            # Flush pending cluster before processing escape\
+  \ sequence\n            if cluster_width:\n                current_col += cluster_width\n          \
+  \      if current_col > max_extent:\n                    max_extent = current_col\n                cluster_width\
+  \ = 0\n            m = _SEQUENCE_CLASSIFY.match(text, idx)\n            if not m:\n                #\
+  \ 1a. Errant ESC or unknown sequence: only the first character is zero-width\n                idx +=\
+  \ 1\n            else:\n                seq = m.group()\n                if strict and INDETERMINATE_EFFECT_SEQUENCE.match(seq):\n\
+  \                    raise ValueError(f\"Indeterminate cursor sequence at position {idx}, {seq!r}\"\
+  )\n\n                # 2b. horizontal position absolute (before forward/backward to\n              \
+  \  #     avoid other_seq match in _SEQUENCE_CLASSIFY)\n                if (hpa_n := m.group('hpa_n'))\
+  \ is not None:\n                    target_col = int(hpa_n) if hpa_n else 1\n                    if\
+  \ strict:\n                        raise ValueError(\n                            f\"Indeterminate horizontal\
+  \ position at position {idx}, \"\n                            f\"{seq!r} (absolute column unknown)\"\
+  \n                        )\n                    current_col = target_col - 1  # HPA is 1-indexed, convert\
+  \ to 0-indexed\n                # 2c. cursor forward, backward\n                elif (cforward_n :=\
+  \ m.group('cforward_n')) is not None:\n                    current_col += int(cforward_n) if cforward_n\
+  \ else 1\n                elif (cbackward_n := m.group('cbackward_n')) is not None:\n              \
+  \      n_backward = int(cbackward_n) if cbackward_n else 1\n                    if strict and n_backward\
+  \ > current_col:\n                        raise ValueError(\n                            f\"Cursor left\
+  \ movement at position {idx} would move \"\n                            f\"{n_backward} cells left from\
+  \ column {current_col}, \"\n                            f\"exceeding string start\"\n              \
+  \          )\n                    current_col -= n_backward\n                    if current_col < 0:\n\
+  \                        current_col = 0\n                # 2d. OSC 66 Text Sizing — has positive display\
+  \ width\n                elif (ts_meta := m.group('ts_meta')) is not None:\n                    ts_text\
+  \ = m.group('ts_text')\n                    ts_term = m.group('ts_term')\n                    assert\
+  \ ts_text is not None and ts_term is not None\n                    text_size = TextSizing(\n       \
+  \                 TextSizingParams.from_params(ts_meta, control_codes=control_codes),\n            \
+  \            ts_text, ts_term)\n                    current_col += text_size.display_width(ambiguous_width)\n\
+  \                # 2e. SGR and other zero-width sequences -- no column advance\n                idx\
+  \ = m.end()\n            # Escape sequences break VS16 adjacency: reset last-measured state\n      \
+  \      last_measured_idx = -2\n            last_measured_ucs = -1\n            cluster_start = -1\n\
+  \            if current_col > max_extent:\n                max_extent = current_col\n            continue\n\
+  \n        # 2. Vertical or Illegal control characters zero width or error when 'strict'\n        if\
+  \ char in ILLEGAL_CTRL:\n            if strict:\n                raise ValueError(f\"Illegal control\
+  \ character {ord(char):#x} at position {idx}\")\n            if cluster_width:\n                current_col\
+  \ += cluster_width\n                if current_col > max_extent:\n                    max_extent = current_col\n\
+  \                cluster_width = 0\n            idx += 1\n            last_measured_idx = -2\n     \
+  \       last_measured_ucs = -1\n            cluster_start = -1\n            continue\n\n        if char\
+  \ in VERTICAL_CTRL:\n            if strict:\n                raise ValueError(f\"Vertical movement character\
+  \ {ord(char):#x} at position {idx}\")\n            if cluster_width:\n                current_col +=\
+  \ cluster_width\n                if current_col > max_extent:\n                    max_extent = current_col\n\
+  \                cluster_width = 0\n            idx += 1\n            last_measured_idx = -2\n     \
+  \       last_measured_ucs = -1\n            cluster_start = -1\n            continue\n\n        # 3.\
+  \ Horizontal movement characters\n        if char in HORIZONTAL_CTRL:\n            if cluster_width:\n\
+  \                current_col += cluster_width\n                if current_col > max_extent:\n      \
+  \              max_extent = current_col\n                cluster_width = 0\n            if char == '\\\
+  t' and tabsize > 0:\n                current_col += tabsize - (current_col % tabsize)\n            elif\
+  \ char == '\\b':\n                if current_col > 0:\n                    current_col -= 1\n      \
+  \      elif char == '\\r':\n                if strict:\n                    raise ValueError(\n    \
+  \                    f\"Horizontal movement character \\\\r at position {idx}: \"\n                \
+  \        \"indeterminate starting column\"\n                    )\n                current_col = 0\n\
+  \            if current_col > max_extent:\n                max_extent = current_col\n            idx\
+  \ += 1\n            last_measured_idx = -2\n            last_measured_ucs = -1\n            cluster_start\
+  \ = -1\n            continue\n\n        # 4. Zero-width control characters\n        if char in ZERO_WIDTH_CTRL:\n\
+  \            if cluster_width:\n                current_col += cluster_width\n                if current_col\
+  \ > max_extent:\n                    max_extent = current_col\n                cluster_width = 0\n \
+  \           idx += 1\n            last_measured_idx = -2\n            last_measured_ucs = -1\n     \
+  \       cluster_start = -1\n            continue\n\n        # 5. Inline grapheme-clustering: ZWJ, Virama,\
+  \ VS16, Regional Indicators,\n        #    Fitzpatrick, Mc, wcwidth\n        ucs = ord(char)\n\n   \
+  \     # ZWJ (U+200D)\n        if ucs == 0x200D:\n            if prev_was_virama:\n                idx\
+  \ += 1\n            elif idx + 1 < text_len:\n                # Check for terminal grapheme override\
+  \ when base char is ExtPict/RI\n                if (_grapheme_overrides\n                        and\
+  \ last_measured_idx >= 0\n                        and last_measured_ucs in _EMOJI_ZWJ_SET):\n      \
+  \              cluster_end = _scan_zwj_cluster_end(text, last_measured_idx, text_len)\n            \
+  \        cluster = text[last_measured_idx:cluster_end]\n                    override_w = _grapheme_overrides.get(cluster)\n\
+  \                    if override_w is not None:\n                        current_col += (override_w\
+  \ - last_measured_w)\n                        max_extent = max(max_extent, current_col)\n          \
+  \              last_measured_idx = -2\n                        last_measured_ucs = -1\n            \
+  \            last_measured_w = 0\n                        prev_was_virama = False\n                \
+  \        cluster_start = -1\n                        idx = cluster_end\n                        continue\n\
+  \                # No override; ZWJ breaks VS adjacency.\n                # VS16 already set last_measured_idx\
+  \ = -2, blocking further VS16.\n                last_measured_w = 0\n                prev_was_virama\
+  \ = False\n                idx += 2\n            else:\n                prev_was_virama = False\n  \
+  \              idx += 1\n            continue\n\n        # 6. VS16 (U+FE0F): converts preceding narrow\
+  \ character to wide.\n        if ucs == 0xFE0F and last_measured_idx >= 0:\n            if _vs16_narrower\
+  \ and _bisearch(last_measured_ucs, _vs16_narrower):\n                pass\n            elif _bisearch(last_measured_ucs,\
+  \ vs16_nw_table):\n                cluster_width = 2\n            last_measured_idx = -2  # prevent\
+  \ double application\n            idx += 1\n            continue\n\n        # VS15 (U+FE0E): text variation\
+  \ selector, requests narrow presentation.\n        if ucs == 0xFE0E and last_measured_idx >= 0:\n  \
+  \          base_ucs = last_measured_ucs\n            vs15_narrow = bisearch(base_ucs, vs15_wn_table)\n\
+  \            if _vs15_wider and bisearch(base_ucs, _vs15_wider):\n                vs15_narrow = False\n\
+  \            if vs15_narrow and last_measured_w == 2:\n                current_col -= 1\n          \
+  \      max_extent = max(_max_extent_before, current_col)\n            idx += 1\n            continue\n\
+  \n        # 7. Regional Indicator & Fitzpatrick (both above BMP)\n        if ucs > 0xFFFF:\n       \
+  \     if ucs in _REGIONAL_INDICATOR_SET:\n                ri_before = 0\n                j = idx - 1\n\
+  \                while j >= 0 and ord(text[j]) in _REGIONAL_INDICATOR_SET:\n                    ri_before\
+  \ += 1\n                    j -= 1\n                if ri_before % 2 == 1:\n                    last_measured_ucs\
+  \ = ucs\n                    idx += 1\n                    continue\n            elif (_FITZPATRICK_RANGE[0]\
+  \ <= ucs <= _FITZPATRICK_RANGE[1]\n                  and last_measured_ucs in _EMOJI_ZWJ_SET):\n   \
+  \             idx += 1\n                continue\n\n        # 8. Normal character: measure with wcwidth\n\
+  \        w = _wcwidth(char)\n        # Apply single-codepoint terminal overrides (pre-merged tuples)\n\
+  \        if w == 2 and _narrower and bisearch(ucs, _narrower):\n            w = 1\n        elif w ==\
+  \ 2 and _zeroer and bisearch(ucs, _zeroer):\n            w = 0\n        if w == 1 and _narrow_wider\
+  \ and bisearch(ucs, _narrow_wider):\n            w = 2\n        elif w == 1 and _narrow_zeroer and bisearch(ucs,\
+  \ _narrow_zeroer):\n            w = 0\n        if w > 0:\n            # virama+consonant extends current\
+  \ cluster; otherwise start new\n            if prev_was_virama:\n                cluster_width = 2\n\
+  \            elif cluster_width:\n                # flush previous cluster, check for grapheme overrides\n\
+  \                flushed = False\n                if _grapheme_overrides and cluster_start >= 0:\n \
+  \                   # Two-phase override lookup (see _wcswidth.py)\n                    candidate =\
+  \ text[cluster_start:idx + 1]\n                    override_w = _grapheme_overrides.get(candidate)\n\
+  \                    if override_w is not None:\n                        current_col = col_before_cluster\
+  \ + override_w\n                        max_extent = max(max_extent_before_cluster, current_col)\n \
+  \                       flushed = True\n                        cluster_width = 0\n                \
+  \    else:\n                        cluster_text = text[cluster_start:idx]\n                       \
+  \ override_w = _grapheme_overrides.get(cluster_text)\n                        if override_w is not None:\n\
+  \                            current_col = col_before_cluster + override_w\n                       \
+  \     max_extent = max(max_extent_before_cluster, current_col)\n                        else:\n    \
+  \                        current_col += cluster_width\n                else:\n                    current_col\
+  \ += cluster_width\n                if current_col > max_extent:\n                    max_extent = current_col\n\
+  \                if not flushed:\n                    cluster_width = w\n                    cluster_start\
+  \ = idx\n                    col_before_cluster = current_col\n                    max_extent_before_cluster\
+  \ = max_extent\n            else:\n                cluster_width = w\n                cluster_start\
+  \ = idx\n                col_before_cluster = current_col\n                max_extent_before_cluster\
+  \ = max_extent\n            last_measured_idx = idx\n            last_measured_ucs = ucs\n         \
+  \   last_measured_w = w\n            _max_extent_before = max_extent\n            prev_was_virama =\
+  \ False\n        elif ucs in _ISC_VIRAMA_SET:\n            prev_was_virama = True\n        elif last_measured_idx\
+  \ >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):\n            # Spacing Combining Mark (Mc) following\
+  \ a base character\n            cluster_width = 2\n            last_measured_idx = -2\n            prev_was_virama\
+  \ = False\n        else:\n            prev_was_virama = False\n        idx += 1\n\n    if cluster_width:\n\
+  \        if _grapheme_overrides and cluster_start >= 0:\n            cluster_text = text[cluster_start:text_len]\n\
+  \            override_w = _grapheme_overrides.get(cluster_text)\n            if override_w is not None:\n\
+  \                current_col = col_before_cluster + override_w\n                max_extent = max(max_extent_before_cluster,\
+  \ current_col)\n            else:\n                current_col += cluster_width\n                if\
+  \ current_col > max_extent:\n                    max_extent = current_col\n        else:\n         \
+  \   current_col += cluster_width\n            if current_col > max_extent:\n                max_extent\
+  \ = current_col\n    return max_extent"
+reference:
+  behavior_summary: Returns the rightmost cursor column reached when rendering text, parsing control codes
+    and terminal escape sequences (cursor movement, tabs, OSC sizing) and measuring grapheme widths, always
+    non-negative.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: the result models a virtual cursor walked over control sequences, regex-classified
+    escapes, tab stops, and Unicode-table grapheme widths; far outside the fragment.'
+  difficulty: hard
+  notes: Relies on regex sequence classification, cursor-movement state, tabsize arithmetic, terminal
+    override tables, and full grapheme clustering. Pure-printable-ASCII fast path gives ret==Length(text),
+    but the general contract is fundamentally out. Always returns ret >= 0 (never -1), but that lone bound
+    is not a faithful spec.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

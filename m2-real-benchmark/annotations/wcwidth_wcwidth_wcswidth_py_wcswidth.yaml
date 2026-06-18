@@ -1,0 +1,97 @@
+benchmark_id: wcwidth::wcwidth::_wcswidth.py::wcswidth
+package: wcwidth
+stratum: numeric
+signature: 'wcswidth(pwcs: str, n: Optional[int], unicode_version: str, ambiguous_width: int) -> int'
+informal_spec: "Given a unicode string, return its printable length on a terminal.\n\nSee :ref:`Specification`\
+  \ for details of cell measurement.\n\nThis implementation differs from Markus Khun's original POSIX\
+  \ C implementation, in that this\n``wcswidth()`` processes graphemes strings yielded by :func:`wcwidth.iter_graphemes`\
+  \ defined by\n`Unicode Standard Annex #29`_. POSIX wcswidth(3) is not grapheme-aware and does not measure\
+  \ many\nkinds of Emojis or complex scripts correctly.\n\n:param pwcs: Measure width of given unicode\
+  \ string.\n:param n: When ``n`` is None (default), return the length of the entire\n    string, otherwise\
+  \ only the first ``n`` characters are measured.\n:param unicode_version: Ignored. Retained for backwards\
+  \ compatibility.\n\n    .. deprecated:: 0.3.0\n       Only the latest Unicode version is now shipped.\n\
+  \n:param ambiguous_width: Width to use for East Asian Ambiguous (A)\n    characters. Default is ``1``\
+  \ (narrow). Set to ``2`` for CJK contexts.\n:returns: The width, in cells, needed to display the first\
+  \ ``n`` characters\n    of the unicode string ``pwcs``.  Returns ``-1`` for C0 and C1 control\n    characters!\n\
+  \n.. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/"
+function_source: "def wcswidth(\n    pwcs: str,\n    n: Optional[int] = None,\n    unicode_version: str\
+  \ = 'auto',\n    ambiguous_width: int = 1,\n) -> int:\n    \"\"\"\n    Given a unicode string, return\
+  \ its printable length on a terminal.\n\n    See :ref:`Specification` for details of cell measurement.\n\
+  \n    This implementation differs from Markus Khun's original POSIX C implementation, in that this\n\
+  \    ``wcswidth()`` processes graphemes strings yielded by :func:`wcwidth.iter_graphemes` defined by\n\
+  \    `Unicode Standard Annex #29`_. POSIX wcswidth(3) is not grapheme-aware and does not measure many\n\
+  \    kinds of Emojis or complex scripts correctly.\n\n    :param pwcs: Measure width of given unicode\
+  \ string.\n    :param n: When ``n`` is None (default), return the length of the entire\n        string,\
+  \ otherwise only the first ``n`` characters are measured.\n    :param unicode_version: Ignored. Retained\
+  \ for backwards compatibility.\n\n        .. deprecated:: 0.3.0\n           Only the latest Unicode\
+  \ version is now shipped.\n\n    :param ambiguous_width: Width to use for East Asian Ambiguous (A)\n\
+  \        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts.\n    :returns: The width,\
+  \ in cells, needed to display the first ``n`` characters\n        of the unicode string ``pwcs``.  Returns\
+  \ ``-1`` for C0 and C1 control\n        characters!\n\n    .. _`Unicode Standard Annex #29`: https://www.unicode.org/reports/tr29/\n\
+  \    \"\"\"\n    # pylint: disable=unused-argument,too-many-locals,too-many-statements,redefined-variable-type\n\
+  \    # pylint: disable=too-complex,too-many-branches,duplicate-code,too-many-nested-blocks\n\n    #\
+  \ Fast path: pure ASCII printable strings are always width == length\n    if n is None and pwcs.isascii()\
+  \ and pwcs.isprintable():\n        return len(pwcs)\n\n    _wcwidth = wcwidth if ambiguous_width ==\
+  \ 1 else lambda c: wcwidth(c, 'auto', ambiguous_width)\n\n    end = len(pwcs) if n is None else n\n\
+  \    total_width = 0\n    idx = 0\n\n    last_measured_idx = -2  # -2 sentinel blocks VS16/VS15 (no\
+  \ base available)\n    last_measured_ucs = -1\n    last_measured_w = 0\n    prev_was_virama = False\n\
+  \    cluster_width = 0\n    vs16_nw_table = VS16_NARROW_TO_WIDE['9.0.0']\n    vs15_wn_table = VS15_WIDE_TO_NARROW['9.0.0']\n\
+  \    _bisearch = bisearch\n\n    while idx < end:\n        char = pwcs[idx]\n        ucs = ord(char)\n\
+  \n        # 5. ZWJ (U+200D): consumed without contributing width.\n        # Virama codepoints are treated\
+  \ as zero-width combining marks (Mn). When a\n        # virama+consonant sequence forms a conjunct,\
+  \ its width is capped at 2 cells.\n\n        # ZWJ (U+200D)\n        if ucs == 0x200D:\n           \
+  \ if prev_was_virama:\n                idx += 1\n            elif idx + 1 < end:\n                last_measured_w\
+  \ = 0\n                prev_was_virama = False\n                idx += 2\n            else:\n      \
+  \          prev_was_virama = False\n                idx += 1\n            continue\n\n        # 6. VS16\
+  \ (U+FE0F): converts preceding narrow character to wide.\n        if ucs == 0xFE0F and last_measured_idx\
+  \ >= 0:\n            if _bisearch(last_measured_ucs, vs16_nw_table):\n                cluster_width\
+  \ = 2\n            last_measured_idx = -2\n            idx += 1\n            continue\n\n        # VS15\
+  \ (U+FE0E): text variation selector, requests narrow presentation.\n        if ucs == 0xFE0E and last_measured_idx\
+  \ >= 0:\n            if bisearch(last_measured_ucs, vs15_wn_table) and last_measured_w == 2:\n     \
+  \           total_width -= 1\n            idx += 1\n            continue\n\n        # 7. Regional Indicator\
+  \ & Fitzpatrick (both above BMP)\n        if ucs > 0xFFFF:\n            if ucs in _REGIONAL_INDICATOR_SET:\n\
+  \                ri_before = 0\n                j = idx - 1\n                while j >= 0 and ord(pwcs[j])\
+  \ in _REGIONAL_INDICATOR_SET:\n                    ri_before += 1\n                    j -= 1\n    \
+  \            if ri_before % 2 == 1:\n                    last_measured_ucs = ucs\n                 \
+  \   idx += 1\n                    continue\n            elif (_FITZPATRICK_RANGE[0] <= ucs <= _FITZPATRICK_RANGE[1]\n\
+  \                  and last_measured_ucs in _EMOJI_ZWJ_SET):\n                idx += 1\n           \
+  \     continue\n\n        # 8. Normal character: measure with wcwidth\n        w = _wcwidth(char)\n\
+  \        if w < 0:\n            return -1\n        if w > 0:\n            if prev_was_virama:\n    \
+  \            cluster_width = 2\n            elif cluster_width:\n                total_width += cluster_width\n\
+  \                cluster_width = w\n            else:\n                cluster_width = w\n\n       \
+  \     last_measured_idx = idx\n            last_measured_ucs = ucs\n            last_measured_w = w\n\
+  \            prev_was_virama = False\n        elif ucs in _ISC_VIRAMA_SET:\n            prev_was_virama\
+  \ = True\n        elif last_measured_idx >= 0 and _bisearch(ucs, _CATEGORY_MC_TABLE):\n            cluster_width\
+  \ = 2\n            last_measured_idx = -2\n            prev_was_virama = False\n        else:\n    \
+  \        prev_was_virama = False\n        idx += 1\n\n    if cluster_width:\n        total_width +=\
+  \ cluster_width\n    return total_width"
+reference:
+  behavior_summary: Returns the printable terminal width in cells of the first n characters of a Unicode
+    string using grapheme-aware measurement, returning -1 if a C0/C1 control character is present.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: width is summed over a grapheme-clustering loop driven by large Unicode interval
+    tables (bisearch) and special codepoint handling; not expressible in the fragment.'
+  difficulty: hard
+  notes: Like wcstwidth without terminal overrides. The only fragment-shaped fact is the ASCII fast path
+    (n is None and pure printable ASCII gives ret==Length(pwcs)), but the general contract relies on Unicode
+    tables and per-character width logic. Returns -1 on control chars. Out.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

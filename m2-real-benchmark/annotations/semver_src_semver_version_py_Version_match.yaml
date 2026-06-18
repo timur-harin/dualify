@@ -1,0 +1,60 @@
+benchmark_id: semver::src::semver::version.py::Version::match
+package: semver
+stratum: boolean
+signature: 'match(self: Any, match_expr: str) -> bool'
+informal_spec: "Compare self to match a match expression.\n\n:param match_expr: optional operator and\
+  \ version; valid operators are\n      ``<``   smaller than\n      ``>``   greater than\n      ``>=``\
+  \  greator or equal than\n      ``<=``  smaller or equal than\n      ``==``  equal\n      ``!=``  not\
+  \ equal\n:return: True if the expression matches the version, otherwise False\n\n>>> semver.Version.parse(\"\
+  2.0.0\").match(\">=1.0.0\")\nTrue\n>>> semver.Version.parse(\"1.0.0\").match(\">1.0.0\")\nFalse\n>>>\
+  \ semver.Version.parse(\"4.0.4\").match(\"4.0.4\")\nTrue"
+function_source: "def match(self, match_expr: str) -> bool:\n        \"\"\"\n        Compare self to match\
+  \ a match expression.\n\n        :param match_expr: optional operator and version; valid operators are\n\
+  \              ``<``   smaller than\n              ``>``   greater than\n              ``>=``  greator\
+  \ or equal than\n              ``<=``  smaller or equal than\n              ``==``  equal\n        \
+  \      ``!=``  not equal\n        :return: True if the expression matches the version, otherwise False\n\
+  \n        >>> semver.Version.parse(\"2.0.0\").match(\">=1.0.0\")\n        True\n        >>> semver.Version.parse(\"\
+  1.0.0\").match(\">1.0.0\")\n        False\n        >>> semver.Version.parse(\"4.0.4\").match(\"4.0.4\"\
+  )\n        True\n        \"\"\"\n        prefix = match_expr[:2]\n        if prefix in (\">=\", \"<=\"\
+  , \"==\", \"!=\"):\n            match_version = match_expr[2:]\n        elif prefix and prefix[0] in\
+  \ (\">\", \"<\"):\n            prefix = prefix[0]\n            match_version = match_expr[1:]\n    \
+  \    elif match_expr and match_expr[0] in \"0123456789\":\n            prefix = \"==\"\n           \
+  \ match_version = match_expr\n        else:\n            raise ValueError(\n                \"match_expr\
+  \ parameter should be in format <op><ver>, \"\n                \"where <op> is one of \"\n         \
+  \       \"['<', '>', '==', '<=', '>=', '!=']. \"\n                \"You provided: %r\" % match_expr\n\
+  \            )\n\n        possibilities_dict = {\n            \">\": (1,),\n            \"<\": (-1,),\n\
+  \            \"==\": (0,),\n            \"!=\": (-1, 1),\n            \">=\": (0, 1),\n            \"\
+  <=\": (-1, 0),\n        }\n\n        possibilities = possibilities_dict[prefix]\n        cmp_res = self.compare(match_version)\n\
+  \n        return cmp_res in possibilities"
+reference:
+  behavior_summary: Parses an operator prefix (one of <, >, <=, >=, ==, !=, or implicit == for a bare
+    version) and a version string from match_expr, then returns True iff comparing self against that version
+    yields a sign consistent with the operator, raising ValueError on a malformed expression.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: In-scope only as a structural precondition on the match_expr prefix (well-formedness vs ValueError);
+    out-of-scope is the postcondition, since the truth value depends on self.compare(match_version), a
+    full semver string comparison of object state against a parsed version.
+  difficulty: hard
+  notes: 'Out of fragment for post: relies on self.compare() (semver parse + ordering) and on string slicing
+    of match_expr into operator/version. A ''valid operator/digit prefix'' guard is the only structural
+    precondition, and even that needs string prefix-set membership that is awkward in-fragment.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

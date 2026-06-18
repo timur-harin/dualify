@@ -1,0 +1,51 @@
+benchmark_id: pathspec::pathspec::util.py::TreeEntry::is_dir
+package: pathspec
+stratum: boolean
+signature: 'is_dir(self: Any, follow_links: Optional[bool]) -> bool'
+informal_spec: 'Get whether the entry is a directory.
+
+
+  *follow_links* (:class:`bool` or :data:`None`) is whether to follow symbolic
+
+  links. If this is :data:`True`, a symlink to a directory will result in
+
+  :data:`True`. Default is :data:`None` for :data:`True`.
+
+
+  Returns whether the entry is a directory (:class:`bool`).'
+function_source: "def is_dir(self, follow_links: Optional[bool] = None) -> bool:\n\t\t\"\"\"\n\t\tGet\
+  \ whether the entry is a directory.\n\n\t\t*follow_links* (:class:`bool` or :data:`None`) is whether\
+  \ to follow symbolic\n\t\tlinks. If this is :data:`True`, a symlink to a directory will result in\n\t\
+  \t:data:`True`. Default is :data:`None` for :data:`True`.\n\n\t\tReturns whether the entry is a directory\
+  \ (:class:`bool`).\n\t\t\"\"\"\n\t\tif follow_links is None:\n\t\t\tfollow_links = True\n\n\t\tnode_stat\
+  \ = self._stat if follow_links else self._lstat\n\t\treturn stat.S_ISDIR(node_stat.st_mode)"
+reference:
+  behavior_summary: Returns True iff the entry's stat result (the linked stat when follow_links is True/None,
+    otherwise the lstat) reports a directory mode.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: the result is stat.S_ISDIR applied to a mode bit field stored in object state
+    (self._stat/self._lstat); it is a function of opaque os.stat_result instance state, not of follow_links
+    alone.'
+  difficulty: hard
+  notes: 'Out of fragment: calls stat.S_ISDIR on os.stat_result.st_mode held in self._stat/self._lstat.
+    follow_links=None is treated as True. Behaviour depends entirely on object state.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

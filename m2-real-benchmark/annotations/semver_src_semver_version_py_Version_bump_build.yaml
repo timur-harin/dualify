@@ -1,0 +1,51 @@
+benchmark_id: semver::src::semver::version.py::Version::bump_build
+package: semver
+stratum: structured
+signature: 'bump_build(self: Any, token: Optional[str]) -> ''Version'''
+informal_spec: "Raise the build part of the version, return a new object but leave self\nuntouched.\n\n\
+  :param token: defaults to ``'build'``\n:return: new :class:`Version` object with the raised build part.\n\
+  \    The original object is not modified.\n\n>>> ver = semver.parse(\"3.4.5-rc.1+build.9\")\n>>> ver.bump_build()\n\
+  Version(major=3, minor=4, patch=5, prerelease='rc.1', build='build.10')"
+function_source: "def bump_build(self, token: Optional[str] = \"build\") -> \"Version\":\n        \"\"\
+  \"\n        Raise the build part of the version, return a new object but leave self\n        untouched.\n\
+  \n        :param token: defaults to ``'build'``\n        :return: new :class:`Version` object with the\
+  \ raised build part.\n            The original object is not modified.\n\n        >>> ver = semver.parse(\"\
+  3.4.5-rc.1+build.9\")\n        >>> ver.bump_build()\n        Version(major=3, minor=4, patch=5, prerelease='rc.1',\
+  \ \\\nbuild='build.10')\n        \"\"\"\n        cls = type(self)\n        if self._build is not None:\n\
+  \            build = self._build\n        elif token == \"\":\n            build = \"0\"\n        elif\
+  \ token is None:\n            build = \"build.0\"\n        else:\n            build = str(token) + \"\
+  .0\"\n\n        # self._build or (token or \"build\") + \".0\"\n        build = cls._increment_string(build)\n\
+  \        if self._build is not None:\n            build = self._build\n        elif token == \"\":\n\
+  \            build = \"0\"\n        elif token is None:\n            build = \"build.0\"\n        else:\n\
+  \            build = str(token) + \".0\"\n\n        # self._build or (token or \"build\") + \".0\"\n\
+  \        build = cls._increment_string(build)\n        return cls(self._major, self._minor, self._patch,\
+  \ self._prerelease, build)"
+reference:
+  behavior_summary: Returns a new Version equal to self but with the build segment incremented (defaulting
+    to 'build.0'->'build.1' when no build is present), leaving self unchanged.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: constructs and returns a new Version object derived from string-segment incrementing.'
+  difficulty: medium
+  notes: 'Observable: ret.major==self_major, ret.minor==self_minor, ret.patch==self_patch, prerelease
+    preserved, only build raised; object construction and string increment are out of fragment. Note the
+    body is duplicated (a copy-paste artifact) but is idempotent.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

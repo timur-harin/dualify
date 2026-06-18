@@ -1,0 +1,37 @@
+benchmark_id: inflection::inflection::__init__.py::dasherize
+package: inflection
+stratum: string
+signature: 'dasherize(word: str) -> str'
+informal_spec: "Replace underscores with dashes in the string.\n\nExample::\n\n    >>> dasherize(\"puni_puni\"\
+  )\n    'puni-puni'"
+function_source: "def dasherize(word: str) -> str:\n    \"\"\"Replace underscores with dashes in the string.\n\
+  \n    Example::\n\n        >>> dasherize(\"puni_puni\")\n        'puni-puni'\n\n    \"\"\"\n    return\
+  \ word.replace('_', '-')"
+reference:
+  behavior_summary: Returns the word with every underscore replaced by a dash.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: per-character str.replace substitution.'
+  difficulty: easy
+  notes: Equal-length character substitution ('_'->'-'); the fragment can state Length(ret) == Length(word)
+    but cannot express the character mapping, so no faithful full postcondition. Length equality alone
+    is a near-fact, not the behaviour.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

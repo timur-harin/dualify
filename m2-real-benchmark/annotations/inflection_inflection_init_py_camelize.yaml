@@ -1,0 +1,47 @@
+benchmark_id: inflection::inflection::__init__.py::camelize
+package: inflection
+stratum: string
+signature: 'camelize(string: str, uppercase_first_letter: bool) -> str'
+informal_spec: "Convert strings to CamelCase.\n\nExamples::\n\n    >>> camelize(\"device_type\")\n   \
+  \ 'DeviceType'\n    >>> camelize(\"device_type\", False)\n    'deviceType'\n\n:func:`camelize` can be\
+  \ thought of as a inverse of :func:`underscore`,\nalthough there are some cases where that does not\
+  \ hold::\n\n    >>> camelize(underscore(\"IOError\"))\n    'IoError'\n\n:param uppercase_first_letter:\
+  \ if set to `True` :func:`camelize` converts\n    strings to UpperCamelCase. If set to `False` :func:`camelize`\
+  \ produces\n    lowerCamelCase. Defaults to `True`."
+function_source: "def camelize(string: str, uppercase_first_letter: bool = True) -> str:\n    \"\"\"\n\
+  \    Convert strings to CamelCase.\n\n    Examples::\n\n        >>> camelize(\"device_type\")\n    \
+  \    'DeviceType'\n        >>> camelize(\"device_type\", False)\n        'deviceType'\n\n    :func:`camelize`\
+  \ can be thought of as a inverse of :func:`underscore`,\n    although there are some cases where that\
+  \ does not hold::\n\n        >>> camelize(underscore(\"IOError\"))\n        'IoError'\n\n    :param\
+  \ uppercase_first_letter: if set to `True` :func:`camelize` converts\n        strings to UpperCamelCase.\
+  \ If set to `False` :func:`camelize` produces\n        lowerCamelCase. Defaults to `True`.\n    \"\"\
+  \"\n    if uppercase_first_letter:\n        return re.sub(r\"(?:^|_)(.)\", lambda m: m.group(1).upper(),\
+  \ string)\n    else:\n        return string[0].lower() + camelize(string)[1:]"
+reference:
+  behavior_summary: Converts an underscored string to CamelCase, optionally lowercasing the first letter
+    for lowerCamelCase.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'out-of-scope: regex substitution with a callback and recursion.'
+  difficulty: medium
+  notes: Relies on re.sub with a lambda uppercasing match groups plus recursion; no in-fragment construct
+    captures the per-character case transformation.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

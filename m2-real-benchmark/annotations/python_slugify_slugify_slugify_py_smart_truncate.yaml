@@ -1,0 +1,62 @@
+benchmark_id: python-slugify::slugify::slugify.py::smart_truncate
+package: python-slugify
+stratum: string
+signature: 'smart_truncate(string: str, max_length: int, word_boundary: bool, separator: str, save_order:
+  bool) -> str'
+informal_spec: 'Truncate a string.
+
+  :param string (str): string for modification
+
+  :param max_length (int): output string length
+
+  :param word_boundary (bool):
+
+  :param save_order (bool): if True then word order of output string is like input string
+
+  :param separator (str): separator between words
+
+  :return:'
+function_source: "def smart_truncate(\n    string: str,\n    max_length: int = 0,\n    word_boundary:\
+  \ bool = False,\n    separator: str = \" \",\n    save_order: bool = False,\n) -> str:\n    \"\"\"\n\
+  \    Truncate a string.\n    :param string (str): string for modification\n    :param max_length (int):\
+  \ output string length\n    :param word_boundary (bool):\n    :param save_order (bool): if True then\
+  \ word order of output string is like input string\n    :param separator (str): separator between words\n\
+  \    :return:\n    \"\"\"\n\n    string = string.strip(separator)\n\n    if not max_length:\n      \
+  \  return string\n\n    if len(string) < max_length:\n        return string\n\n    if not word_boundary:\n\
+  \        return string[:max_length].strip(separator)\n\n    if separator not in string:\n        return\
+  \ string[:max_length]\n\n    truncated = ''\n    for word in string.split(separator):\n        if word:\n\
+  \            next_len = len(truncated) + len(word)\n            if next_len < max_length:\n        \
+  \        truncated += '{}{}'.format(word, separator)\n            elif next_len == max_length:\n   \
+  \             truncated += '{}'.format(word)\n                break\n            else:\n           \
+  \     if save_order:\n                    break\n    if not truncated:  # pragma: no cover\n       \
+  \ truncated = string[:max_length]\n    return truncated.strip(separator)"
+reference:
+  behavior_summary: Strips leading/trailing separators and returns the string truncated to at most max_length
+    characters, optionally cutting at word boundaries.
+  fragment_fit: near
+  reference_pre: []
+  reference_post: Implies(max_length == 0, Length(ret) <= Length(string))
+  profile: 'observable boundary: a length bound holds, but exact truncated content needs string slicing
+    and split.'
+  difficulty: hard
+  notes: When max_length==0 it returns the separator-stripped string so Length(ret) <= Length(string);
+    the general truncation uses str.split, slicing and strip which are out of fragment, so only the length
+    bound is faithfully expressible and even Length(ret) <= max_length fails when max_length==0.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

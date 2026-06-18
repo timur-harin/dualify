@@ -1,0 +1,44 @@
+benchmark_id: packaging::src::packaging::specifiers.py::_numeric_prefix_len
+package: packaging
+stratum: numeric
+signature: '_numeric_prefix_len(split: list[str]) -> int'
+informal_spec: 'Count leading numeric components in a :func:`_version_split` result.
+
+
+  >>> _numeric_prefix_len(["0", "1", "2", "a1"])
+
+  3'
+function_source: "def _numeric_prefix_len(split: list[str]) -> int:\n    \"\"\"Count leading numeric components\
+  \ in a :func:`_version_split` result.\n\n    >>> _numeric_prefix_len([\"0\", \"1\", \"2\", \"a1\"])\n\
+  \    3\n    \"\"\"\n    count = 0\n    for segment in split:\n        if not segment.isdigit():\n  \
+  \          break\n        count += 1\n    return count"
+reference:
+  behavior_summary: Returns the number of leading list elements whose string is all digits, stopping at
+    the first non-digit element.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Observable boundary: ret is in 0..Length(split), but the exact value requires per-element
+    str.isdigit() testing in a loop, a quantified/helper-call property outside the fragment.'
+  difficulty: medium
+  notes: Requires iterating over list elements and calling str.isdigit on each (helper call + implicit
+    quantification). Best near-approximation would only bound ret between 0 and Length(split), which is
+    weak and not faithful to the actual counting; treated as out.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

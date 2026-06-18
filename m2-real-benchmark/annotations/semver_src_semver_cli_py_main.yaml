@@ -1,0 +1,45 @@
+benchmark_id: semver::src::semver::cli.py::main
+package: semver
+stratum: numeric
+signature: 'main(cliargs: Optional[List[str]]) -> int'
+informal_spec: 'Entry point for the application script.
+
+
+  :param list cliargs: Arguments to parse or None (=use :class:`sys.argv`)
+
+  :return: error code'
+function_source: "def main(cliargs: Optional[List[str]] = None) -> int:\n    \"\"\"\n    Entry point for\
+  \ the application script.\n\n    :param list cliargs: Arguments to parse or None (=use :class:`sys.argv`)\n\
+  \    :return: error code\n    \"\"\"\n    try:\n        parser = createparser()\n        args = parser.parse_args(args=cliargs)\n\
+  \        # Save parser instance:\n        args.parser = parser\n        result = process(args)\n   \
+  \     if result is not None:\n            print(result)\n        return 0\n\n    except (ValueError,\
+  \ TypeError) as err:\n        print(\"ERROR\", err, file=sys.stderr)\n        return 2"
+reference:
+  behavior_summary: 'CLI entry point: parses arguments, runs the command, prints the result, and returns
+    exit code 0 on success or 2 on ValueError/TypeError.'
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: a side-effecting CLI driver (argument parsing, printing, dispatch) whose return
+    is an exit code; behaviour is not a pure input/output relation expressible in the fragment.'
+  difficulty: easy
+  notes: Side effects (print, stderr) and external dispatch (createparser/process). ret is 0 on success,
+    2 on caught exceptions; depends on parsing arbitrary cliargs. No faithful in-fragment postcondition.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

@@ -1,0 +1,59 @@
+benchmark_id: pathspec::pathspec::_backends::_utils.py::enumerate_patterns
+package: pathspec
+stratum: structured
+signature: 'enumerate_patterns(patterns: Iterable[TPattern], filter: bool, reverse: bool) -> list[tuple[int,
+  TPattern]]'
+informal_spec: 'Enumerate the patterns.
+
+
+  *patterns* (:class:`Iterable` of :class:`.Pattern`) contains the patterns.
+
+
+  *filter* (:class:`bool`) is whether to remove no-op patterns (:data:`True`),
+
+  or keep them (:data:`False`).
+
+
+  *reverse* (:class:`bool`) is whether to reverse the pattern order
+
+  (:data:`True`), or keep the order (:data:`True`).
+
+
+  Returns the enumerated patterns (:class:`list` of :class:`tuple`).'
+function_source: "def enumerate_patterns(\n\tpatterns: Iterable[TPattern],\n\tfilter: bool,\n\treverse:\
+  \ bool,\n) -> list[tuple[int, TPattern]]:\n\t\"\"\"\n\tEnumerate the patterns.\n\n\t*patterns* (:class:`Iterable`\
+  \ of :class:`.Pattern`) contains the patterns.\n\n\t*filter* (:class:`bool`) is whether to remove no-op\
+  \ patterns (:data:`True`),\n\tor keep them (:data:`False`).\n\n\t*reverse* (:class:`bool`) is whether\
+  \ to reverse the pattern order\n\t(:data:`True`), or keep the order (:data:`True`).\n\n\tReturns the\
+  \ enumerated patterns (:class:`list` of :class:`tuple`).\n\t\"\"\"\n\tout_patterns = [\n\t\t(__i, __pat)\n\
+  \t\tfor __i, __pat in enumerate(patterns)\n\t\tif not filter or __pat.include is not None\n\t]\n\tif\
+  \ reverse:\n\t\tout_patterns.reverse()\n\n\treturn out_patterns"
+reference:
+  behavior_summary: Enumerates patterns into (index, pattern) tuples, dropping no-op patterns when filter
+    is True, then reverses the list when reverse is True.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out-of-scope: builds a list of index/pattern tuples via comprehension and inspects pattern.include
+    attributes.'
+  difficulty: medium
+  notes: A weak in-fragment property (Length(ret) <= Length(patterns)) holds but patterns is an arbitrary
+    Iterable with no Length and the result is a tuple list; not faithfully expressible, so out.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

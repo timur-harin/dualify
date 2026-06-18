@@ -1,0 +1,66 @@
+benchmark_id: wcwidth::wcwidth::_wcwidth.py::wcwidth
+package: wcwidth
+stratum: numeric
+signature: 'wcwidth(wc: str, unicode_version: str, ambiguous_width: int) -> int'
+informal_spec: "Given one Unicode codepoint, return its printable length on a terminal.\n\n:param wc:\
+  \ A single Unicode character.\n:param unicode_version: Ignored. Retained for backwards compatibility.\n\
+  \n    .. deprecated:: 0.3.0\n       Only the latest Unicode version is now shipped.\n\n:param ambiguous_width:\
+  \ Width to use for East Asian Ambiguous (A)\n    characters. Default is ``1`` (narrow). Set to ``2``\
+  \ for CJK contexts\n    where ambiguous characters display as double-width. See\n    :ref:`ambiguous_width`\
+  \ for details.\n:returns: The width, in cells, necessary to display the character of\n    Unicode string\
+  \ character, ``wc``.  Returns 0 if the ``wc`` argument has\n    no printable effect on a terminal (such\
+  \ as NUL '\\0'), -1 if ``wc`` is\n    not printable, or has an indeterminate effect on the terminal,\
+  \ such as\n    a control character.  Otherwise, the number of column positions the\n    character occupies\
+  \ on a graphic terminal (1 or 2) is returned.\n\nSee :ref:`Specification` for details of cell measurement."
+function_source: "def wcwidth(wc: str, unicode_version: str = 'auto', ambiguous_width: int = 1) -> int:\
+  \  # pylint: disable=unused-argument\n    r\"\"\"\n    Given one Unicode codepoint, return its printable\
+  \ length on a terminal.\n\n    :param wc: A single Unicode character.\n    :param unicode_version: Ignored.\
+  \ Retained for backwards compatibility.\n\n        .. deprecated:: 0.3.0\n           Only the latest\
+  \ Unicode version is now shipped.\n\n    :param ambiguous_width: Width to use for East Asian Ambiguous\
+  \ (A)\n        characters. Default is ``1`` (narrow). Set to ``2`` for CJK contexts\n        where ambiguous\
+  \ characters display as double-width. See\n        :ref:`ambiguous_width` for details.\n    :returns:\
+  \ The width, in cells, necessary to display the character of\n        Unicode string character, ``wc``.\
+  \  Returns 0 if the ``wc`` argument has\n        no printable effect on a terminal (such as NUL '\\\
+  0'), -1 if ``wc`` is\n        not printable, or has an indeterminate effect on the terminal, such as\n\
+  \        a control character.  Otherwise, the number of column positions the\n        character occupies\
+  \ on a graphic terminal (1 or 2) is returned.\n\n    See :ref:`Specification` for details of cell measurement.\n\
+  \    \"\"\"\n    ucs = ord(wc) if wc else 0\n\n    # small optimization: early return of 1 for printable\
+  \ ASCII, this provides\n    # approximately 40% performance improvement for mostly-ascii documents,\
+  \ with\n    # less than 1% impact to others.\n    if 32 <= ucs < 0x7f:\n        return 1\n\n    # C0/C1\
+  \ control characters are -1 for compatibility with POSIX-like calls\n    if ucs and ucs < 32 or 0x07F\
+  \ <= ucs < 0x0A0:\n        return -1\n\n    # Zero width\n    if bisearch(ucs, _ZERO_WIDTH_TABLE):\n\
+  \        return 0\n\n    # Wide (F/W categories)\n    if bisearch(ucs, _WIDE_EASTASIAN_TABLE):\n   \
+  \     return 2\n\n    # Ambiguous width (A category) - only when ambiguous_width=2\n    if ambiguous_width\
+  \ == 2 and bisearch(ucs, _AMBIGUOUS_TABLE):\n        return 2\n\n    return 1"
+reference:
+  behavior_summary: 'Returns the display width of a single codepoint: 1 for printable ASCII, -1 for C0/C1
+    control characters, 0 for zero-width, 2 for wide (and ambiguous when ambiguous_width==2), else 1.'
+  fragment_fit: near
+  reference_pre: []
+  reference_post: And(Implies(And(wc >= 32, wc < 127), ret == 1), Implies(Or(And(wc >= 1, wc < 32), And(wc
+    >= 127, wc < 160)), ret == -1), Or(ret == -1, ret == 0, ret == 1, ret == 2))
+  profile: 'Observable boundary: the ASCII and control-character ranges are cleanly expressible, but the
+    0/2 classifications for non-ASCII depend on Unicode interval tables (bisearch) that lie outside the
+    fragment.'
+  difficulty: medium
+  notes: 'Near approximation: keep the exactly-known facts (printable ASCII -> 1, C0/C1 -> -1) and otherwise
+    only constrain ret to {-1,0,1,2}. The zero-width and wide/ambiguous cases require _ZERO_WIDTH_TABLE/_WIDE_EASTASIAN_TABLE/_AMBIGUOUS_TABLE
+    lookups, which are out of fragment. Treats wc as its codepoint ordinal.'
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []

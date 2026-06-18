@@ -1,0 +1,55 @@
+benchmark_id: humanize::src::humanize::time.py::_rounding_by_fmt
+package: humanize
+stratum: numeric
+signature: '_rounding_by_fmt(format: str, value: float) -> float | int'
+informal_spec: 'Round a number according to the string format provided.
+
+
+  The string format is the old printf-style string formatting.
+
+
+  If we are using a format which truncates the value, such as "%d" or "%i", the
+
+  returned value will be of type `int`.
+
+
+  If we are using a format which rounds the value, such as "%.2f" or even "%.0f",
+
+  we will return a float.'
+function_source: "def _rounding_by_fmt(format: str, value: float) -> float | int:\n    \"\"\"Round a number\
+  \ according to the string format provided.\n\n    The string format is the old printf-style string formatting.\n\
+  \n    If we are using a format which truncates the value, such as \"%d\" or \"%i\", the\n    returned\
+  \ value will be of type `int`.\n\n    If we are using a format which rounds the value, such as \"%.2f\"\
+  \ or even \"%.0f\",\n    we will return a float.\n    \"\"\"\n    result = format % value\n\n    try:\n\
+  \        value = int(result)\n    except ValueError:\n        value = float(result)\n\n    return value"
+reference:
+  behavior_summary: Applies printf-style format string to value and returns the result parsed as int if
+    it is integer-shaped, otherwise as float.
+  fragment_fit: out
+  reference_pre: []
+  reference_post: null
+  profile: 'Out of scope: the return value is governed by printf-style string formatting (format % value)
+    and int/float parsing of the resulting string, which are arbitrary library operations not expressible
+    in the fragment.'
+  difficulty: medium
+  notes: Behaviour depends on the contents of the format string (e.g. %d vs %.2f), parsed via % operator
+    and int()/float() with exception handling. No faithful in-fragment postcondition; the numeric relation
+    between value and ret is format-dependent.
+p01:
+  status: pending_hosted_run
+  domain_constraints: []
+  postcondition: null
+  confidence: null
+  degraded: null
+annotations:
+  annotator_1:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+  annotator_2:
+    postcondition: null
+    domain_constraints: []
+    note: ''
+adjudicated:
+  postcondition: null
+  domain_constraints: []
