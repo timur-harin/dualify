@@ -32,3 +32,8 @@ benchmark/repos/
 !.env.example
 !.env.*.example
 
+# Conference papers: private submodules (not on public main).
+# Clone with: git submodule update --init --recursive
+# Setup: ./scripts/setup_conference_submodules.sh
+conferences/
+

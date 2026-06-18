@@ -1,0 +1,6 @@
+[submodule "conferences/icse-2027"]
+	path = conferences/icse-2027
+	url = https://github.com/timur-harin/dualify-icse-2027.git
+[submodule "conferences/arxiv"]
+	path = conferences/arxiv
+	url = https://github.com/timur-harin/dualify-arxiv.git
