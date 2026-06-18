@@ -5,6 +5,7 @@ from typing import Any
 
 import z3
 
+from dualify.formula_parser import extract_quantifier_binders, normalize_formula
 from dualify.types import ExtractionResult, SmtResult
 
 
@@ -20,19 +21,62 @@ def _sanitize_sort_name(type_name: str) -> str:
     return cleaned or "Unknown"
 
 
-def _sort_for_type(type_name: str) -> z3.SortRef:
-    if type_name == "int":
+def _normalize_type_name(type_name: str) -> str:
+    return "".join(type_name.split())
+
+
+def _element_sort_for_generic(type_name: str) -> z3.SortRef:
+    lowered = _normalize_type_name(type_name).lower()
+    if lowered in {"t", "u", "any", "direction", "activity"}:
         return z3.IntSort()
-    if type_name == "bool":
+    return _sort_for_type(type_name)
+
+
+def _sequence_element_sort(inner_type: str) -> z3.SortRef:
+    inner = _normalize_type_name(inner_type).lower()
+    tuple_match = re.fullmatch(r"tuple\[(.+)\]", inner)
+    if tuple_match:
+        parts = [part.strip() for part in tuple_match.group(1).replace("...", "").split(",") if part.strip()]
+        elem_type = parts[0] if parts else "int"
+        return z3.SeqSort(_element_sort_for_generic(elem_type))
+    if inner.startswith("list["):
+        return z3.SeqSort(z3.SeqSort(z3.IntSort()))
+    return _element_sort_for_generic(inner_type)
+
+
+def _sort_for_type(type_name: str) -> z3.SortRef:
+    normalized = _normalize_type_name(type_name)
+    lowered = normalized.lower()
+
+    if lowered in {"int", "integer"}:
+        return z3.IntSort()
+    if lowered == "bool":
         return z3.BoolSort()
-    if type_name == "float":
+    if lowered in {"float", "real"}:
         return z3.RealSort()
-    if type_name == "str":
+    if lowered == "str":
         return z3.StringSort()
-    list_match = re.fullmatch(r"list\[(.+)\]", type_name)
-    if list_match:
-        item_type = list_match.group(1).strip()
-        return z3.SeqSort(_sort_for_type(item_type))
+    if "ndarray" in lowered:
+        return z3.SeqSort(z3.RealSort())
+
+    optional_match = re.fullmatch(r"optional\[(.+)\]", lowered)
+    if optional_match:
+        return _sort_for_type(optional_match.group(1))
+
+    container_match = re.fullmatch(r"(list|tuple|set|iterable|mutablemapping)\[(.+)\]", lowered)
+    if container_match:
+        kind, inner = container_match.group(1), container_match.group(2).strip()
+        if kind == "tuple":
+            if "..." in inner:
+                return z3.SeqSort(z3.IntSort())
+            parts = [part.strip() for part in inner.replace("...", "").split(",") if part.strip()]
+            elem_type = parts[0] if parts else "int"
+            return z3.SeqSort(_element_sort_for_generic(elem_type))
+        return z3.SeqSort(_sequence_element_sort(inner))
+
+    if re.match(r"^[A-Z]", type_name):
+        return z3.SeqSort(z3.IntSort())
+
     return z3.DeclareSort(f"T_{_sanitize_sort_name(type_name)}")
 
 
@@ -105,7 +149,8 @@ def _rewrite_expression(expr: str, benchmark_id: str) -> str:
 
 
 def _canonicalize_expression(expr: str, benchmark_id: str) -> str:
-    rewritten = _rewrite_expression(expr, benchmark_id)
+    normalized = normalize_formula(expr)
+    rewritten = _rewrite_expression(normalized, benchmark_id)
     try:
         parsed = ast.parse(rewritten, mode="eval")
         transformed = _BoolOpTransformer().visit(parsed)
@@ -119,8 +164,59 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
     normalized_expr = _canonicalize_expression(expr, benchmark_id)
     sqrt_fn = z3.Function("sqrt", z3.RealSort(), z3.RealSort())
 
+    def _max(*values: Any) -> Any:
+        if not values:
+            raise ValueError("max requires at least one argument")
+        result = values[0]
+        for value in values[1:]:
+            result = z3.If(value >= result, value, result)
+        return result
+
+    def _min(*values: Any) -> Any:
+        if not values:
+            raise ValueError("min requires at least one argument")
+        result = values[0]
+        for value in values[1:]:
+            result = z3.If(value <= result, value, result)
+        return result
+
     def _floor(value: Any) -> Any:
+        if hasattr(value, "sort") and value.sort().kind() == z3.Z3_INT_SORT:
+            value = z3.ToReal(value)
         return z3.ToInt(value)
+
+    def _is_string_sort(sort: Any) -> bool:
+        return str(sort) == "String"
+
+    def _contains(seq: Any, elem: Any) -> Any:
+        if hasattr(seq, "sort"):
+            if _is_string_sort(seq.sort()):
+                if isinstance(elem, str):
+                    return z3.Contains(seq, elem)
+                return z3.Contains(seq, elem)
+            if hasattr(elem, "sort") and elem.sort().kind() == z3.Z3_INT_SORT:
+                if seq.sort().kind() == z3.Z3_SEQ_SORT:
+                    try:
+                        return z3.Contains(seq, z3.Unit(elem))
+                    except z3.Z3Exception:
+                        return z3.And(elem >= 0, elem < z3.Length(seq))
+        if isinstance(elem, str):
+            return z3.Contains(seq, elem)
+        if hasattr(elem, "sort"):
+            if elem.sort().kind() == z3.Z3_SEQ_SORT:
+                return z3.Contains(seq, elem)
+            return z3.Contains(seq, z3.Unit(elem))
+        return z3.Contains(seq, z3.Unit(elem))
+
+    def _string_lit(value: Any) -> Any:
+        if isinstance(value, str):
+            return z3.StringVal(value)
+        return value
+
+    def _char_lit(value: Any) -> Any:
+        if isinstance(value, str):
+            return z3.CharVal(value)
+        return value
 
     def _sqrt(value: Any) -> Any:
         if hasattr(z3, "Sqrt"):
@@ -140,7 +236,7 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
         for name in dir(z3)
         if not name.startswith("_") and callable(getattr(z3, name, None))
     }
-    env = {
+    custom_callables = {
         "And": z3.And,
         "Or": z3.Or,
         "Not": z3.Not,
@@ -148,19 +244,29 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
         "If": z3.If,
         "Abs": z3.Abs,
         "Length": z3.Length,
-        "Contains": z3.Contains,
+        "Contains": _contains,
+        "String": _string_lit,
+        "Char": _char_lit,
         "PrefixOf": z3.PrefixOf,
         "SuffixOf": z3.SuffixOf,
         "Concat": z3.Concat,
         "floor": _floor,
+        "max": _max,
+        "min": _min,
         "sqrt": _sqrt,
         "pow": _pow,
         "IsDigitString": _is_digit_string,
         "True": True,
         "False": False,
     }
+    env = {}
     env.update(z3_callables)
+    env.update(custom_callables)
     env.update(scope)
+    # Quantifier binders are locally bound variables in formulas. If the model
+    # emits ForAll([i], ...) / Exists(i, ...), ensure those names exist in eval env.
+    for binder in extract_quantifier_binders(normalized_expr):
+        env.setdefault(binder, z3.Int(binder))
     return eval(normalized_expr, {"__builtins__": {}}, env)
 
 
@@ -248,8 +354,16 @@ _RESERVED_FORMULA_TOKENS = {
 
 
 def _infer_symbol_type(name: str, expressions: list[str]) -> str:
+    if name.startswith("self_"):
+        return "int"
     joined = " ".join(expressions)
+    if re.search(rf"\b{re.escape(name)}\s*\[", joined):
+        return "List[int]"
+    if re.search(rf"\bContains\s*\(\s*{re.escape(name)}\b", joined):
+        return "str"
     if re.search(rf"\bLength\s*\(\s*{re.escape(name)}\b", joined):
+        if re.search(rf"\b{re.escape(name)}\s*\[", joined):
+            return "List[int]"
         return "str"
     if re.search(rf"\b{re.escape(name)}\s*[%+\-*/<>]", joined) or re.search(
         rf"[%+\-*/<>]\s*{re.escape(name)}\b",
@@ -323,11 +437,15 @@ def _check_post_well_formedness(spec_post: str, code_post: str) -> str:
     return "ok"
 
 
+_SOLVER_TIMEOUT_MS = 5_000
+
+
 def _check_with_status(solver: z3.Solver) -> z3.CheckSatResult:
     """Run solver.check() and return its raw status, never coerced to sat/unsat.
 
     Centralized so the call site can distinguish unknown from unsat.
     """
+    solver.set("timeout", _SOLVER_TIMEOUT_MS)
     return solver.check()
 
 
@@ -337,6 +455,9 @@ def _augment_scope_from_formulas(
     expressions: list[str],
 ) -> None:
     found_names: set[str] = set()
+    binder_names: set[str] = set()
+    for expr in expressions:
+        binder_names |= extract_quantifier_binders(expr)
     for expr in expressions:
         called_names: set[str] = set()
         try:
@@ -352,6 +473,8 @@ def _augment_scope_from_formulas(
             if token in _RESERVED_FORMULA_TOKENS:
                 continue
             if token in called_names:
+                continue
+            if token in binder_names:
                 continue
             if token.isdigit():
                 continue
@@ -379,10 +502,10 @@ def check_equivalence(
 
     try:
         clean_spec_constraints = _strip_exhaustive_zero_split_constraints(
-            spec_logic.domain_constraints
+            [_canonicalize_expression(c, case_spec.benchmark_id) for c in spec_logic.domain_constraints]
         )
         clean_code_constraints = _strip_exhaustive_zero_split_constraints(
-            code_logic.domain_constraints
+            [_canonicalize_expression(c, case_spec.benchmark_id) for c in code_logic.domain_constraints]
         )
         _augment_scope_from_formulas(
             scope,
@@ -390,8 +513,8 @@ def check_equivalence(
             [
                 *clean_spec_constraints,
                 *clean_code_constraints,
-                spec_logic.postcondition,
-                code_logic.postcondition,
+                _canonicalize_expression(spec_logic.postcondition, case_spec.benchmark_id),
+                _canonicalize_expression(code_logic.postcondition, case_spec.benchmark_id),
             ],
         )
         spec_constraints = [
@@ -400,8 +523,16 @@ def check_equivalence(
         code_constraints = [
             _safe_eval(c, scope, case_spec.benchmark_id) for c in clean_code_constraints
         ]
-        spec_post = _safe_eval(spec_logic.postcondition, scope, case_spec.benchmark_id)
-        code_post = _safe_eval(code_logic.postcondition, scope, case_spec.benchmark_id)
+        spec_post = _safe_eval(
+            _canonicalize_expression(spec_logic.postcondition, case_spec.benchmark_id),
+            scope,
+            case_spec.benchmark_id,
+        )
+        code_post = _safe_eval(
+            _canonicalize_expression(code_logic.postcondition, case_spec.benchmark_id),
+            scope,
+            case_spec.benchmark_id,
+        )
     except Exception as exc:
         return SmtResult(
             benchmark_id=case_spec.benchmark_id,

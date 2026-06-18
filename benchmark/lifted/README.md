@@ -97,8 +97,15 @@ use `ForAll`/`Exists` in the *reference* contract for human readability; these g
 beyond the decidable fragment Dualify sends to Z3 and are intended as a
 ground-truth oracle, not as direct solver input.
 
-## Status
+## Scoring
 
-The benchmark is **data-only** at this stage: nothing in `src/` loads these
-YAMLs yet. A loader that builds `BenchmarkCase`s from the gold records and scores
-Dualify's p01/p02/p03 output against the reference contracts is later work.
+`dualify.gold_scoring` loads these YAMLs and scores p01/p02 extractions against
+`reference_pre` / `reference_post` (or `reference_normalized` when present).
+The benchmark runner attaches per-case `gold_scoring` and run-level
+`summary.gold_scoring` counters (`pre_exact`, `post_exact`,
+`contract_equivalent` for spec and code separately). Re-score an existing run
+without LLM calls:
+
+```bash
+poetry run python -m dualify.runner --score-gold-json results/lifted_auto_eval_*.json
+```

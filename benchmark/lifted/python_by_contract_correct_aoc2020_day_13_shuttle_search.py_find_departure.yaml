@@ -11,19 +11,28 @@ informal_spec_raw: Find the earliest bus to catch after ``start_time``.
 function_source: "def find_departure(start_time: int, bus_ids: Set[int]) -> Tuple[int,\
   \ int]:\n    \"\"\"Find the earliest bus to catch after ``start_time``.\"\"\"\n\
   \    return min([(next_departure(bid, start_time), bid) for bid in bus_ids])"
-profile: ''
+profile: 'In scope: earliest bus departure (time, bus_id) among bus_ids after start_time.
+  Out of scope: set iteration order. Observable: returned pair ret[0], ret[1].'
 in_fragment: true
 reference_pre:
 - start_time >= 0
 - Length(bus_ids) > 0
 - ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(bus_ids)), bus_ids[_k0] > 0))
-reference_post: ret[0] >= start_time and ret[0] % ret[1] == 0
-notes: ''
+reference_post: And(Exists([_k0], And(0 <= _k0, _k0 < Length(bus_ids), bus_ids[_k0]
+  == ret[1])), ret[0] >= start_time, ret[0] % ret[1] == 0, ret[0] < start_time +
+  ret[1], ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(bus_ids)), ret[0] <=
+  If(start_time % bus_ids[_k0] == 0, start_time, start_time - start_time % bus_ids[_k0]
+  + bus_ids[_k0]))))
+notes: 'manual-fix: strengthened post with ret[1] in bus_ids and minimality over all
+  buses via next-departure upper bounds.'
 reference_normalized:
   pre:
   - start_time >= 0
   - Length(bus_ids) > 0
   - ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(bus_ids)), bus_ids[_k0] > 0))
-  post: ret[0] >= start_time and ret[0] % ret[1] == 0
+  post: And(Exists([_k0], And(0 <= _k0, _k0 < Length(bus_ids), bus_ids[_k0] == ret[1])),
+    ret[0] >= start_time, ret[0] % ret[1] == 0, ret[0] < start_time + ret[1], ForAll([_k0],
+    Implies(And(0 <= _k0, _k0 < Length(bus_ids)), ret[0] <= If(start_time % bus_ids[_k0]
+    == 0, start_time, start_time - start_time % bus_ids[_k0] + bus_ids[_k0]))))
 status: confirmed
 needs_attention: false
