@@ -9,7 +9,9 @@ install_hooks() {
   local repo="$1"
   local label="$2"
   mkdir -p "$repo/.githooks"
-  cp "$ROOT/.githooks/prepare-commit-msg" "$repo/.githooks/prepare-commit-msg"
+  if [[ "$repo" != "$ROOT" ]]; then
+    cp "$ROOT/.githooks/prepare-commit-msg" "$repo/.githooks/prepare-commit-msg"
+  fi
   chmod +x "$repo/.githooks/prepare-commit-msg"
   git -C "$repo" config core.hooksPath .githooks
   echo "==> Git hooks enabled for $label"
