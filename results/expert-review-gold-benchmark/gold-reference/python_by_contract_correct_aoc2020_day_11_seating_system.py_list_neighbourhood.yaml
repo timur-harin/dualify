@@ -1,0 +1,47 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_11_seating_system.py::list_neighbourhood
+qualname: list_neighbourhood
+file: ''
+signature: 'list_neighbourhood(i: int, j: int, height: int, width: int) -> List[Tuple[int,
+  int]]'
+arg_types:
+  i: int
+  j: int
+  height: int
+  width: int
+return_type: List[Tuple[int, int]]
+informal_spec: 'List all the neighbours of the given seat at position ``i, j``.
+
+
+  The ``height`` and ``width`` define the limits of the layout.'
+informal_spec_raw: 'List all the neighbours of the given seat at position ``i, j``.
+
+
+  The ``height`` and ``width`` define the limits of the layout.'
+function_source: "def list_neighbourhood(\n    i: int, j: int, height: int, width:\
+  \ int\n) -> List[Tuple[int, int]]:\n    \"\"\"\n    List all the neighbours of the\
+  \ given seat at position ``i, j``.\n\n    The ``height`` and ``width`` define the\
+  \ limits of the layout.\n    \"\"\"\n    # (mristin, 2021-04-03): This would be\
+  \ a nice use case for ensure_each.\n    start_i = max(0, i - 1)\n    end_i = min(height,\
+  \ i + 2)\n    start_j = max(0, j - 1)\n    end_j = min(width, j + 2)\n\n    result\
+  \ = []  # type: List[Tuple[int, int]]\n    for neighbour_i in range(start_i, end_i):\n\
+  \        for neighbour_j in range(start_j, end_j):\n            if neighbour_i ==\
+  \ i and neighbour_j == j:\n                continue\n\n            result.append((neighbour_i,\
+  \ neighbour_j))\n\n    return result"
+profile: ''
+in_fragment: true
+reference_pre:
+- 0 <= i <= height
+- 0 <= j <= width
+reference_post: ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(ret)), 0 <= ret[_k0][0]
+  <= height and 0 <= ret[_k0][1] <= width)) and Length(ret) <= 8 and ((i, j) not in
+  ret)
+notes: ''
+reference_normalized:
+  pre:
+  - 0 <= i <= height
+  - 0 <= j <= width
+  post: ForAll([_k0], Implies(And(0 <= _k0, _k0 < Length(ret)), 0 <= ret[_k0][0] <=
+    height and 0 <= ret[_k0][1] <= width)) and Length(ret) <= 8 and Not(Contains(ret,
+    Unit((i, j))))
+status: confirmed
+needs_attention: false

@@ -1,0 +1,45 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::chess.py::ChessPiece::can_move_to
+qualname: ChessPiece.can_move_to
+file: ''
+signature: 'can_move_to(self_x: int, self_y: int, x: int, y: int) -> bool'
+arg_types:
+  self_x: int
+  self_y: int
+  x: int
+  y: int
+return_type: bool
+informal_spec: 'Determine whether this piece can move to the given position (in a
+  single turn).
+
+
+  #  It''s never valid to "move" to your present location:'
+informal_spec_raw: 'Determine whether this piece can move to the given position (in
+  a single turn).
+
+
+  pre: (0 <= x < 8) and (0 <= y < 8)
+
+
+  #  It''s never valid to "move" to your present location:
+
+  post: implies((x, y) == (self.x, self.y), not __return__)'
+function_source: "def can_move_to(self, x: int, y: int) -> bool:\n        \"\"\"\n\
+  \        Determine whether this piece can move to the given position (in a single\
+  \ turn).\n\n        pre: (0 <= x < 8) and (0 <= y < 8)\n\n        #  It's never\
+  \ valid to \"move\" to your present location:\n        post: implies((x, y) == (self.x,\
+  \ self.y), not __return__)\n        \"\"\"\n        raise NotImplementedError"
+profile: 'In scope: board coordinates and prohibition on moving to the current square.
+  Out of scope: piece-specific movement rules (NotImplementedError stub). Observable:
+  returned bool.'
+in_fragment: true
+reference_pre:
+- And(0 <= x, x < 8, 0 <= y, y < 8)
+reference_post: Implies(And(x == self_x, y == self_y), Not(ret))
+notes: 'manual-fix: admit self_x/self_y as signature args; rewrite tuple equality and
+  python not into fragment form.'
+reference_normalized:
+  pre:
+  - And(0 <= x, x < 8, 0 <= y, y < 8)
+  post: Implies(And(x == self_x, y == self_y), Not(ret))
+status: confirmed
+needs_attention: false

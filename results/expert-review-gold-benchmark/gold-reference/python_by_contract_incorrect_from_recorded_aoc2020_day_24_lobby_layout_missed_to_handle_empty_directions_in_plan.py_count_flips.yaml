@@ -1,0 +1,49 @@
+benchmark_id: python_by_contract::incorrect_from_recorded::aoc2020::day_24_lobby_layout::missed_to_handle_empty_directions_in_plan.py::count_flips
+qualname: count_flips
+file: ''
+signature: 'count_flips(plan: List[List[Direction]]) -> int'
+arg_types:
+  plan: List[List[Direction]]
+return_type: int
+informal_spec: 'Count how many cells had to flip for the given plan.
+
+
+  The plan consists of different journeys, all starting from the cell zero.'
+informal_spec_raw: 'Count how many cells had to flip for the given ``plan``.
+
+
+  The ``plan`` consists of different journeys, all starting from the cell zero.'
+function_source: "def count_flips(plan: List[List[Direction]]) -> int:\n    \"\"\"\
+  \n    Count how many cells had to flip for the given ``plan``.\n\n    The ``plan``\
+  \ consists of different journeys, all starting from the cell zero.\n    \"\"\"\n\
+  \    # True means white.\n    state = collections.defaultdict(\n        lambda:\
+  \ True\n    )  # type: MutableMapping[Tuple[int, int, int], bool]\n    start = Cell(x=0,\
+  \ y=0, z=0)\n    for directions in plan:\n        cell = follow_directions(start=start,\
+  \ directions=directions)\n        key = cell_as_tuple(cell=cell)\n        state[key]\
+  \ = not state[key]\n\n    # Count the blacks which correspond to False.\n    return\
+  \ sum(1 for value in state.values() if not value)"
+profile: 'In scope: arithmetic bound on the count of "black" cells produced by simulating
+  a list of journeys over a hex grid. Out of scope: semantics of follow_directions
+  / cell_as_tuple, the specific cells visited, and the defaultdict state. Observable:
+  the returned non-negative integer count.'
+in_fragment: true
+reference_pre: []
+reference_post: And(ret >= 0, ret <= Length(plan), Implies(Length(plan) == 0, ret
+  == 0))
+notes: 'ai-review: The original draft post `not Length(plan) == 0 or (ret == 0 and
+  (not Length(plan) != 0)) or ret > 0` used Python `not`/`or`/`and` and (more importantly)
+  was unsound: it forces `ret > 0` whenever `plan` is non-empty, but `count_flips`
+  can legitimately return 0 when journeys cancel each other (each cell ends up white).
+  Rewrote into the genuinely observable arithmetic envelope: `ret` is non-negative,
+  bounded above by `Length(plan)` (each journey flips exactly one cell once, so the
+  number of black cells cannot exceed the number of journeys), and is exactly 0 on
+  an empty plan. Anything stronger (which cells are black) depends on the user-defined
+  helpers `follow_directions` / `cell_as_tuple` and the hex-cell state map, which
+  are out of fragment.
+
+  apply_reviews: agent flagged needs_attention=True.'
+needs_attention: true
+status: confirmed
+reference_normalized:
+  pre: []
+  post: And(ret >= 0, ret <= Length(plan), Implies(Length(plan) == 0, ret == 0))

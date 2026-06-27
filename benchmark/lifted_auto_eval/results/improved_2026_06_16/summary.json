@@ -1,0 +1,107 @@
+{
+  "baseline_avg_3_runs": {
+    "equiv": 9.333333333333334,
+    "spec_deg": 18.0,
+    "code_deg": 14.333333333333334,
+    "parse_err": 21.333333333333332,
+    "spec_pre": 13.0,
+    "spec_post": 3.0,
+    "code_pre": 11.666666666666666,
+    "code_post": 5.0,
+    "weak": 14.666666666666666
+  },
+  "improved_runs": [
+    {
+      "equiv": 4,
+      "spec_deg": 5,
+      "code_deg": 8,
+      "parse_err": 32,
+      "spec_pre": 14,
+      "spec_post": 3,
+      "code_pre": 14,
+      "code_post": 4,
+      "weak": 2
+    },
+    {
+      "equiv": 5,
+      "spec_deg": 7,
+      "code_deg": 9,
+      "parse_err": 29,
+      "spec_pre": 15,
+      "spec_post": 3,
+      "code_pre": 12,
+      "code_post": 4,
+      "weak": 5
+    },
+    {
+      "equiv": 7,
+      "spec_deg": 14,
+      "code_deg": 20,
+      "parse_err": 24,
+      "spec_pre": 12,
+      "spec_post": 3,
+      "code_pre": 12,
+      "code_post": 4,
+      "weak": 11
+    }
+  ],
+  "improved_run_ids": [
+    "lifted_auto_eval_2026_06_16_14_33_36",
+    "lifted_auto_eval_2026_06_16_14_49_32",
+    "lifted_auto_eval_2026_06_16_14_57_42"
+  ],
+  "p03_reeval_on_run3": {
+    "description": "Re-run SMT on run3 LLM extractions with latest p03/formula_parser fixes (no new LLM calls)",
+    "equiv": 9,
+    "parse_err": 3,
+    "weak_spec_post": 11,
+    "spec_deg": 14,
+    "code_deg": 20,
+    "remaining_parse_errors": [
+      "list_neighbourhood",
+      "matches",
+      "reverse_side"
+    ],
+    "verdicts": {
+      "equivalent_no_mismatch": 9,
+      "case_pre_spec": 8,
+      "case_pre_code": 7,
+      "case_post_code": 5,
+      "case_post_spec": 4,
+      "formula_parse_error": 3,
+      "solver_unknown": 4
+    }
+  },
+  "prompt_repair_run": {
+    "run_id": "lifted_auto_eval_2026_06_17_06_34_48",
+    "equiv": 7,
+    "parse_err": 7,
+    "spec_deg": 6,
+    "code_deg": 8,
+    "weak": 2,
+    "gold_exact": {
+      "spec_pre": 0,
+      "spec_post": 0,
+      "code_pre": 0,
+      "code_post": 0
+    },
+    "verdicts": {
+      "case_pre_spec": 12,
+      "formula_parse_error": 7,
+      "case_post_code": 1,
+      "solver_unknown": 6,
+      "case_post_spec": 4,
+      "equivalent_no_mismatch": 7,
+      "case_pre_code": 3
+    },
+    "parse_error_cases": [
+      "can_move_to",
+      "compute",
+      "compute_grade",
+      "compute_score",
+      "count_flips",
+      "reverse_side",
+      "verify"
+    ]
+  }
+}

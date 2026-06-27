@@ -1,0 +1,60 @@
+diff --git a/pathvalidate/_filename.py b/pathvalidate/_filename.py
+index f2651ed..f420a5b 100644
+--- a/pathvalidate/_filename.py
++++ b/pathvalidate/_filename.py
+@@ -360,6 +360,20 @@ def is_valid_filename(
+             A filename to be checked.
+         platform:
+             Target platform name of the filename.
++        min_len:
++            Minimum byte length. Defaults to ``1`` (same as
++            :py:func:`.validate_filename`).
++        max_len:
++            Maximum byte length. |None| uses the platform default limit
++            (via internal ``max_len=-1``), **not** the ``255`` default of
++            :py:func:`.validate_filename`.
++        fs_encoding:
++            Filesystem encoding for byte-length checks. |None| uses the
++            execution environment default.
++        check_reserved:
++            If |True|, reject reserved OS names.
++        additional_reserved_names:
++            Extra reserved names (case insensitive).
+ 
+     Example:
+         :ref:`example-is-valid-filename`
+@@ -451,8 +465,13 @@ def sanitize_filename(
+             Sanitized filename.
+ 
+     Raises:
+-        ValueError:
+-            If the ``filename`` is an invalid filename.
++        ValidationError:
++            If ``validate_after_sanitize`` is |True| and the result is still
++            invalid (``ErrorReason.INVALID_AFTER_SANITIZE``).
++        ValidationError:
++            Propagated from internal validation or from ``null_value_handler`` /
++            ``reserved_name_handler`` when configured with
++            :py:func:`~.handler.raise_error`.
+ 
+     Example:
+         :ref:`example-sanitize-filename`
+diff --git a/pathvalidate/_filepath.py b/pathvalidate/_filepath.py
+index df49ed4..9282935 100644
+--- a/pathvalidate/_filepath.py
++++ b/pathvalidate/_filepath.py
+@@ -488,8 +488,12 @@ def sanitize_filepath(
+             Sanitized filepath.
+ 
+     Raises:
+-        ValueError:
+-            If the ``file_path`` is an invalid file path.
++        ValidationError:
++            If ``validate_after_sanitize`` is |True| and the result is still
++            invalid (``ErrorReason.INVALID_AFTER_SANITIZE``).
++        ValidationError:
++            Propagated from internal validation or from handlers configured
++            with :py:func:`~.handler.raise_error`.
+ 
+     Example:
+         :ref:`example-sanitize-file-path`

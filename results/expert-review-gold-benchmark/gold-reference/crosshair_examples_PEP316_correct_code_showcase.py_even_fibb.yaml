@@ -1,0 +1,51 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::showcase.py::even_fibb
+qualname: even_fibb
+file: ''
+signature: 'even_fibb(n: int) -> List[int]'
+arg_types:
+  n: int
+return_type: List[int]
+informal_spec: 'Return a list of the first N even fibbonacci numbers.
+
+
+
+  >>> even_fibb(2)
+
+
+  [2, 8]'
+informal_spec_raw: 'Return a list of the first N even fibbonacci numbers.
+
+
+  >>> even_fibb(2)
+
+  [2, 8]
+
+
+  pre: n >= 0
+
+  post: len(__return__) == n'
+function_source: "def even_fibb(n: int) -> List[int]:\n    \"\"\"\n    Return a list\
+  \ of the first N even fibbonacci numbers.\n\n    >>> even_fibb(2)\n    [2, 8]\n\n\
+  \    pre: n >= 0\n    post: len(__return__) == n\n    \"\"\"\n    prev = 1\n   \
+  \ cur = 1\n    result = []\n    while n > 0:\n        prev, cur = cur, prev + cur\n\
+  \        if cur % 2 == 0:\n            result.append(cur)\n            n -= 1\n\
+  \    return result"
+profile: 'In scope: cardinality of the returned list for a non-negative integer count.
+  Out of scope: the actual values in the list being even Fibonacci numbers, their
+  order, or their relation to the Fibonacci sequence. Observable: the length of the
+  returned list.'
+in_fragment: true
+reference_pre:
+- n >= 0
+reference_post: Length(ret) == n
+notes: 'ai-review: PEP316 directives lifted verbatim (pre: n >= 0; post: len(__return__)
+  == n). The original contract only constrains the returned list''s length, not that
+  the elements are even Fibonacci numbers — the docstring example [2, 8] illustrates
+  the intended semantics but is not asserted by the formal post. Kept as-is to match
+  what the spec actually says.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - n >= 0
+  post: Length(ret) == n

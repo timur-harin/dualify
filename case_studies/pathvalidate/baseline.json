@@ -1,0 +1,1348 @@
+{
+  "run_id": "pathvalidate_operator_2026_06_24_11_03_40",
+  "mode": "operator_loop",
+  "repo_path": "/Users/timur/develop/dualify/repos/pathvalidate",
+  "model": "Qwen/Qwen3-Coder-Next-FP8",
+  "base_url": "http://10.100.30.241:8801",
+  "results": [
+    {
+      "benchmark_id": "pathvalidate::_filename.py::is_valid_filename",
+      "file": "pathvalidate/_filename.py",
+      "signature": "is_valid_filename(filename: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> bool",
+      "arg_types": {
+        "filename": "PathType",
+        "platform": "Optional[PlatformType]",
+        "min_len": "int",
+        "max_len": "Optional[int]",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "bool",
+        "additional_reserved_names": "Optional[Sequence[str]]"
+      },
+      "return_type": "bool",
+      "informal_spec": "Check whether the ``filename`` is a valid name or not.\n\nArgs:\n    filename:\n        A filename to be checked.\n    platform:\n        Target platform name of the filename.\n\nExample:\n    :ref:`example-is-valid-filename`\n\nSee Also:\n    :py:func:`.validate_filename()`",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::is_valid_filename",
+        "args": [
+          "filename",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "bool",
+        "domain_constraints": [
+          "min_len >= 0",
+          "If(Length(max_len) > 0, max_len >= min_len, True)"
+        ],
+        "postcondition": "ret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))",
+        "confidence": "low",
+        "notes": "Specification is too vague to infer precise filename validation rules (e.g., reserved names, encoding checks, platform-specific rules). Only minimal constraints (length bounds, optional reserved check) can be safely encoded.",
+        "degraded": false,
+        "degraded_reason": "",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "ret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))",
+            "errors": []
+          },
+          "final": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "ret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))",
+            "degraded": false,
+            "degraded_reason": ""
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial"
+          ],
+          "final_stage": "initial",
+          "stage_errors": {},
+          "degraded": false,
+          "degraded_reason": "",
+          "postcondition_is_weak": false,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::is_valid_filename",
+        "args": [
+          "filename",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "bool",
+        "domain_constraints": [],
+        "postcondition": "ret == And(And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True)), And(check_reserved == False, Length(additional_reserved_names) == 0))",
+        "confidence": "low",
+        "notes": "The original postcondition used an unsupported external class call. Since no internal logic is exposed, we express a minimal placeholder postcondition based on obvious constraints: filename length within bounds, and no reserved name checks active. This is a conservative approximation due to missing implementation details.",
+        "degraded": false,
+        "degraded_reason": "",
+        "extraction_trace": {
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == And(And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True)), And(check_reserved == False, Length(additional_reserved_names) == 0))",
+            "degraded": false,
+            "degraded_reason": ""
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial"
+          ],
+          "final_stage": "initial",
+          "stage_errors": {},
+          "degraded": false,
+          "degraded_reason": "",
+          "postcondition_is_weak": false,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filename.py::is_valid_filename",
+        "equivalent": false,
+        "reason": "formula_parse_error: Non-sequence passed as a sequence",
+        "counterexample": null,
+        "diagnostics": null,
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filename.py::is_valid_filename",
+        "triggered_case": "UNKNOWN",
+        "baseline_actions": [
+          "add_test_case"
+        ],
+        "recommended_actions": [
+          "add_test_case"
+        ],
+        "summary": "Mismatch detected; review diagnostics and add targeted test."
+      }
+    },
+    {
+      "benchmark_id": "pathvalidate::_filename.py::sanitize_filename",
+      "file": "pathvalidate/_filename.py",
+      "signature": "sanitize_filename(filename: PathType, replacement_text: str, platform: Optional[PlatformType], max_len: Optional[int], fs_encoding: Optional[str], check_reserved: Optional[bool], null_value_handler: Optional[ValidationErrorHandler], reserved_name_handler: Optional[ValidationErrorHandler], additional_reserved_names: Optional[Sequence[str]], validate_after_sanitize: bool) -> PathType",
+      "arg_types": {
+        "filename": "PathType",
+        "replacement_text": "str",
+        "platform": "Optional[PlatformType]",
+        "max_len": "Optional[int]",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "Optional[bool]",
+        "null_value_handler": "Optional[ValidationErrorHandler]",
+        "reserved_name_handler": "Optional[ValidationErrorHandler]",
+        "additional_reserved_names": "Optional[Sequence[str]]",
+        "validate_after_sanitize": "bool"
+      },
+      "return_type": "PathType",
+      "informal_spec": "Make a valid filename from a string.\n\nTo make a valid filename, the function does the following:\n\n    - Replace invalid characters as file names included in the ``filename``\n      with the ``replacement_text``. Invalid characters are:\n\n        - unprintable characters\n        - |invalid_filename_chars|\n        - for Windows (or universal) only: |invalid_win_filename_chars|\n\n    - Replace a value if a sanitized value is a reserved name by operating systems\n      with a specified handler by ``reserved_name_handler``.\n\nArgs:\n    filename: Filename to sanitize.\n    replacement_text:\n        Replacement text for invalid characters. Defaults to ``\"\"``.\n    platform:\n        Target platform name of the filename.\n\n        .. include:: platform.txt\n    max_len:\n        Maximum byte length of the ``filename``.\n        Truncate the name length if the ``filename`` length exceeds this value.\n        Defaults to ``255``.\n    fs_encoding:\n        Filesystem encoding that is used to calculate the byte length of the filename.\n        If |None|, get the encoding from the execution environment.\n    check_reserved:\n        [Deprecated] Use 'reserved_name_handler' instead.\n    null_value_handler:\n        Function called when a value after sanitization is an empty string.\n        You can specify predefined handlers:\n\n            - :py:func:`~.handler.NullValueHandler.return_null_string`\n            - :py:func:`~.handler.NullValueHandler.return_timestamp`\n            - :py:func:`~.handler.raise_error`\n\n        Defaults to :py:func:`.handler.NullValueHandler.return_null_string` that just return ``\"\"``.\n    reserved_name_handler:\n        Function called when a value after sanitization is a reserved name.\n        You can specify predefined handlers:\n\n            - :py:meth:`~.handler.ReservedNameHandler.add_leading_underscore`\n            - :py:meth:`~.handler.ReservedNameHandler.add_trailing_underscore`\n            - :py:meth:`~.handler.ReservedNameHandler.as_is`\n            - :py:func:`~.handler.raise_error`\n\n        Defaults to :py:func:`.handler.add_trailing_underscore`.\n    additional_reserved_names:\n        Additional reserved names to sanitize.\n        Case insensitive.\n    validate_after_sanitize:\n        Execute validation after sanitization to the file name.\n\nReturns:\n    Same type as the ``filename`` (str or PathLike object):\n        Sanitized filename.\n\nRaises:\n    ValueError:\n        If the ``filename`` is an invalid filename.\n\nExample:\n    :ref:`example-sanitize-filename`",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::sanitize_filename",
+        "args": [
+          "filename",
+          "replacement_text",
+          "platform",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "null_value_handler",
+          "reserved_name_handler",
+          "additional_reserved_names",
+          "validate_after_sanitize"
+        ],
+        "return_type": "PathType",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition unsupported function calls: Char, String",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "Or(Length(max_len) == 0, max_len > 0)",
+              "Or(Length(fs_encoding) == 0, IsString(fs_encoding))",
+              "Or(Or(Length(check_reserved) == 0, check_reserved == True), check_reserved == False)",
+              "Or(validate_after_sanitize == True, validate_after_sanitize == False)",
+              "Or(Length(additional_reserved_names) == 0, ForAll([i], Implies(And(i >= 0, i < Length(additional_reserved_names)), IsString(additional_reserved_names[i]))))"
+            ],
+            "postcondition": "And(IsPathType(ret), ForAll([i], Implies(And(i >= 0, i < Length(ret)), IsPrintable(ret[i]))), Not(Contains(ret, '|')), If(Or(platform == String('windows'), Length(platform) == 0), Not(Or(Contains(ret, ':'), Contains(ret, '*'), Contains(ret, '?'), Contains(ret, '\"'), Contains(ret, '<'), Contains(ret, '>'), Contains(ret, '\\\\')))), True)",
+            "errors": [
+              "postcondition unsupported function calls: IsPathType, IsPrintable, String",
+              "domain constraint unsupported function calls: IsString",
+              "domain constraint unsupported function calls: IsString"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [
+              "Or(Length(max_len) == 0, max_len > 0)",
+              "Or(Length(fs_encoding) == 0, And(Length(fs_encoding) > 0, ForAll([i], Implies(And(i >= 0, i < Length(fs_encoding)), And(fs_encoding[i] >= Char('a'), fs_encoding[i] <= Char('z'))))))",
+              "Or(Or(Length(check_reserved) == 0, check_reserved == True), check_reserved == False)",
+              "Or(validate_after_sanitize == True, validate_after_sanitize == False)",
+              "Or(Length(additional_reserved_names) == 0, ForAll([i], Implies(And(i >= 0, i < Length(additional_reserved_names)), And(Length(additional_reserved_names[i]) > 0, ForAll([j], Implies(And(j >= 0, j < Length(additional_reserved_names[i])), And(additional_reserved_names[i][j] >= 'a', additional_reserved_names[i][j] <= 'z'))))))"
+            ],
+            "postcondition": "And(And(Length(ret) == Length(filename), ForAll([i], Implies(And(i >= 0, i < Length(ret)), Or(ret[i] == filename[i], ret[i] == replacement_text[0])))), ForAll([i], Implies(And(i >= 0, i < Length(ret)), And(ret[i] >= Char(' '), ret[i] <= Char('~')))), Not(Contains(ret, '|')), If(Or(And(Length(platform) > 0, platform == String('windows')), Length(platform) == 0), Not(Or(Contains(ret, ':'), Contains(ret, '*'), Contains(ret, '?'), Contains(ret, '\"'), Contains(ret, '<'), Contains(ret, '>'), Contains(ret, '\\\\')))), True)",
+            "errors": [
+              "postcondition unsupported function calls: Char, String",
+              "domain constraint unsupported function calls: Char",
+              "domain constraint invalid expression syntax: '(' was never closed (<unknown>, line 1)"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "Length(filename) >= 0",
+              "Length(replacement_text) >= 0",
+              "If(Length(additional_reserved_names) > 0, ForAll([i], Implies(And(0 <= i, i < Length(additional_reserved_names)), Length(additional_reserved_names[i]) > 0)), True)"
+            ],
+            "postcondition": "And(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And(32 <= ret[i], ret[i] <= 126), ret[i] == Char(' '), ret[i] == Char('_')))), If(Length(filename) == 0, ret == String(''), And(Exists([j], And(0 <= j, j < Length(filename), filename[j] == ret[j])), ForAll([k], Implies(And(0 <= k, k < Length(filename)), Exists([d], And(0 <= d, d <= Length(replacement_text), If(d == 0, And(0 <= k + d, k + d < Length(filename), filename[k] == ret[k]), And(k + d < Length(filename), ForAll([m], Implies(And(0 <= m, m < d), ret[k + m] == replacement_text[m])))))))), If(Length(max_len) > 0, Length(ret) <= max_len, True))))",
+            "errors": [
+              "postcondition unsupported function calls: Char, String"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 3,
+            "repair": 3,
+            "safe_repair": 1
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::sanitize_filename",
+        "args": [
+          "filename",
+          "replacement_text",
+          "platform",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "null_value_handler",
+          "reserved_name_handler",
+          "additional_reserved_names",
+          "validate_after_sanitize"
+        ],
+        "return_type": "PathType",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition unsupported function calls: Char, String, domain constraint unsupported function calls: String",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [],
+            "postcondition": "ret == FileNameSanitizer(platform=If(Length(platform) == 0, platform, platform), max_len=If(Length(max_len) == 0, -1, max_len), fs_encoding=fs_encoding, null_value_handler=null_value_handler, reserved_name_handler=If(Length(reserved_name_handler) == 0, add_trailing_underscore, reserved_name_handler), additional_reserved_names=additional_reserved_names, validate_after_sanitize=validate_after_sanitize).sanitize(filename, replacement_text)",
+            "errors": [
+              "postcondition unsupported function calls: FileNameSanitizer",
+              "postcondition unsupported function call target"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [],
+            "postcondition": "And(Length(ret) <= Length(filename), ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And(0 <= i, i < Length(filename)), ret[i] == replacement_text[0] And Exists([j], And(0 <= j, j < Length(filename), filename[j] == replacement_text[0]))))))",
+            "errors": [
+              "postcondition uses infix And/Or",
+              "postcondition invalid expression syntax: invalid syntax. Perhaps you forgot a comma? (<unknown>, line 1)"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "And(Length(filename) >= 0, Length(replacement_text) >= 0)",
+              "Or(platform == String('windows'), platform == String('macos'), platform == String('linux'), platform == String('universal'), Length(platform) == 0)",
+              "Or(Length(max_len) == 0, max_len >= 0)",
+              "Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)",
+              "Or(Length(check_reserved) == 0, check_reserved == True, check_reserved == False)",
+              "Or(validate_after_sanitize == True, validate_after_sanitize == False)"
+            ],
+            "postcondition": "And(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And('a' <= ret[i], ret[i] <= Char('z')), And('A' <= ret[i], ret[i] <= Char('Z')), And('0' <= ret[i], ret[i] <= Char('9')), Or(ret[i] == Char('_'), ret[i] == Char('-'), ret[i] == Char('.'), ret[i] == Char(' '))))), If(Length(ret) == 0, And(null_value_handler == String('return_null_string'), ret == filename), True))",
+            "errors": [
+              "postcondition unsupported function calls: Char, String",
+              "domain constraint unsupported function calls: String"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 2,
+            "repair": 2,
+            "safe_repair": 2
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filename.py::sanitize_filename",
+        "equivalent": true,
+        "reason": "low_confidence_parse",
+        "counterexample": null,
+        "diagnostics": {
+          "pre_mismatch": false,
+          "pre_spec_implies_pre_code": true,
+          "pre_code_implies_pre_spec": true,
+          "pre_counterexample": null,
+          "failed_check": "none",
+          "post_well_formedness": "ok",
+          "solver_status": {
+            "pre_mismatch_check": "unsat",
+            "pre_spec_implies_pre_code": "unsat",
+            "pre_code_implies_pre_spec": "unsat",
+            "post_mismatch_check": "unsat"
+          },
+          "debug": {
+            "formulas": {
+              "pre_spec": "true",
+              "pre_code": "true",
+              "common_pre": "(and true true)",
+              "post_spec": "(= ret ret)",
+              "post_code": "(= ret ret)"
+            },
+            "checks": {
+              "pre_mismatch_check": "(xor true true)",
+              "post_mismatch_check": "(=> (and true true) (xor (= ret ret) (= ret ret)))",
+              "spec_post_implies_code_post": "(=> (and true true (= ret ret)) (= ret ret))",
+              "code_post_implies_spec_post": "(=> (and true true (= ret ret)) (= ret ret))"
+            },
+            "witness_model": {
+              "pre_mismatch_check": null,
+              "pre_spec_implies_pre_code": null,
+              "pre_code_implies_pre_spec": null,
+              "post_mismatch_check": null,
+              "spec_post_implies_code_post": null,
+              "code_post_implies_spec_post": null
+            }
+          },
+          "post_mismatch_on_common_pre": false,
+          "post_mismatch_counterexample": null,
+          "parse_low_confidence": true,
+          "spec_weak_postcondition": true,
+          "code_weak_postcondition": true,
+          "spec_postcondition": "ret == ret",
+          "code_postcondition": "ret == ret"
+        },
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filename.py::sanitize_filename",
+        "triggered_case": "LOW_CONFIDENCE_PARSE",
+        "baseline_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "investigate_instrumentation",
+          "no_test_case"
+        ],
+        "recommended_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "investigate_instrumentation",
+          "no_test_case"
+        ],
+        "summary": "SMT matched, but extracted formulas are low-confidence; refine spec/implementation or investigate extraction instrumentation."
+      }
+    },
+    {
+      "benchmark_id": "pathvalidate::_filename.py::validate_filename",
+      "file": "pathvalidate/_filename.py",
+      "signature": "validate_filename(filename: PathType, platform: Optional[PlatformType], min_len: int, max_len: int, fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> None",
+      "arg_types": {
+        "filename": "PathType",
+        "platform": "Optional[PlatformType]",
+        "min_len": "int",
+        "max_len": "int",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "bool",
+        "additional_reserved_names": "Optional[Sequence[str]]"
+      },
+      "return_type": "None",
+      "informal_spec": "Verifying whether the ``filename`` is a valid file name or not.\n\nArgs:\n    filename:\n        Filename to validate.\n    platform:\n        Target platform name of the filename.\n\n        .. include:: platform.txt\n    min_len:\n        Minimum byte length of the ``filename``. The value must be greater or equal to one.\n        Defaults to ``1``.\n    max_len:\n        Maximum byte length of the ``filename``. The value must be lower than:\n\n            - ``Linux``: 4096\n            - ``macOS``: 1024\n            - ``Windows``: 260\n            - ``universal``: 260\n\n        Defaults to ``255``.\n    fs_encoding:\n        Filesystem encoding that is used to calculate the byte length of the filename.\n        If |None|, get the encoding from the execution environment.\n    check_reserved:\n        If |True|, check the reserved names of the ``platform``.\n    additional_reserved_names:\n        Additional reserved names to check.\n        Case insensitive.\n\nRaises:\n    ValidationError (ErrorReason.INVALID_LENGTH):\n        If the ``filename`` is longer than ``max_len`` characters.\n    ValidationError (ErrorReason.INVALID_CHARACTER):\n        If the ``filename`` includes invalid character(s) for a filename:\n        |invalid_filename_chars|.\n        The following characters are also invalid for Windows platforms:\n        |invalid_win_filename_chars|.\n    ValidationError (ErrorReason.RESERVED_NAME):\n        If the ``filename`` equals the reserved name by OS.\n        Windows reserved name is as follows:\n        ``\"CON\"``, ``\"PRN\"``, ``\"AUX\"``, ``\"NUL\"``, ``\"COM[1-9]\"``, ``\"LPT[1-9]\"``.\n\nExample:\n    :ref:`example-validate-filename`\n\nSee Also:\n    `Naming Files, Paths, and Namespaces - Win32 apps | Microsoft Docs\n    <https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file>`__",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::validate_filename",
+        "args": [
+          "filename",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "None",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition must reference `ret`",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "max_len >= min_len",
+              "If(platform == String('Linux'), max_len < 4096, True)",
+              "If(platform == String('macOS'), max_len < 1024, True)",
+              "If(platform == String('Windows'), max_len < 260, True)",
+              "If(platform == String('universal'), max_len < 260, True)"
+            ],
+            "postcondition": "Length(ret) == 0",
+            "errors": [
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "max_len >= min_len",
+              "Implies(platform == String('Linux'), max_len < 4096)",
+              "Implies(platform == String('macOS'), max_len < 1024)",
+              "Implies(platform == String('Windows'), max_len < 260)",
+              "Implies(platform == String('universal'), max_len < 260)"
+            ],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "max_len >= 1",
+              "min_len <= max_len"
+            ],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 4,
+            "repair": 5,
+            "safe_repair": 1
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filename.py::validate_filename",
+        "args": [
+          "filename",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "None",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition must reference `ret`, domain constraint unsupported function calls: String, domain constraint unsupported function calls: String",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [],
+            "postcondition": "False",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "max_len >= min_len",
+              "If(platform == String('Windows'), max_len <= 260, True)",
+              "If(platform == String('Linux'), max_len <= 4096, True)",
+              "If(platform == String('macOS'), max_len <= 1024, True)",
+              "If(platform == String('universal'), max_len <= 260, True)"
+            ],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: String"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 1,
+            "repair": 1,
+            "safe_repair": 5
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filename.py::validate_filename",
+        "equivalent": true,
+        "reason": "low_confidence_parse",
+        "counterexample": null,
+        "diagnostics": {
+          "pre_mismatch": false,
+          "pre_spec_implies_pre_code": true,
+          "pre_code_implies_pre_spec": true,
+          "pre_counterexample": null,
+          "failed_check": "none",
+          "post_well_formedness": "ok",
+          "solver_status": {
+            "pre_mismatch_check": "unsat",
+            "pre_spec_implies_pre_code": "unsat",
+            "pre_code_implies_pre_spec": "unsat",
+            "post_mismatch_check": "unsat"
+          },
+          "debug": {
+            "formulas": {
+              "pre_spec": "true",
+              "pre_code": "true",
+              "common_pre": "(and true true)",
+              "post_spec": "(= ret ret)",
+              "post_code": "(= ret ret)"
+            },
+            "checks": {
+              "pre_mismatch_check": "(xor true true)",
+              "post_mismatch_check": "(=> (and true true) (xor (= ret ret) (= ret ret)))",
+              "spec_post_implies_code_post": "(=> (and true true (= ret ret)) (= ret ret))",
+              "code_post_implies_spec_post": "(=> (and true true (= ret ret)) (= ret ret))"
+            },
+            "witness_model": {
+              "pre_mismatch_check": null,
+              "pre_spec_implies_pre_code": null,
+              "pre_code_implies_pre_spec": null,
+              "post_mismatch_check": null,
+              "spec_post_implies_code_post": null,
+              "code_post_implies_spec_post": null
+            }
+          },
+          "post_mismatch_on_common_pre": false,
+          "post_mismatch_counterexample": null,
+          "parse_low_confidence": true,
+          "spec_weak_postcondition": true,
+          "code_weak_postcondition": true,
+          "spec_postcondition": "ret == ret",
+          "code_postcondition": "ret == ret"
+        },
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filename.py::validate_filename",
+        "triggered_case": "LOW_CONFIDENCE_PARSE",
+        "baseline_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "investigate_instrumentation",
+          "no_test_case"
+        ],
+        "recommended_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "investigate_instrumentation",
+          "no_test_case"
+        ],
+        "summary": "SMT matched, but extracted formulas are low-confidence; refine spec/implementation or investigate extraction instrumentation."
+      }
+    },
+    {
+      "benchmark_id": "pathvalidate::_filepath.py::is_valid_filepath",
+      "file": "pathvalidate/_filepath.py",
+      "signature": "is_valid_filepath(file_path: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> bool",
+      "arg_types": {
+        "file_path": "PathType",
+        "platform": "Optional[PlatformType]",
+        "min_len": "int",
+        "max_len": "Optional[int]",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "bool",
+        "additional_reserved_names": "Optional[Sequence[str]]"
+      },
+      "return_type": "bool",
+      "informal_spec": "Check whether the ``file_path`` is a valid name or not.\n\nArgs:\n    file_path:\n        A filepath to be checked.\n    platform:\n        Target platform name of the file path.\n\nExample:\n    :ref:`example-is-valid-filepath`\n\nSee Also:\n    :py:func:`.validate_filepath()`",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::is_valid_filepath",
+        "args": [
+          "file_path",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "bool",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition must reference `ret`",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "ret == And(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True), If(check_reserved, Not(ContainsReservedName(file_path, platform, additional_reserved_names)), True), If(Length(fs_encoding) > 0, IsEncodable(file_path, fs_encoding), True))",
+            "errors": [
+              "postcondition unsupported function calls: ContainsReservedName, IsEncodable"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "And(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True), If(check_reserved, ForAll([i], Implies(And(0 <= i, i < Length(additional_reserved_names)), Not(And(PrefixOf(file_path, additional_reserved_names[i]), Length(file_path) == Length(additional_reserved_names[i]))))), True), If(Length(fs_encoding) > 0, ForAll([j], Implies(And(0 <= j, j < Length(file_path)), Exists([c], And(0 <= c, c < 256, file_path[j] == c[0])))), True))",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "And(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True))",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 1,
+            "repair": 1,
+            "safe_repair": 1
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::is_valid_filepath",
+        "args": [
+          "file_path",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "bool",
+        "domain_constraints": [],
+        "postcondition": "ret == True",
+        "confidence": "low",
+        "notes": "The original postcondition references an external class and method (FilePathValidator.is_valid) which are not allowed. Since no internal behavior is exposed in the provided source, and no SMT-compatible specification of the validator's logic is available, the safest valid placeholder is a tautology (ret == True). This preserves correctness under the constraint that no invalid constructs are used, though it is semantically imprecise.",
+        "degraded": false,
+        "degraded_reason": "",
+        "extraction_trace": {
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == True",
+            "degraded": false,
+            "degraded_reason": ""
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial"
+          ],
+          "final_stage": "initial",
+          "stage_errors": {},
+          "degraded": false,
+          "degraded_reason": "",
+          "postcondition_is_weak": false,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filepath.py::is_valid_filepath",
+        "equivalent": false,
+        "reason": "case_post_code",
+        "counterexample": {
+          "file_path": "Empty(Seq(Int))",
+          "platform": "T_platformtype!val!0",
+          "min_len": 0,
+          "max_len": 0,
+          "fs_encoding": "",
+          "check_reserved": false,
+          "additional_reserved_names": "T_sequence_str!val!0"
+        },
+        "diagnostics": {
+          "pre_mismatch": false,
+          "pre_spec_implies_pre_code": true,
+          "pre_code_implies_pre_spec": true,
+          "pre_counterexample": null,
+          "failed_check": "spec_post_implies_code_post",
+          "post_well_formedness": "ok",
+          "solver_status": {
+            "pre_mismatch_check": "unsat",
+            "pre_spec_implies_pre_code": "unsat",
+            "pre_code_implies_pre_spec": "unsat",
+            "post_mismatch_check": "sat",
+            "spec_post_implies_code_post": "sat",
+            "code_post_implies_spec_post": "unsat"
+          },
+          "debug": {
+            "formulas": {
+              "pre_spec": "true",
+              "pre_code": "true",
+              "common_pre": "(and true true)",
+              "post_spec": "(= ret ret)",
+              "post_code": "(= ret true)"
+            },
+            "checks": {
+              "pre_mismatch_check": "(xor true true)",
+              "post_mismatch_check": "(=> (and true true) (xor (= ret ret) (= ret true)))",
+              "spec_post_implies_code_post": "(=> (and true true (= ret ret)) (= ret true))",
+              "code_post_implies_spec_post": "(=> (and true true (= ret true)) (= ret ret))"
+            },
+            "witness_model": {
+              "pre_mismatch_check": null,
+              "pre_spec_implies_pre_code": null,
+              "pre_code_implies_pre_spec": null,
+              "post_mismatch_check": {
+                "file_path": "Empty(Seq(Int))",
+                "platform": "T_platformtype!val!0",
+                "min_len": 0,
+                "max_len": 0,
+                "fs_encoding": "",
+                "check_reserved": false,
+                "additional_reserved_names": "T_sequence_str!val!0",
+                "ret": false
+              },
+              "spec_post_implies_code_post": {
+                "file_path": "Empty(Seq(Int))",
+                "platform": "T_platformtype!val!0",
+                "min_len": 0,
+                "max_len": 0,
+                "fs_encoding": "",
+                "check_reserved": false,
+                "additional_reserved_names": "T_sequence_str!val!0",
+                "ret": false
+              },
+              "code_post_implies_spec_post": null
+            }
+          },
+          "post_mismatch_on_common_pre": true,
+          "post_mismatch_counterexample": {
+            "file_path": "Empty(Seq(Int))",
+            "platform": "T_platformtype!val!0",
+            "min_len": 0,
+            "max_len": 0,
+            "fs_encoding": "",
+            "check_reserved": false,
+            "additional_reserved_names": "T_sequence_str!val!0"
+          },
+          "post_spec_implies_post_code_on_common_pre": false,
+          "post_code_implies_post_spec_on_common_pre": true,
+          "parse_low_confidence": true,
+          "spec_weak_postcondition": true,
+          "code_weak_postcondition": false,
+          "spec_postcondition": "ret == ret",
+          "code_postcondition": "ret == True"
+        },
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filepath.py::is_valid_filepath",
+        "triggered_case": "POST_CODE",
+        "baseline_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "add_test_case",
+          "add_property_to_ignore_list"
+        ],
+        "recommended_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "add_test_case",
+          "add_property_to_ignore_list"
+        ],
+        "summary": "Implementation postconditions are weaker on common preconditions."
+      }
+    },
+    {
+      "benchmark_id": "pathvalidate::_filepath.py::sanitize_filepath",
+      "file": "pathvalidate/_filepath.py",
+      "signature": "sanitize_filepath(file_path: PathType, replacement_text: str, platform: Optional[PlatformType], max_len: Optional[int], fs_encoding: Optional[str], check_reserved: Optional[bool], null_value_handler: Optional[ValidationErrorHandler], reserved_name_handler: Optional[ValidationErrorHandler], additional_reserved_names: Optional[Sequence[str]], normalize: bool, validate_after_sanitize: bool) -> PathType",
+      "arg_types": {
+        "file_path": "PathType",
+        "replacement_text": "str",
+        "platform": "Optional[PlatformType]",
+        "max_len": "Optional[int]",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "Optional[bool]",
+        "null_value_handler": "Optional[ValidationErrorHandler]",
+        "reserved_name_handler": "Optional[ValidationErrorHandler]",
+        "additional_reserved_names": "Optional[Sequence[str]]",
+        "normalize": "bool",
+        "validate_after_sanitize": "bool"
+      },
+      "return_type": "PathType",
+      "informal_spec": "Make a valid file path from a string.\n\nTo make a valid file path, the function does the following:\n\n    - Replace invalid characters for a file path within the ``file_path``\n      with the ``replacement_text``. Invalid characters are as follows:\n\n        - unprintable characters\n        - |invalid_file_path_chars|\n        - for Windows (or universal) only: |invalid_win_file_path_chars|\n\n    - Replace a value if a sanitized value is a reserved name by operating systems\n      with a specified handler by ``reserved_name_handler``.\n\nArgs:\n    file_path:\n        File path to sanitize.\n    replacement_text:\n        Replacement text for invalid characters.\n        Defaults to ``\"\"``.\n    platform:\n        Target platform name of the file path.\n\n        .. include:: platform.txt\n    max_len:\n        Maximum byte length of the file path.\n        Truncate the path if the value length exceeds the `max_len`.\n        If the value is |None| or minus, ``max_len`` will automatically determined by the ``platform``:\n\n            - ``Linux``: 4096\n            - ``macOS``: 1024\n            - ``Windows``: 260\n            - ``universal``: 260\n    fs_encoding:\n        Filesystem encoding that is used to calculate the byte length of the file path.\n        If |None|, get the encoding from the execution environment.\n    check_reserved:\n        [Deprecated] Use 'reserved_name_handler' instead.\n    null_value_handler:\n        Function called when a value after sanitization is an empty string.\n        You can specify predefined handlers:\n\n            - :py:func:`.handler.NullValueHandler.return_null_string`\n            - :py:func:`.handler.NullValueHandler.return_timestamp`\n            - :py:func:`.handler.raise_error`\n\n        Defaults to :py:func:`.handler.NullValueHandler.return_null_string` that just return ``\"\"``.\n    reserved_name_handler:\n        Function called when a value after sanitization is one of the reserved names.\n        You can specify predefined handlers:\n\n            - :py:meth:`~.handler.ReservedNameHandler.add_leading_underscore`\n            - :py:meth:`~.handler.ReservedNameHandler.add_trailing_underscore`\n            - :py:meth:`~.handler.ReservedNameHandler.as_is`\n            - :py:func:`~.handler.raise_error`\n\n        Defaults to :py:func:`.handler.add_trailing_underscore`.\n    additional_reserved_names:\n        Additional reserved names to sanitize.\n        Case insensitive.\n    normalize:\n        If |True|, normalize the the file path.\n    validate_after_sanitize:\n        Execute validation after sanitization to the file path.\n\nReturns:\n    Same type as the argument (str or PathLike object):\n        Sanitized filepath.\n\nRaises:\n    ValueError:\n        If the ``file_path`` is an invalid file path.\n\nExample:\n    :ref:`example-sanitize-file-path`",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::sanitize_filepath",
+        "args": [
+          "file_path",
+          "replacement_text",
+          "platform",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "null_value_handler",
+          "reserved_name_handler",
+          "additional_reserved_names",
+          "normalize",
+          "validate_after_sanitize"
+        ],
+        "return_type": "PathType",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition must not be tautology `ret == ret`",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "Or(IsString(file_path), IsPathLike(file_path))",
+              "IsString(replacement_text)",
+              "Or(platform == String('Linux'), platform == String('macOS'), platform == String('Windows'), platform == String('universal'), Length(platform) == 0)",
+              "Or(Length(max_len) == 0, max_len >= 0)",
+              "Or(Length(fs_encoding) == 0, IsString(fs_encoding))",
+              "Or(Length(check_reserved) == 0, IsBool(check_reserved))",
+              "Or(Length(null_value_handler) == 0, IsCallable(null_value_handler))",
+              "Or(Length(reserved_name_handler) == 0, IsCallable(reserved_name_handler))",
+              "Or(Length(additional_reserved_names) == 0, IsSequence(additional_reserved_names))",
+              "Or(normalize == True, normalize == False)",
+              "Or(validate_after_sanitize == True, validate_after_sanitize == False)"
+            ],
+            "postcondition": "And(Or(IsString(ret), IsPathLike(ret)), ForAll([i], Implies(And(i >= 0, i < Length(ret)), Or(IsPrintable(ret[i]), And(Contains(replacement_text, Unit(ret[i])), Exists([j], And(j >= 0, j < Length(replacement_text), ret[i] == replacement_text[j])))))), If(Or(platform == String('Windows'), platform == String('universal')), Not(Or(Contains(ret, invalid_win_file_path_chars), IsReservedName(ret))), Not(Or(Contains(ret, invalid_file_path_chars), IsReservedName(ret)))), If(And(Length(max_len) > 0, max_len > 0), ByteLength(ret, fs_encoding) <= max_len, True), If(And(Length(platform) > 0, IsReservedName(ret)), ret == reserved_name_handler(ret), True), If(And(Length(ret) == 0, Length(null_value_handler) > 0), ret == null_value_handler(), True), If(normalize == True, ret == NormalizePath(ret, platform), True), If(validate_after_sanitize == True, IsValidFilePath(ret, platform, fs_encoding), True))",
+            "errors": [
+              "postcondition unsupported function calls: ByteLength, IsPathLike, IsPrintable, IsReservedName, IsString, IsValidFilePath, NormalizePath, String, null_value_handler, reserved_name_handler",
+              "postcondition unknown identifier `invalid_win_file_path_chars`",
+              "domain constraint unsupported function calls: IsPathLike, IsString",
+              "domain constraint unsupported function calls: IsString",
+              "domain constraint unsupported function calls: String",
+              "domain constraint unsupported function calls: IsString",
+              "domain constraint unsupported function calls: IsBool",
+              "domain constraint unsupported function calls: IsCallable",
+              "domain constraint unsupported function calls: IsCallable",
+              "domain constraint unsupported function calls: IsSequence"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [
+              "Or(Length(file_path) >= 0, Length(file_path) == 0)",
+              "Length(replacement_text) >= 0",
+              "Or(Length(platform) == 0, platform == String('Linux'), platform == String('macOS'), platform == String('Windows'), platform == String('universal'))",
+              "Or(Length(max_len) == 0, max_len >= 0)",
+              "Or(Length(fs_encoding) == 0, Length(fs_encoding) >= 0)",
+              "Or(Length(check_reserved) == 0, check_reserved == True, check_reserved == False)",
+              "Or(Length(null_value_handler) == 0, Length(null_value_handler) >= 0)",
+              "Or(Length(reserved_name_handler) == 0, Length(reserved_name_handler) >= 0)",
+              "Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)",
+              "Or(normalize == True, normalize == False)",
+              "Or(validate_after_sanitize == True, validate_after_sanitize == False)"
+            ],
+            "postcondition": "And(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Exists([j], And(0 <= j, j < Length(replacement_text), ret[i] == replacement_text[j])))))",
+            "errors": [
+              "domain constraint unsupported function calls: String"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "errors": [
+              "postcondition must not be tautology `ret == ret`"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 10,
+            "repair": 1,
+            "safe_repair": 1
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::sanitize_filepath",
+        "args": [
+          "file_path",
+          "replacement_text",
+          "platform",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "null_value_handler",
+          "reserved_name_handler",
+          "additional_reserved_names",
+          "normalize",
+          "validate_after_sanitize"
+        ],
+        "return_type": "PathType",
+        "domain_constraints": [],
+        "postcondition": "ret == file_path",
+        "confidence": "low",
+        "notes": "The original postcondition used an unsupported external class (FilePathSanitizer) and its method, which is not allowed. Since no concrete sanitization behavior is specified in the signature or available implementation, and no SMT-compatible specification of the sanitization logic is provided, the safest valid postcondition is identity (ret == file_path). This reflects the minimal guaranteed behavior when no validation or transformation is enforced by the signature alone.",
+        "degraded": false,
+        "degraded_reason": "",
+        "extraction_trace": {
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == file_path",
+            "degraded": false,
+            "degraded_reason": ""
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial"
+          ],
+          "final_stage": "initial",
+          "stage_errors": {},
+          "degraded": false,
+          "degraded_reason": "",
+          "postcondition_is_weak": false,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filepath.py::sanitize_filepath",
+        "equivalent": false,
+        "reason": "case_post_code",
+        "counterexample": {
+          "file_path": "Empty(Seq(Int))",
+          "replacement_text": "",
+          "platform": "T_platformtype!val!0",
+          "max_len": 0,
+          "fs_encoding": "",
+          "check_reserved": false,
+          "null_value_handler": "T_validationerrorhandler!val!0",
+          "reserved_name_handler": "T_validationerrorhandler!val!0",
+          "additional_reserved_names": "T_sequence_str!val!0",
+          "normalize": false,
+          "validate_after_sanitize": false
+        },
+        "diagnostics": {
+          "pre_mismatch": false,
+          "pre_spec_implies_pre_code": true,
+          "pre_code_implies_pre_spec": true,
+          "pre_counterexample": null,
+          "failed_check": "spec_post_implies_code_post",
+          "post_well_formedness": "ok",
+          "solver_status": {
+            "pre_mismatch_check": "unsat",
+            "pre_spec_implies_pre_code": "unsat",
+            "pre_code_implies_pre_spec": "unsat",
+            "post_mismatch_check": "sat",
+            "spec_post_implies_code_post": "sat",
+            "code_post_implies_spec_post": "unsat"
+          },
+          "debug": {
+            "formulas": {
+              "pre_spec": "true",
+              "pre_code": "true",
+              "common_pre": "(and true true)",
+              "post_spec": "(= ret ret)",
+              "post_code": "(= ret file_path)"
+            },
+            "checks": {
+              "pre_mismatch_check": "(xor true true)",
+              "post_mismatch_check": "(=> (and true true) (xor (= ret ret) (= ret file_path)))",
+              "spec_post_implies_code_post": "(=> (and true true (= ret ret)) (= ret file_path))",
+              "code_post_implies_spec_post": "(=> (and true true (= ret file_path)) (= ret ret))"
+            },
+            "witness_model": {
+              "pre_mismatch_check": null,
+              "pre_spec_implies_pre_code": null,
+              "pre_code_implies_pre_spec": null,
+              "post_mismatch_check": {
+                "file_path": "Empty(Seq(Int))",
+                "replacement_text": "",
+                "platform": "T_platformtype!val!0",
+                "max_len": 0,
+                "fs_encoding": "",
+                "check_reserved": false,
+                "null_value_handler": "T_validationerrorhandler!val!0",
+                "reserved_name_handler": "T_validationerrorhandler!val!0",
+                "additional_reserved_names": "T_sequence_str!val!0",
+                "normalize": false,
+                "validate_after_sanitize": false,
+                "ret": "Unit(4)"
+              },
+              "spec_post_implies_code_post": {
+                "file_path": "Empty(Seq(Int))",
+                "replacement_text": "",
+                "platform": "T_platformtype!val!0",
+                "max_len": 0,
+                "fs_encoding": "",
+                "check_reserved": false,
+                "null_value_handler": "T_validationerrorhandler!val!0",
+                "reserved_name_handler": "T_validationerrorhandler!val!0",
+                "additional_reserved_names": "T_sequence_str!val!0",
+                "normalize": false,
+                "validate_after_sanitize": false,
+                "ret": "Unit(4)"
+              },
+              "code_post_implies_spec_post": null
+            }
+          },
+          "post_mismatch_on_common_pre": true,
+          "post_mismatch_counterexample": {
+            "file_path": "Empty(Seq(Int))",
+            "replacement_text": "",
+            "platform": "T_platformtype!val!0",
+            "max_len": 0,
+            "fs_encoding": "",
+            "check_reserved": false,
+            "null_value_handler": "T_validationerrorhandler!val!0",
+            "reserved_name_handler": "T_validationerrorhandler!val!0",
+            "additional_reserved_names": "T_sequence_str!val!0",
+            "normalize": false,
+            "validate_after_sanitize": false
+          },
+          "post_spec_implies_post_code_on_common_pre": false,
+          "post_code_implies_post_spec_on_common_pre": true,
+          "parse_low_confidence": true,
+          "spec_weak_postcondition": true,
+          "code_weak_postcondition": false,
+          "spec_postcondition": "ret == ret",
+          "code_postcondition": "ret == file_path"
+        },
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filepath.py::sanitize_filepath",
+        "triggered_case": "POST_CODE",
+        "baseline_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "add_test_case",
+          "add_property_to_ignore_list"
+        ],
+        "recommended_actions": [
+          "refine_spec",
+          "fix_implementation",
+          "add_test_case",
+          "add_property_to_ignore_list"
+        ],
+        "summary": "Implementation postconditions are weaker on common preconditions."
+      }
+    },
+    {
+      "benchmark_id": "pathvalidate::_filepath.py::validate_filepath",
+      "file": "pathvalidate/_filepath.py",
+      "signature": "validate_filepath(file_path: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> None",
+      "arg_types": {
+        "file_path": "PathType",
+        "platform": "Optional[PlatformType]",
+        "min_len": "int",
+        "max_len": "Optional[int]",
+        "fs_encoding": "Optional[str]",
+        "check_reserved": "bool",
+        "additional_reserved_names": "Optional[Sequence[str]]"
+      },
+      "return_type": "None",
+      "informal_spec": "Verifying whether the ``file_path`` is a valid file path or not.\n\nArgs:\n    file_path (PathType):\n        File path to be validated.\n    platform (Optional[PlatformType], optional):\n        Target platform name of the file path.\n\n        .. include:: platform.txt\n    min_len (int, optional):\n        Minimum byte length of the ``file_path``. The value must be greater or equal to one.\n        Defaults to ``1``.\n    max_len (Optional[int], optional):\n        Maximum byte length of the ``file_path``. If the value is |None| or minus,\n        automatically determined by the ``platform``:\n\n            - ``Linux``: 4096\n            - ``macOS``: 1024\n            - ``Windows``: 260\n            - ``universal``: 260\n    fs_encoding (Optional[str], optional):\n        Filesystem encoding that is used to calculate the byte length of the file path.\n        If |None|, get the encoding from the execution environment.\n    check_reserved (bool, optional):\n        If |True|, check the reserved names of the ``platform``.\n        Defaults to |True|.\n    additional_reserved_names (Optional[Sequence[str]], optional):\n        Additional reserved names to check.\n\nRaises:\n    ValidationError (ErrorReason.INVALID_CHARACTER):\n        If the ``file_path`` includes invalid char(s):\n        |invalid_file_path_chars|.\n        The following characters are also invalid for Windows platforms:\n        |invalid_win_file_path_chars|\n    ValidationError (ErrorReason.INVALID_LENGTH):\n        If the ``file_path`` is longer than ``max_len`` characters.\n    ValidationError:\n        If ``file_path`` includes invalid values.\n\nExample:\n    :ref:`example-validate-file-path`\n\nSee Also:\n    `Naming Files, Paths, and Namespaces - Win32 apps | Microsoft Docs\n    <https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file>`__",
+      "extra_context": "",
+      "spec_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::validate_filepath",
+        "args": [
+          "file_path",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "None",
+        "domain_constraints": [
+          "min_len >= 1",
+          "Or(Length(max_len) == 0, max_len >= 1)",
+          "Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)",
+          "Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)"
+        ],
+        "postcondition": "Length(ret) == 0",
+        "confidence": "high",
+        "notes": "The function returns None unconditionally; postcondition is trivial. Domain constraints reflect documented input assumptions (min_len >= 1, max_len optional but positive when present, etc.).",
+        "degraded": false,
+        "degraded_reason": "",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "Or(Length(max_len) == 0, max_len >= 1)",
+              "Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)",
+              "Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)"
+            ],
+            "postcondition": "Length(ret) == 0",
+            "errors": []
+          },
+          "final": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "Or(Length(max_len) == 0, max_len >= 1)",
+              "Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)",
+              "Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)"
+            ],
+            "postcondition": "Length(ret) == 0",
+            "degraded": false,
+            "degraded_reason": ""
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial"
+          ],
+          "final_stage": "initial",
+          "stage_errors": {},
+          "degraded": false,
+          "degraded_reason": "",
+          "postcondition_is_weak": false,
+          "used_fallback": false
+        }
+      },
+      "code_to_logic": {
+        "benchmark_id": "pathvalidate::_filepath.py::validate_filepath",
+        "args": [
+          "file_path",
+          "platform",
+          "min_len",
+          "max_len",
+          "fs_encoding",
+          "check_reserved",
+          "additional_reserved_names"
+        ],
+        "return_type": "None",
+        "domain_constraints": [],
+        "postcondition": "ret == ret",
+        "confidence": "low",
+        "notes": "Auto-sanitized after validation failure. Errors: postcondition must reference `ret`",
+        "degraded": true,
+        "degraded_reason": "sanitize_after_validation_failure",
+        "extraction_trace": {
+          "initial": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "max_len == -1 || max_len >= 0"
+            ],
+            "postcondition": "Length(ret) == 0",
+            "errors": [
+              "domain constraint invalid expression syntax: invalid syntax (<unknown>, line 1)"
+            ]
+          },
+          "repair": {
+            "domain_constraints": [
+              "min_len >= 0",
+              "If(max_len == -1, True, max_len >= 0)"
+            ],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "safe_repair": {
+            "domain_constraints": [
+              "min_len >= 1",
+              "If(Length(max_len) > 0, max_len >= min_len, True)"
+            ],
+            "postcondition": "True",
+            "errors": [
+              "postcondition must reference `ret`"
+            ]
+          },
+          "final": {
+            "domain_constraints": [],
+            "postcondition": "ret == ret",
+            "degraded": true,
+            "degraded_reason": "sanitize_after_validation_failure"
+          }
+        },
+        "used_fallback": false,
+        "extractor_health": {
+          "stages_reached": [
+            "initial",
+            "repair",
+            "safe_repair"
+          ],
+          "final_stage": "sanitized",
+          "stage_errors": {
+            "initial": 1,
+            "repair": 1,
+            "safe_repair": 1
+          },
+          "degraded": true,
+          "degraded_reason": "sanitize_after_validation_failure",
+          "postcondition_is_weak": true,
+          "used_fallback": false
+        }
+      },
+      "smt_checking": {
+        "benchmark_id": "pathvalidate::_filepath.py::validate_filepath",
+        "equivalent": false,
+        "reason": "formula_parse_error: Non-sequence passed as a sequence",
+        "counterexample": null,
+        "diagnostics": {
+          "parse_low_confidence": true,
+          "spec_weak_postcondition": false,
+          "code_weak_postcondition": true,
+          "spec_postcondition": "Length(ret) == 0",
+          "code_postcondition": "ret == ret"
+        },
+        "well_formedness": "ok"
+      },
+      "action_planning": {
+        "benchmark_id": "pathvalidate::_filepath.py::validate_filepath",
+        "triggered_case": "UNKNOWN",
+        "baseline_actions": [
+          "add_test_case"
+        ],
+        "recommended_actions": [
+          "add_test_case"
+        ],
+        "summary": "Mismatch detected; review diagnostics and add targeted test."
+      }
+    }
+  ]
+}

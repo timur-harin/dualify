@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# Remove Cursor agent trailers before the commit is finalized.
+COMMIT_MSG_FILE="${1:?}"
+
+if [[ ! -f "$COMMIT_MSG_FILE" ]]; then
+  exit 0
+fi
+
+tmp="$(mktemp)"
+grep -v -E \
+  '^(Co-authored-by: Cursor <cursoragent@cursor\.com>|Made-with: Cursor)$' \
+  "$COMMIT_MSG_FILE" >"$tmp"
+mv "$tmp" "$COMMIT_MSG_FILE"

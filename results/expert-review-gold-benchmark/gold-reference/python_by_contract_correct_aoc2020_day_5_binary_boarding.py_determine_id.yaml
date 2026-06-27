@@ -1,0 +1,34 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_5_binary_boarding.py::determine_id
+qualname: determine_id
+file: ''
+signature: 'determine_id(row: int, column: int) -> int'
+arg_types:
+  row: int
+  column: int
+return_type: int
+informal_spec: Compute the identifier of the seat given its ``row`` and ``column``.
+informal_spec_raw: Compute the identifier of the seat given its ``row`` and ``column``.
+function_source: "def determine_id(row: int, column: int) -> int:\n    \"\"\"Compute\
+  \ the identifier of the seat given its ``row`` and ``column``.\"\"\"\n    return\
+  \ row * 8 + column"
+profile: 'In scope: arithmetic computation of a seat identifier from row and column
+  (row * 8 + column). Out of scope: the AOC binary-boarding decoding from boarding-pass
+  strings; any IO. Observable: the returned integer ID.'
+in_fragment: true
+reference_pre:
+- And(0 <= row, row <= 127)
+- And(0 <= column, column <= 7)
+reference_post: ret == row * 8 + column
+notes: 'ai-review: Tightened the postcondition from the draft''s weak upper bound
+  `ret <= 127 * 8 + 8` to the exact functional equality `ret == row * 8 + column`,
+  which is what the implementation computes and what defines an AOC2020-day-5 seat
+  ID. Tightened the column bound from `<= 8` to `<= 7`: binary boarding uses 3 column
+  bits (values 0..7); rows use 7 bits (0..127). Split chained `0 <= x <= K` into `And(...)`
+  form for fragment hygiene even though the parser accepts the chained form.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - And(0 <= row, row <= 127)
+  - And(0 <= column, column <= 7)
+  post: ret == row * 8 + column

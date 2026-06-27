@@ -1,0 +1,25 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::arith.py::double
+qualname: double
+file: ''
+signature: 'double(items: List[str]) -> List[str]'
+arg_types:
+  items: List[str]
+return_type: List[str]
+informal_spec: Return a new list that is the input list, repeated twice.
+informal_spec_raw: 'Return a new list that is the input list, repeated twice.
+
+
+  post: len(_) == len(items) * 2'
+function_source: "def double(items: List[str]) -> List[str]:\n    \"\"\"\n    Return\
+  \ a new list that is the input list, repeated twice.\n\n    post: len(_) == len(items)\
+  \ * 2\n    \"\"\"\n    return items + items"
+profile: ''
+in_fragment: true
+reference_pre: []
+reference_post: Length(ret) == Length(items) * 2
+notes: ''
+reference_normalized:
+  pre: []
+  post: Length(ret) == Length(items) * 2
+status: confirmed
+needs_attention: false

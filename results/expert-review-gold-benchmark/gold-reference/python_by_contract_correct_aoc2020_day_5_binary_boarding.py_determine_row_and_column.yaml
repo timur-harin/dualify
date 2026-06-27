@@ -1,0 +1,43 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_5_binary_boarding.py::determine_row_and_column
+qualname: determine_row_and_column
+file: ''
+signature: 'determine_row_and_column(identifier: str) -> Tuple[int, int]'
+arg_types:
+  identifier: str
+return_type: Tuple[int, int]
+informal_spec: Compute the ``(row, column)`` of the seat identified by the ``identifier``.
+informal_spec_raw: Compute the ``(row, column)`` of the seat identified by the ``identifier``.
+function_source: "def determine_row_and_column(identifier: str) -> Tuple[int, int]:\n\
+  \    \"\"\"Compute the ``(row, column)`` of the seat identified by the ``identifier``.\"\
+  \"\"\n    row_identifier = identifier[:7]\n    column_identifier = identifier[7:]\n\
+  \    row = determine_row(identifier=row_identifier)\n    column = determine_column(identifier=column_identifier)\n\
+  \    return row, column"
+profile: 'In scope: arithmetic mapping from a 10-character boarding-pass identifier
+  string to the (row, column) tuple decoded by binary partitioning. Out of scope:
+  the exact decoding arithmetic (delegated to helpers determine_row / determine_column).
+  Observable: the two integer components of the returned tuple lie within the valid
+  seat-grid bounds.'
+in_fragment: true
+reference_pre:
+- Length(identifier) == 10
+- ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(And(k < 7, Or(identifier[k]
+  == "F", identifier[k] == "B")), And(k >= 7, Or(identifier[k] == "L", identifier[k]
+  == "R")))))
+reference_post: And(0 <= ret[0], ret[0] <= 127, 0 <= ret[1], ret[1] <= 7)
+notes: 'ai-review: Rewrote the draft regex `re_match(''^[FB]{7}[LR]{3}\Z'', identifier)`
+  precondition into fragment-legal form: explicit Length and a single ForAll whose
+  body splits indices 0..6 (F/B) from indices 7..9 (L/R). Also rewrote the postcondition
+  from Python `and`-chain into prefix And(...). Tightened the column bound from `<=
+  8` (draft) to `<= 7`, since three binary L/R partitions span 0..7 inclusive — the
+  draft''s `<= 8` looks like an off-by-one typo. Postcondition treats the bounds as
+  observable; it does not assert the precise binary-partition arithmetic, which lives
+  in the helpers determine_row / determine_column.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(identifier) == 10
+  - ForAll([k], Implies(And(0 <= k, k < Length(identifier)), Or(And(k < 7, Or(identifier[k]
+    == 'F', identifier[k] == 'B')), And(k >= 7, Or(identifier[k] == 'L', identifier[k]
+    == 'R')))))
+  post: And(0 <= ret[0], ret[0] <= 127, 0 <= ret[1], ret[1] <= 7)

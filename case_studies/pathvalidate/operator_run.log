@@ -1,0 +1,319 @@
+
+=== Pathvalidate operator loop (6 functions) ===
+
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filename.py:347[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filename.py::is_valid_filename[0m
+[1m[97mSignature:[0m [97mis_valid_filename(filename: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> bool[0m
+[1m[97mSMT reason:[0m [36mformula_parse_error: Non-sequence passed as a sequence[0m
+[1m[97mEquivalent:[0m [1m[97m[41m FALSE [0m
+[1m[97mTriggered case:[0m [1m[97m[41m UNKNOWN [0m
+[1m[97mCounterexample(args):[0m [31mNone[0m
+[1m[97mExtractor:[0m [32mspec=initial[0m  [32mcode=initial[0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': None, 'post_mismatch_on_common_pre': None, 'failed_check': None, 'parse_low_confidence': None, 'spec_weak_postcondition': None, 'code_weak_postcondition': None}[0m
+[1m[97mSpec preconditions:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+[1m[97mSpec postcondition:[0m [97mret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))[0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mret == And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True), If(check_reserved, Not(Contains(additional_reserved_names, filename)), True))[0m
+    [1m[32mDEGRADED:[0m [97mFalse[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == And(And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True)), And(check_reserved == False, Length(additional_reserved_names) == 0))[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == And(And(Length(filename) >= min_len, If(Length(max_len) > 0, Length(filename) <= max_len, True)), And(check_reserved == False, Length(additional_reserved_names) == 0))[0m
+    [1m[32mDEGRADED:[0m [97mFalse[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97madd_test_case[0m
+[1m[97mPlanner summary:[0m [97mMismatch detected; review diagnostics and add targeted test.[0m
+
+[OPERATOR] decision=add_test_case
+[OPERATOR] rationale: Fallback to first recommended action (UNKNOWN).
+[OPERATOR] actions: ['add_test_case']
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filename.py:381[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filename.py::sanitize_filename[0m
+[1m[97mSignature:[0m [97msanitize_filename(filename: PathType, replacement_text: str, platform: Optional[PlatformType], max_len: Optional[int], fs_encoding: Optional[str], check_reserved: Optional[bool], null_value_handler: Optional[ValidationErrorHandler], reserved_name_handler: Optional[ValidationErrorHandler], additional_reserved_names: Optional[Sequence[str]], validate_after_sanitize: bool) -> PathType[0m
+[1m[97mSMT reason:[0m [36mlow_confidence_parse[0m
+[1m[97mEquivalent:[0m [1m[97m[42m TRUE [0m
+[1m[97mTriggered case:[0m [1m[97m[43m LOW_CONFIDENCE_PARSE [0m
+[1m[97mCounterexample(args):[0m [33mNone[0m
+[1m[97mExtractor:[0m [31mspec=sanitized [degraded, weak][0m  [31mcode=sanitized [degraded, weak][0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': False, 'post_mismatch_on_common_pre': False, 'failed_check': 'none', 'parse_low_confidence': True, 'spec_weak_postcondition': True, 'code_weak_postcondition': True}[0m
+[1m[97mSpec preconditions:[0m [97m[][0m
+[1m[97mSpec postcondition:[0m [97mret == ret[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['Or(Length(max_len) == 0, max_len > 0)', 'Or(Length(fs_encoding) == 0, IsString(fs_encoding))', 'Or(Or(Length(check_reserved) == 0, check_reserved == True), check_reserved == False)', 'Or(validate_after_sanitize == True, validate_after_sanitize == False)', 'Or(Length(additional_reserved_names) == 0, ForAll([i], Implies(And(i >= 0, i < Length(additional_reserved_names)), IsString(additional_reserved_names[i]))))'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(IsPathType(ret), ForAll([i], Implies(And(i >= 0, i < Length(ret)), IsPrintable(ret[i]))), Not(Contains(ret, '|')), If(Or(platform == String('windows'), Length(platform) == 0), Not(Or(Contains(ret, ':'), Contains(ret, '*'), Contains(ret, '?'), Contains(ret, '"'), Contains(ret, '<'), Contains(ret, '>'), Contains(ret, '\\')))), True)[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: IsPathType, IsPrintable, String', 'domain constraint unsupported function calls: IsString', 'domain constraint unsupported function calls: IsString'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m['Or(Length(max_len) == 0, max_len > 0)', "Or(Length(fs_encoding) == 0, And(Length(fs_encoding) > 0, ForAll([i], Implies(And(i >= 0, i < Length(fs_encoding)), And(fs_encoding[i] >= Char('a'), fs_encoding[i] <= Char('z'))))))", 'Or(Or(Length(check_reserved) == 0, check_reserved == True), check_reserved == False)', 'Or(validate_after_sanitize == True, validate_after_sanitize == False)', "Or(Length(additional_reserved_names) == 0, ForAll([i], Implies(And(i >= 0, i < Length(additional_reserved_names)), And(Length(additional_reserved_names[i]) > 0, ForAll([j], Implies(And(j >= 0, j < Length(additional_reserved_names[i])), And(additional_reserved_names[i][j] >= 'a', additional_reserved_names[i][j] <= 'z'))))))"][0m
+    [1m[33mPOST:[0m [1m[97mAnd(And(Length(ret) == Length(filename), ForAll([i], Implies(And(i >= 0, i < Length(ret)), Or(ret[i] == filename[i], ret[i] == replacement_text[0])))), ForAll([i], Implies(And(i >= 0, i < Length(ret)), And(ret[i] >= Char(' '), ret[i] <= Char('~')))), Not(Contains(ret, '|')), If(Or(And(Length(platform) > 0, platform == String('windows')), Length(platform) == 0), Not(Or(Contains(ret, ':'), Contains(ret, '*'), Contains(ret, '?'), Contains(ret, '"'), Contains(ret, '<'), Contains(ret, '>'), Contains(ret, '\\')))), True)[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: Char, String', 'domain constraint unsupported function calls: Char', "domain constraint invalid expression syntax: '(' was never closed (<unknown>, line 1)"][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['Length(filename) >= 0', 'Length(replacement_text) >= 0', 'If(Length(additional_reserved_names) > 0, ForAll([i], Implies(And(0 <= i, i < Length(additional_reserved_names)), Length(additional_reserved_names[i]) > 0)), True)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And(32 <= ret[i], ret[i] <= 126), ret[i] == Char(' '), ret[i] == Char('_')))), If(Length(filename) == 0, ret == String(''), And(Exists([j], And(0 <= j, j < Length(filename), filename[j] == ret[j])), ForAll([k], Implies(And(0 <= k, k < Length(filename)), Exists([d], And(0 <= d, d <= Length(replacement_text), If(d == 0, And(0 <= k + d, k + d < Length(filename), filename[k] == ret[k]), And(k + d < Length(filename), ForAll([m], Implies(And(0 <= m, m < d), ret[k + m] == replacement_text[m])))))))), If(Length(max_len) > 0, Length(ret) <= max_len, True))))[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: Char, String'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == ret[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == FileNameSanitizer(platform=If(Length(platform) == 0, platform, platform), max_len=If(Length(max_len) == 0, -1, max_len), fs_encoding=fs_encoding, null_value_handler=null_value_handler, reserved_name_handler=If(Length(reserved_name_handler) == 0, add_trailing_underscore, reserved_name_handler), additional_reserved_names=additional_reserved_names, validate_after_sanitize=validate_after_sanitize).sanitize(filename, replacement_text)[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: FileNameSanitizer', 'postcondition unsupported function call target'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(ret) <= Length(filename), ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And(0 <= i, i < Length(filename)), ret[i] == replacement_text[0] And Exists([j], And(0 <= j, j < Length(filename), filename[j] == replacement_text[0]))))))[0m
+    [1m[31mERRORS:[0m [97m['postcondition uses infix And/Or', 'postcondition invalid expression syntax: invalid syntax. Perhaps you forgot a comma? (<unknown>, line 1)'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['And(Length(filename) >= 0, Length(replacement_text) >= 0)', "Or(platform == String('windows'), platform == String('macos'), platform == String('linux'), platform == String('universal'), Length(platform) == 0)", 'Or(Length(max_len) == 0, max_len >= 0)', 'Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)', 'Or(Length(check_reserved) == 0, check_reserved == True, check_reserved == False)', 'Or(validate_after_sanitize == True, validate_after_sanitize == False)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Or(And('a' <= ret[i], ret[i] <= Char('z')), And('A' <= ret[i], ret[i] <= Char('Z')), And('0' <= ret[i], ret[i] <= Char('9')), Or(ret[i] == Char('_'), ret[i] == Char('-'), ret[i] == Char('.'), ret[i] == Char(' '))))), If(Length(ret) == 0, And(null_value_handler == String('return_null_string'), ret == filename), True))[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: Char, String', 'domain constraint unsupported function calls: String'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97mrefine_spec[0m
+  [36m•[0m [97mfix_implementation[0m
+  [36m•[0m [97minvestigate_instrumentation[0m
+  [36m•[0m [97mno_test_case[0m
+[1m[97mPlanner summary:[0m [97mSMT matched, but extracted formulas are low-confidence; refine spec/implementation or investigate extraction instrumentation.[0m
+
+[OPERATOR] decision=investigate_instrumentation
+[OPERATOR] rationale: Weak/degraded spec extraction; compare docstring to code manually.
+[OPERATOR] actions: ['investigate_instrumentation']
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filename.py:277[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filename.py::validate_filename[0m
+[1m[97mSignature:[0m [97mvalidate_filename(filename: PathType, platform: Optional[PlatformType], min_len: int, max_len: int, fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> None[0m
+[1m[97mSMT reason:[0m [36mlow_confidence_parse[0m
+[1m[97mEquivalent:[0m [1m[97m[42m TRUE [0m
+[1m[97mTriggered case:[0m [1m[97m[43m LOW_CONFIDENCE_PARSE [0m
+[1m[97mCounterexample(args):[0m [33mNone[0m
+[1m[97mExtractor:[0m [31mspec=sanitized [degraded, weak][0m  [31mcode=sanitized [degraded, weak][0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': False, 'post_mismatch_on_common_pre': False, 'failed_check': 'none', 'parse_low_confidence': True, 'spec_weak_postcondition': True, 'code_weak_postcondition': True}[0m
+[1m[97mSpec preconditions:[0m [97m[][0m
+[1m[97mSpec postcondition:[0m [97mret == ret[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'max_len >= min_len', "If(platform == String('Linux'), max_len < 4096, True)", "If(platform == String('macOS'), max_len < 1024, True)", "If(platform == String('Windows'), max_len < 260, True)", "If(platform == String('universal'), max_len < 260, True)"][0m
+    [1m[33mPOST:[0m [1m[97mLength(ret) == 0[0m
+    [1m[31mERRORS:[0m [97m['domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'max_len >= min_len', "Implies(platform == String('Linux'), max_len < 4096)", "Implies(platform == String('macOS'), max_len < 1024)", "Implies(platform == String('Windows'), max_len < 260)", "Implies(platform == String('universal'), max_len < 260)"][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'max_len >= 1', 'min_len <= max_len'][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == ret[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mFalse[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'max_len >= min_len', "If(platform == String('Windows'), max_len <= 260, True)", "If(platform == String('Linux'), max_len <= 4096, True)", "If(platform == String('macOS'), max_len <= 1024, True)", "If(platform == String('universal'), max_len <= 260, True)"][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: String'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97mrefine_spec[0m
+  [36m•[0m [97mfix_implementation[0m
+  [36m•[0m [97minvestigate_instrumentation[0m
+  [36m•[0m [97mno_test_case[0m
+[1m[97mPlanner summary:[0m [97mSMT matched, but extracted formulas are low-confidence; refine spec/implementation or investigate extraction instrumentation.[0m
+
+[OPERATOR] decision=investigate_instrumentation
+[OPERATOR] rationale: Weak/degraded spec extraction; compare docstring to code manually.
+[OPERATOR] actions: ['investigate_instrumentation']
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filepath.py:374[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filepath.py::is_valid_filepath[0m
+[1m[97mSignature:[0m [97mis_valid_filepath(file_path: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> bool[0m
+[1m[97mSMT reason:[0m [36mcase_post_code[0m
+[1m[97mEquivalent:[0m [1m[97m[41m FALSE [0m
+[1m[97mTriggered case:[0m [1m[97m[43m POST_CODE [0m
+[1m[97mCounterexample(args):[0m [33m{'file_path': 'Empty(Seq(Int))', 'platform': 'T_platformtype!val!0', 'min_len': 0, 'max_len': 0, 'fs_encoding': '', 'check_reserved': False, 'additional_reserved_names': 'T_sequence_str!val!0'}[0m
+[1m[97mExtractor:[0m [31mspec=sanitized [degraded, weak][0m  [32mcode=initial[0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': False, 'post_mismatch_on_common_pre': True, 'failed_check': 'spec_post_implies_code_post', 'parse_low_confidence': True, 'spec_weak_postcondition': True, 'code_weak_postcondition': False}[0m
+[1m[97mSpec preconditions:[0m [97m[][0m
+[1m[97mSpec postcondition:[0m [97mret == ret[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mret == And(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True), If(check_reserved, Not(ContainsReservedName(file_path, platform, additional_reserved_names)), True), If(Length(fs_encoding) > 0, IsEncodable(file_path, fs_encoding), True))[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: ContainsReservedName, IsEncodable'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True), If(check_reserved, ForAll([i], Implies(And(0 <= i, i < Length(additional_reserved_names)), Not(And(PrefixOf(file_path, additional_reserved_names[i]), Length(file_path) == Length(additional_reserved_names[i]))))), True), If(Length(fs_encoding) > 0, ForAll([j], Implies(And(0 <= j, j < Length(file_path)), Exists([c], And(0 <= c, c < 256, file_path[j] == c[0])))), True))[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(file_path) >= min_len, If(Length(max_len) > 0, Length(file_path) <= max_len, True))[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == True[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == True[0m
+    [1m[32mDEGRADED:[0m [97mFalse[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97mrefine_spec[0m
+  [36m•[0m [97mfix_implementation[0m
+  [36m•[0m [97madd_test_case[0m
+  [36m•[0m [97madd_property_to_ignore_list[0m
+[1m[97mPlanner summary:[0m [97mImplementation postconditions are weaker on common preconditions.[0m
+
+[OPERATOR] decision=investigate_instrumentation
+[OPERATOR] rationale: Weak/degraded spec extraction; compare docstring to code manually.
+[OPERATOR] actions: ['investigate_instrumentation']
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filepath.py:408[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filepath.py::sanitize_filepath[0m
+[1m[97mSignature:[0m [97msanitize_filepath(file_path: PathType, replacement_text: str, platform: Optional[PlatformType], max_len: Optional[int], fs_encoding: Optional[str], check_reserved: Optional[bool], null_value_handler: Optional[ValidationErrorHandler], reserved_name_handler: Optional[ValidationErrorHandler], additional_reserved_names: Optional[Sequence[str]], normalize: bool, validate_after_sanitize: bool) -> PathType[0m
+[1m[97mSMT reason:[0m [36mcase_post_code[0m
+[1m[97mEquivalent:[0m [1m[97m[41m FALSE [0m
+[1m[97mTriggered case:[0m [1m[97m[43m POST_CODE [0m
+[1m[97mCounterexample(args):[0m [33m{'file_path': 'Empty(Seq(Int))', 'replacement_text': '', 'platform': 'T_platformtype!val!0', 'max_len': 0, 'fs_encoding': '', 'check_reserved': False, 'null_value_handler': 'T_validationerrorhandler!val!0', 'reserved_name_handler': 'T_validationerrorhandler!val!0', 'additional_reserved_names': 'T_sequence_str!val!0', 'normalize': False, 'validate_after_sanitize': False}[0m
+[1m[97mExtractor:[0m [31mspec=sanitized [degraded, weak][0m  [32mcode=initial[0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': False, 'post_mismatch_on_common_pre': True, 'failed_check': 'spec_post_implies_code_post', 'parse_low_confidence': True, 'spec_weak_postcondition': True, 'code_weak_postcondition': False}[0m
+[1m[97mSpec preconditions:[0m [97m[][0m
+[1m[97mSpec postcondition:[0m [97mret == ret[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['Or(IsString(file_path), IsPathLike(file_path))', 'IsString(replacement_text)', "Or(platform == String('Linux'), platform == String('macOS'), platform == String('Windows'), platform == String('universal'), Length(platform) == 0)", 'Or(Length(max_len) == 0, max_len >= 0)', 'Or(Length(fs_encoding) == 0, IsString(fs_encoding))', 'Or(Length(check_reserved) == 0, IsBool(check_reserved))', 'Or(Length(null_value_handler) == 0, IsCallable(null_value_handler))', 'Or(Length(reserved_name_handler) == 0, IsCallable(reserved_name_handler))', 'Or(Length(additional_reserved_names) == 0, IsSequence(additional_reserved_names))', 'Or(normalize == True, normalize == False)', 'Or(validate_after_sanitize == True, validate_after_sanitize == False)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Or(IsString(ret), IsPathLike(ret)), ForAll([i], Implies(And(i >= 0, i < Length(ret)), Or(IsPrintable(ret[i]), And(Contains(replacement_text, Unit(ret[i])), Exists([j], And(j >= 0, j < Length(replacement_text), ret[i] == replacement_text[j])))))), If(Or(platform == String('Windows'), platform == String('universal')), Not(Or(Contains(ret, invalid_win_file_path_chars), IsReservedName(ret))), Not(Or(Contains(ret, invalid_file_path_chars), IsReservedName(ret)))), If(And(Length(max_len) > 0, max_len > 0), ByteLength(ret, fs_encoding) <= max_len, True), If(And(Length(platform) > 0, IsReservedName(ret)), ret == reserved_name_handler(ret), True), If(And(Length(ret) == 0, Length(null_value_handler) > 0), ret == null_value_handler(), True), If(normalize == True, ret == NormalizePath(ret, platform), True), If(validate_after_sanitize == True, IsValidFilePath(ret, platform, fs_encoding), True))[0m
+    [1m[31mERRORS:[0m [97m['postcondition unsupported function calls: ByteLength, IsPathLike, IsPrintable, IsReservedName, IsString, IsValidFilePath, NormalizePath, String, null_value_handler, reserved_name_handler', 'postcondition unknown identifier `invalid_win_file_path_chars`', 'domain constraint unsupported function calls: IsPathLike, IsString', 'domain constraint unsupported function calls: IsString', 'domain constraint unsupported function calls: String', 'domain constraint unsupported function calls: IsString', 'domain constraint unsupported function calls: IsBool', 'domain constraint unsupported function calls: IsCallable', 'domain constraint unsupported function calls: IsCallable', 'domain constraint unsupported function calls: IsSequence'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m['Or(Length(file_path) >= 0, Length(file_path) == 0)', 'Length(replacement_text) >= 0', "Or(Length(platform) == 0, platform == String('Linux'), platform == String('macOS'), platform == String('Windows'), platform == String('universal'))", 'Or(Length(max_len) == 0, max_len >= 0)', 'Or(Length(fs_encoding) == 0, Length(fs_encoding) >= 0)', 'Or(Length(check_reserved) == 0, check_reserved == True, check_reserved == False)', 'Or(Length(null_value_handler) == 0, Length(null_value_handler) >= 0)', 'Or(Length(reserved_name_handler) == 0, Length(reserved_name_handler) >= 0)', 'Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)', 'Or(normalize == True, normalize == False)', 'Or(validate_after_sanitize == True, validate_after_sanitize == False)'][0m
+    [1m[33mPOST:[0m [1m[97mAnd(Length(ret) >= 0, ForAll([i], Implies(And(0 <= i, i < Length(ret)), Exists([j], And(0 <= j, j < Length(replacement_text), ret[i] == replacement_text[j])))))[0m
+    [1m[31mERRORS:[0m [97m['domain constraint unsupported function calls: String'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mERRORS:[0m [97m['postcondition must not be tautology `ret == ret`'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == file_path[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == file_path[0m
+    [1m[32mDEGRADED:[0m [97mFalse[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97mrefine_spec[0m
+  [36m•[0m [97mfix_implementation[0m
+  [36m•[0m [97madd_test_case[0m
+  [36m•[0m [97madd_property_to_ignore_list[0m
+[1m[97mPlanner summary:[0m [97mImplementation postconditions are weaker on common preconditions.[0m
+
+[OPERATOR] decision=investigate_instrumentation
+[OPERATOR] rationale: Weak/degraded spec extraction; compare docstring to code manually.
+[OPERATOR] actions: ['investigate_instrumentation']
+
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97m[44m Dualify Comparison [0m
+[36m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[1m[97mLocation:[0m [1m[97m/Users/timur/develop/dualify/repos/pathvalidate/pathvalidate/_filepath.py:307[0m
+[1m[97mTarget:[0m [1m[97mpathvalidate::_filepath.py::validate_filepath[0m
+[1m[97mSignature:[0m [97mvalidate_filepath(file_path: PathType, platform: Optional[PlatformType], min_len: int, max_len: Optional[int], fs_encoding: Optional[str], check_reserved: bool, additional_reserved_names: Optional[Sequence[str]]) -> None[0m
+[1m[97mSMT reason:[0m [36mformula_parse_error: Non-sequence passed as a sequence[0m
+[1m[97mEquivalent:[0m [1m[97m[41m FALSE [0m
+[1m[97mTriggered case:[0m [1m[97m[41m UNKNOWN [0m
+[1m[97mCounterexample(args):[0m [31mNone[0m
+[1m[97mExtractor:[0m [32mspec=initial[0m  [31mcode=sanitized [degraded, weak][0m
+[1m[97mDiagnostics(short):[0m [97m{'pre_mismatch': None, 'post_mismatch_on_common_pre': None, 'failed_check': None, 'parse_low_confidence': True, 'spec_weak_postcondition': False, 'code_weak_postcondition': True}[0m
+[1m[97mSpec preconditions:[0m [97m['min_len >= 1', 'Or(Length(max_len) == 0, max_len >= 1)', 'Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)', 'Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)'][0m
+[1m[97mSpec postcondition:[0m [97mLength(ret) == 0[0m
+[1m[97mSpec extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'Or(Length(max_len) == 0, max_len >= 1)', 'Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)', 'Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)'][0m
+    [1m[33mPOST:[0m [1m[97mLength(ret) == 0[0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'Or(Length(max_len) == 0, max_len >= 1)', 'Or(Length(fs_encoding) == 0, Length(fs_encoding) > 0)', 'Or(Length(additional_reserved_names) == 0, Length(additional_reserved_names) >= 0)'][0m
+    [1m[33mPOST:[0m [1m[97mLength(ret) == 0[0m
+    [1m[32mDEGRADED:[0m [97mFalse[0m
+[1m[97mImplementation preconditions:[0m [97m[][0m
+[1m[97mImplementation postcondition:[0m [97mret == ret[0m
+[1m[97mImplementation extraction trace:[0m
+  [1m[36m[initial][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'max_len == -1 || max_len >= 0'][0m
+    [1m[33mPOST:[0m [1m[97mLength(ret) == 0[0m
+    [1m[31mERRORS:[0m [97m['domain constraint invalid expression syntax: invalid syntax (<unknown>, line 1)'][0m
+  [1m[36m[repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 0', 'If(max_len == -1, True, max_len >= 0)'][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[safe_repair][0m
+    [1m[34mPRE:[0m [97m['min_len >= 1', 'If(Length(max_len) > 0, max_len >= min_len, True)'][0m
+    [1m[33mPOST:[0m [1m[97mTrue[0m
+    [1m[31mERRORS:[0m [97m['postcondition must reference `ret`'][0m
+  [1m[36m[final][0m
+    [1m[34mPRE:[0m [97m[][0m
+    [1m[33mPOST:[0m [1m[97mret == ret[0m
+    [1m[31mDEGRADED:[0m [97mTrue[0m
+    [1m[31mDEGRADED_REASON:[0m [97msanitize_after_validation_failure[0m
+[1m[97mRecommended actions:[0m
+  [36m•[0m [97madd_test_case[0m
+[1m[97mPlanner summary:[0m [97mMismatch detected; review diagnostics and add targeted test.[0m
+
+[OPERATOR] decision=investigate_instrumentation
+[OPERATOR] rationale: Weak/degraded spec extraction; compare docstring to code manually.
+[OPERATOR] actions: ['investigate_instrumentation']
+
+Wrote /Users/timur/develop/dualify/case_studies/pathvalidate/baseline.json (6 cases)
+Operator log: /Users/timur/develop/dualify/case_studies/pathvalidate/operator_log.jsonl

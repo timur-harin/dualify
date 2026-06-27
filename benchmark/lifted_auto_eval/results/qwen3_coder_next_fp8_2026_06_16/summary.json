@@ -1,0 +1,77 @@
+{
+  "model": "Qwen/Qwen3-Coder-Next-FP8",
+  "base_url": "http://10.100.30.241:8801",
+  "runs": [
+    "lifted_auto_eval_2026_06_16_13_14_17.json",
+    "lifted_auto_eval_2026_06_16_13_36_39.json",
+    "lifted_auto_eval_2026_06_16_13_42_00.json"
+  ],
+  "per_run": [
+    {
+      "run": 1,
+      "run_id": "lifted_auto_eval_2026_06_16_13_14_17",
+      "equivalent_cases": 10,
+      "non_equivalent_cases": 30,
+      "spec_degraded": 17,
+      "code_degraded": 15,
+      "verdict_distribution": {
+        "formula_parse_error": 20,
+        "case_pre_spec": 3,
+        "case_post_code": 2,
+        "low_confidence_parse": 7,
+        "case_post_spec": 2,
+        "equivalent_no_mismatch": 3,
+        "case_pre_code": 3
+      },
+      "spec_pre_exact": 14,
+      "spec_post_exact": 2,
+      "code_pre_exact": 11,
+      "code_post_exact": 3
+    },
+    {
+      "run": 2,
+      "run_id": "lifted_auto_eval_2026_06_16_13_36_39",
+      "equivalent_cases": 7,
+      "non_equivalent_cases": 33,
+      "spec_degraded": 18,
+      "code_degraded": 14,
+      "verdict_distribution": {
+        "formula_parse_error": 24,
+        "case_pre_spec": 3,
+        "case_post_code": 1,
+        "low_confidence_parse": 5,
+        "case_post_spec": 3,
+        "equivalent_no_mismatch": 2,
+        "case_pre_code": 2
+      },
+      "spec_pre_exact": 13,
+      "spec_post_exact": 2,
+      "code_pre_exact": 11,
+      "code_post_exact": 3
+    },
+    {
+      "run": 3,
+      "run_id": "lifted_auto_eval_2026_06_16_13_42_00",
+      "equivalent_cases": 11,
+      "non_equivalent_cases": 29,
+      "spec_degraded": 19,
+      "code_degraded": 14,
+      "verdict_distribution": {
+        "formula_parse_error": 20,
+        "case_post_code": 2,
+        "low_confidence_parse": 9,
+        "case_post_spec": 2,
+        "equivalent_no_mismatch": 2,
+        "case_pre_code": 2,
+        "case_pre_spec": 3
+      },
+      "spec_pre_exact": 12,
+      "spec_post_exact": 2,
+      "code_pre_exact": 13,
+      "code_post_exact": 3
+    }
+  ],
+  "stable_smt_equiv": 6,
+  "never_smt_equiv": 27,
+  "mixed_smt_equiv": 7
+}

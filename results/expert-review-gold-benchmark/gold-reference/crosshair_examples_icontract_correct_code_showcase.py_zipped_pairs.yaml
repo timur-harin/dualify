@@ -1,0 +1,21 @@
+benchmark_id: crosshair_examples::icontract::correct_code::showcase.py::zipped_pairs
+qualname: zipped_pairs
+file: ''
+signature: 'zipped_pairs(x: List[T]) -> List[Tuple[T, T]]'
+arg_types:
+  x: List[T]
+return_type: List[Tuple[T, T]]
+informal_spec: Behavior of zipped_pairs
+informal_spec_raw: Behavior of zipped_pairs
+function_source: "def zipped_pairs(x: List[T]) -> List[Tuple[T, T]]:\n    return zip_exact(x[:-1],\
+  \ x[1:])"
+profile: ''
+in_fragment: true
+reference_pre: []
+reference_post: Length(ret) == max(0, Length(x) - 1)
+notes: ''
+reference_normalized:
+  pre: []
+  post: Length(ret) == max(0, Length(x) - 1)
+status: confirmed
+needs_attention: false

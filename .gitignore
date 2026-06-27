@@ -8,7 +8,9 @@ dist/
 build/
 
 # Dualify benchmark / experiment run logs (JSON reports from dualify-run, repo scans, etc.)
-results/
+results/*
+!results/expert-review-gold-benchmark/
+!results/expert-review-gold-benchmark/**
 
 # Dataset pipeline run logs (regenerated artifacts; keep clean/ + reports in git)
 benchmark/dataset/runs/**/raw/

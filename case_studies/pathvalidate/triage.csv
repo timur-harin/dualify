@@ -1,0 +1,7 @@
+benchmark_id,equivalent,smt_reason,triggered_case,triage,operator_decision,notes
+pathvalidate::_filename.py::is_valid_filename,false,formula_parse_error,UNKNOWN,UN,add_test_case,LLM spec used Contains on sequence; manual TP: max_len None vs validate 255 — doc patched
+pathvalidate::_filename.py::sanitize_filename,true,low_confidence_parse,LOW_CONFIDENCE_PARSE,FP,investigate_instrumentation,Both channels degraded to ret==ret; manual TP: Raises said ValueError — doc patched
+pathvalidate::_filename.py::validate_filename,true,low_confidence_parse,LOW_CONFIDENCE_PARSE,UN,investigate_instrumentation,Vacuous equivalence after weak extraction; no code change
+pathvalidate::_filepath.py::is_valid_filepath,false,case_post_code,POST_CODE,FP,investigate_instrumentation,Spec degraded; delegate wrapper — extraction noise
+pathvalidate::_filepath.py::sanitize_filepath,false,case_post_code,POST_CODE,FP,investigate_instrumentation,Spec degraded ret==ret vs code ret==file_path — extraction noise
+pathvalidate::_filepath.py::validate_filepath,false,formula_parse_error,UNKNOWN,UN,investigate_instrumentation,void return confuses postcondition lifting

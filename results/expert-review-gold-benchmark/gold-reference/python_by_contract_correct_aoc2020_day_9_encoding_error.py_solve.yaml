@@ -1,0 +1,76 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_9_encoding_error.py::solve
+qualname: solve
+file: ''
+signature: 'solve(puzzle_input: List[int], preamble_length: int) -> Optional[Tuple[int,
+  int]]'
+arg_types:
+  puzzle_input: List[int]
+  preamble_length: int
+return_type: Optional[Tuple[int, int]]
+informal_spec: "Parse the data of the XMAS protocol, ``puzzle_input``, and find a\
+  \ weakness.\n\n:return:\n    offset of the number,\n    first number *after* the\
+  \ preamble which uncovers the weakness"
+informal_spec_raw: "Parse the data of the XMAS protocol, ``puzzle_input``, and find\
+  \ a weakness.\n\n:return:\n    offset of the number,\n    first number *after* the\
+  \ preamble which uncovers the weakness"
+function_source: "def solve(puzzle_input: List[int], preamble_length: int) -> Optional[Tuple[int,\
+  \ int]]:\n    \"\"\"\n    Parse the data of the XMAS protocol, ``puzzle_input``,\
+  \ and find a weakness.\n\n    :return:\n        offset of the number,\n        first\
+  \ number *after* the preamble which uncovers the weakness\n    \"\"\"\n    for index,\
+  \ number in enumerate(puzzle_input[preamble_length:]):\n        preamble = puzzle_input[index\
+  \ : index + preamble_length]\n        valid = False\n        for i in preamble:\n\
+  \            for j in preamble:\n                if i != j and i + j == number:\n\
+  \                    valid = True\n        if not valid:\n            return preamble_length\
+  \ + index, number\n\n    return None"
+profile: 'In scope: arithmetic relation between a non-empty integer list with a preamble
+  length and the optional (offset, value) pair identifying the first post-preamble
+  entry that is not the sum of two distinct values in its immediately preceding preamble
+  window. Out of scope: iteration order, intermediate variables, behaviour when the
+  input list is shorter than the preamble. Observable: whether ret is None vs a 2-tuple,
+  and the offset/value it carries.'
+in_fragment: true
+reference_pre:
+- Length(puzzle_input) > preamble_length
+- preamble_length > 0
+reference_post: Or(And(ret == None, ForAll([k], Implies(And(preamble_length <= k,
+  k < Length(puzzle_input)), Exists([i], And(0 <= i, i < preamble_length, Exists([j],
+  And(0 <= j, j < preamble_length, i != j, puzzle_input[k - preamble_length + i] +
+  puzzle_input[k - preamble_length + j] == puzzle_input[k]))))))), And(Not(ret ==
+  None), preamble_length <= ret[0], ret[0] < Length(puzzle_input), ret[1] == puzzle_input[ret[0]],
+  Not(Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
+  i != j, puzzle_input[ret[0] - preamble_length + i] + puzzle_input[ret[0] - preamble_length
+  + j] == ret[1]))))), ForAll([k], Implies(And(preamble_length <= k, k < ret[0]),
+  Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
+  i != j, puzzle_input[k - preamble_length + i] + puzzle_input[k - preamble_length
+  + j] == puzzle_input[k]))))))))
+notes: 'ai-review: Rewrote auto-seed post (which used a list comprehension and Python
+  `not`/`or`) into nested ForAll/Exists in Z3 form. Two cases: (a) ret is None and
+  every post-preamble index has a distinct pair in its window summing to it; (b) ret
+  is a 2-tuple whose offset is the first post-preamble index lacking such a pair,
+  with ret[1] equal to puzzle_input[ret[0]]. Dropped the auto-seed non-negativity
+  precondition on elements — the source code does not require it (negative ints are
+  fine). Uses `ret == None` to express the Optional return; if the fragment forbids
+  that, reviewer should adjust. Nested Exists/ForAll over a single bound variable
+  each was used to express the pair search.
+
+  apply_reviews: agent flagged needs_attention=True.
+
+  manual-fix: fixed parenthesis so reference_post is one Or(And(...), And(...)) formula,
+  not a top-level tuple.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre:
+  - Length(puzzle_input) > preamble_length
+  - preamble_length > 0
+  post: Or(And(ret == None, ForAll([k], Implies(And(preamble_length <= k, k < Length(puzzle_input)),
+    Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
+    i != j, puzzle_input[k - preamble_length + i] + puzzle_input[k - preamble_length
+    + j] == puzzle_input[k]))))))), And(Not(ret == None), preamble_length <= ret[0],
+    ret[0] < Length(puzzle_input), ret[1] == puzzle_input[ret[0]], Not(Exists([i],
+    And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
+    i != j, puzzle_input[ret[0] - preamble_length + i] + puzzle_input[ret[0] - preamble_length
+    + j] == ret[1]))))), ForAll([k], Implies(And(preamble_length <= k, k < ret[0]),
+    Exists([i], And(0 <= i, i < preamble_length, Exists([j], And(0 <= j, j < preamble_length,
+    i != j, puzzle_input[k - preamble_length + i] + puzzle_input[k - preamble_length
+    + j] == puzzle_input[k]))))))))
