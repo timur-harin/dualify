@@ -230,8 +230,14 @@ def _safe_eval(expr: str, scope: dict[str, Any], benchmark_id: str) -> Any:
             return z3.Sqrt(value)
         return sqrt_fn(value)
 
-    def _pow(lhs: Any, rhs: Any) -> Any:
-        return lhs**rhs
+    def _pow(lhs: Any, rhs: Any, modulus: Any = None) -> Any:
+        # Support 3-arg modular exponentiation (Python's pow(a, b, m)). Z3 has no
+        # native modexp, so model it as (a ** b) % m; with a symbolic exponent
+        # this is nonlinear and Z3 will answer unknown rather than crash.
+        result = lhs**rhs
+        if modulus is not None:
+            return result % modulus
+        return result
 
     def _is_digit_string(value: Any) -> Any:
         if hasattr(z3, "InRe"):
@@ -858,6 +864,33 @@ def check_equivalence(
         counterexample=post_mismatch_counterexample,
         diagnostics=diagnostics,
     )
+
+
+def extraction_parseable(
+    arg_types: dict[str, str],
+    return_type: str,
+    domain_constraints: list[str],
+    postcondition: str,
+) -> bool:
+    """Whether the given formulas survive Z3 type-checking under these arg types.
+
+    Thin wrapper over :func:`is_parseable` for the extraction phases, which only
+    have raw formula strings + signature types (not a full ``ExtractionResult``).
+    Used to catch type-broken-but-syntactically-valid formulas (e.g.
+    ``ForAll(...) / Length(...)`` or ``int <= ForAll(...)``) during validation,
+    so they trigger the repair ladder instead of crashing Z3 later in ``p03``.
+    """
+    case_spec = CaseSpec(benchmark_id="", arg_types=arg_types, return_type=return_type)
+    extraction = ExtractionResult(
+        benchmark_id="",
+        args=list(arg_types.keys()),
+        return_type=return_type,
+        domain_constraints=list(domain_constraints),
+        postcondition=postcondition,
+        confidence="",
+        notes="",
+    )
+    return is_parseable(case_spec, extraction)
 
 
 def is_parseable(case_spec: CaseSpec, extraction: ExtractionResult) -> bool:

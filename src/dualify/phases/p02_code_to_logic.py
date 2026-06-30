@@ -3,10 +3,31 @@ import json
 import re
 from typing import TypedDict
 
-from dualify.formula_parser import extract_quantifier_binders, normalize_formula, validate_formula
+from dualify.formula_parser import (
+    ensure_ret_reference,
+    extract_quantifier_binders,
+    normalize_formula,
+    salvage_valid_conjuncts,
+    validate_formula,
+)
 from dualify.ollama_client import LLMClient
 from dualify.phases.formula_prompt_rules import REPAIR_FORMULA_RULES, SAFE_SUBSET_EXTRA_RULES
+from dualify.phases.p03_smt_checking import extraction_parseable
 from dualify.types import ExtractionResult
+
+
+def _typecheck_errors(
+    domain_constraints: list[str],
+    postcondition: str,
+    arg_types: dict[str, str] | None,
+    return_type: str,
+) -> list[str]:
+    """Z3 type-check gate: catch syntactically-valid but type-broken formulas."""
+    if not arg_types:
+        return []
+    if extraction_parseable(arg_types, return_type, domain_constraints, postcondition):
+        return []
+    return ["postcondition/constraints fail Z3 type check"]
 
 _INFIX_BOOL_PATTERN = re.compile(r"\s(And|Or)\s")
 _RET_SELF_EQ_PATTERN = re.compile(r"^\s*ret\s*==\s*ret\s*$")
@@ -127,7 +148,7 @@ def _normalize_payload_formulas(payload: _ExtractionPayload) -> _ExtractionPaylo
     payload["domain_constraints"] = [
         _normalize_formula(expr) for expr in payload["domain_constraints"]
     ]
-    payload["postcondition"] = _normalize_formula(payload["postcondition"])
+    payload["postcondition"] = ensure_ret_reference(_normalize_formula(payload["postcondition"]))
     return payload
 
 
@@ -268,6 +289,7 @@ def extract_code_logic(
     function_source: str,
     return_type: str,
     extra_context: str = "",
+    arg_types: dict[str, str] | None = None,
 ) -> ExtractionResult:
     prompt = f"""
 You are extracting implementation semantics from Python function code.
@@ -342,6 +364,10 @@ Additional context:
         raw_payload = {}
     payload = _normalize_payload_formulas(_coerce_payload(raw_payload, allowed_args, return_type))
     errors = _validate_payload(payload, allowed_args, extra_symbols)
+    if not errors:
+        errors = _typecheck_errors(
+            payload["domain_constraints"], payload["postcondition"], arg_types, return_type
+        )
     payload["extraction_trace"]["initial"] = {
         "domain_constraints": list(payload["domain_constraints"]),
         "postcondition": payload["postcondition"],
@@ -356,6 +382,13 @@ Additional context:
             _coerce_payload(repaired_raw, allowed_args, return_type)
         )
         repair_errors = _validate_payload(repaired_payload, allowed_args, extra_symbols)
+        if not repair_errors:
+            repair_errors = _typecheck_errors(
+                repaired_payload["domain_constraints"],
+                repaired_payload["postcondition"],
+                arg_types,
+                return_type,
+            )
         payload["extraction_trace"]["repair"] = {
             "domain_constraints": list(repaired_payload["domain_constraints"]),
             "postcondition": repaired_payload["postcondition"],
@@ -378,6 +411,13 @@ Additional context:
                 _coerce_payload(safe_raw, allowed_args, return_type)
             )
             safe_errors = _validate_payload(safe_payload, allowed_args, extra_symbols)
+            if not safe_errors:
+                safe_errors = _typecheck_errors(
+                    safe_payload["domain_constraints"],
+                    safe_payload["postcondition"],
+                    arg_types,
+                    return_type,
+                )
             payload["extraction_trace"]["safe_repair"] = {
                 "domain_constraints": list(safe_payload["domain_constraints"]),
                 "postcondition": safe_payload["postcondition"],
@@ -391,15 +431,43 @@ Additional context:
                 safe_payload["extraction_trace"] = dict(payload["extraction_trace"])
                 payload = safe_payload
             else:
-                payload["notes"] = (
-                    "Auto-sanitized after validation failure. "
-                    + f"Errors: {', '.join(safe_errors[:3])}"
-                )
-                payload["confidence"] = "low"
-                payload["domain_constraints"] = []
-                payload["postcondition"] = "ret == ret"
-                payload["degraded"] = True
-                payload["degraded_reason"] = "sanitize_after_validation_failure"
+                allowed_names = set(allowed_args) | {"ret"} | extra_symbols
+
+                def _is_valid_conjunct(expr: str, _names: set[str] = allowed_names) -> bool:
+                    if _validate_expression(expr, _names) or _post_quality_issues(expr):
+                        return False
+                    return not _typecheck_errors([], expr, arg_types, return_type)
+
+                salvaged = ""
+                for candidate in (
+                    safe_payload["postcondition"],
+                    repaired_payload["postcondition"],
+                    payload["postcondition"],
+                ):
+                    salvaged = salvage_valid_conjuncts(candidate, _is_valid_conjunct)
+                    if salvaged:
+                        break
+                if salvaged:
+                    payload["postcondition"] = salvaged
+                    payload["domain_constraints"] = [
+                        c
+                        for c in safe_payload["domain_constraints"]
+                        if not _validate_expression(c, allowed_names)
+                    ]
+                    payload["confidence"] = "low"
+                    payload["notes"] = "Recovered via conjunct salvage after repair failure."
+                    payload["degraded"] = True
+                    payload["degraded_reason"] = "salvaged_partial_postcondition"
+                else:
+                    payload["notes"] = (
+                        "Auto-sanitized after validation failure. "
+                        + f"Errors: {', '.join(safe_errors[:3])}"
+                    )
+                    payload["confidence"] = "low"
+                    payload["domain_constraints"] = []
+                    payload["postcondition"] = "ret == ret"
+                    payload["degraded"] = True
+                    payload["degraded_reason"] = "sanitize_after_validation_failure"
     payload["extraction_trace"]["final"] = {
         "domain_constraints": list(payload["domain_constraints"]),
         "postcondition": payload["postcondition"],

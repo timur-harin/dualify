@@ -1,6 +1,9 @@
+Repository scan (sanitized)
 
-[1m[97m[44m Repository scan [0m
-[1m[97mRepository:[0m [97m/Users/timur/develop/dualify/repos/pathvalidate[0m
-[1m[97mFunctions discovered:[0m [36m3[0m
-[1m[97mExecution order starts from:[0m [33mpathvalidate::_filename.py::is_valid_filename[0m
+Repository: <anonymized-oss-checkout>
+Functions discovered: 3
+Execution order starts from: oss_validation::_filename.py::is_valid_filename
 
+This file replaces the raw ANSI terminal capture for the double-blind artifact.
+The raw capture contained local filesystem paths and the de-anonymized package
+name; the structured transcript and operator log carry the reproducible data.

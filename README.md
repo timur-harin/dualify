@@ -138,6 +138,41 @@ def is_positive(x: int) -> bool: ...
 
 - Single run report per launch:
   - `results/<benchmark>_<yyyy_mm_dd_hh_mm_ss>.json`
+- Each per-case record carries a `fingerprint` (SHA-256 of the function source,
+  spec, and signature, plus extractor/fingerprint versions) so a stored verdict
+  can be checked for staleness without re-running the LLM (see
+  `dualify.fingerprint`).
+
+## Multi-run campaigns and reproducibility
+
+Run a benchmark N times, recording a frozen LLM transcript per run and writing
+mean/median/std/spread plus a cross-run stability summary:
+
+```bash
+poetry run python scripts/run_campaign.py \
+  --provider openai --base-url http://10.100.30.241:8802 --api-key API_KEY \
+  --model "Qwen/Qwen3-Coder-Next-FP8" \
+  --benchmark lifted_auto_eval --runs 7 --label qwen_local
+```
+
+This writes `results/campaigns/<benchmark>__<label>/run_NN/` (report +
+`transcript.jsonl`) and `aggregate.json`.
+
+### Reproducing results without API keys (for reviewers)
+
+Every equivalence verdict is a deterministic function of the saved LLM
+responses: the SMT/parser stages call no model. Reviewers can therefore
+re-derive all verdicts offline from the committed transcripts:
+
+```bash
+poetry run python scripts/verify_reproducibility.py \
+  results/campaigns/lifted_auto_eval__qwen_local
+```
+
+The script checks every run report carries the durable artifacts (per-case
+fingerprints and formulas), replays the frozen transcript **twice** with zero
+network calls, and asserts the verdict vector is byte-stable and matches the
+committed report. No API key is required.
 
 ## Development quality checks
 

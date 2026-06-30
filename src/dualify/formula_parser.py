@@ -1,4 +1,8 @@
 import ast
+import re
+from collections.abc import Callable
+
+_RET_TOKEN = re.compile(r"\bret\b")
 
 
 class _NormalizeTransformer(ast.NodeTransformer):
@@ -422,6 +426,86 @@ def extract_quantifier_binders(expr: str) -> set[str]:
                 if isinstance(element, ast.Name):
                     binders.add(element.id)
     return binders
+
+
+def ensure_ret_reference(post: str) -> str:
+    """Bind a value/property expression that never mentions ``ret`` to ``ret``.
+
+    The single most common extraction failure is a postcondition that states
+    the returned *value expression* (``a * b``) or a bare property (``x > 0``)
+    without ever naming ``ret``. Such a formula is rejected by validation
+    (``must reference ret``) and then sanitized away to ``ret == ret``, which
+    both loses information and inflated the degraded-extraction counts.
+
+    Wrapping it as ``ret == (<expr>)`` turns it into a proper postcondition.
+    Bare boolean literals are left untouched so they keep being flagged as
+    weak rather than being silently promoted into a real constraint.
+    """
+    stripped = post.strip()
+    if not stripped:
+        return post
+    if stripped in {"True", "False", "(True)", "(False)"}:
+        return post
+    if _RET_TOKEN.search(stripped):
+        return post
+    return f"ret == ({stripped})"
+
+
+def _split_top_level_conjuncts(tree: ast.expr) -> list[ast.expr]:
+    """Flatten nested ``And(a, And(b, c))`` / ``a and b`` into ``[a, b, c]``."""
+    if isinstance(tree, ast.BoolOp) and isinstance(tree.op, ast.And):
+        out: list[ast.expr] = []
+        for value in tree.values:
+            out.extend(_split_top_level_conjuncts(value))
+        return out
+    if (
+        isinstance(tree, ast.Call)
+        and isinstance(tree.func, ast.Name)
+        and tree.func.id == "And"
+        and tree.args
+    ):
+        out = []
+        for arg in tree.args:
+            out.extend(_split_top_level_conjuncts(arg))
+        return out
+    return [tree]
+
+
+def salvage_valid_conjuncts(postcondition: str, is_valid: Callable[[str], bool]) -> str:
+    """Return the conjunction of the individually-valid conjuncts of *postcondition*.
+
+    When a full postcondition fails validation, it is often a single bad
+    conjunct dragging down an otherwise usable formula (e.g. one quantifier
+    with a stray comprehension next to three clean comparisons). Rather than
+    collapse everything to ``ret == ret``, keep the conjuncts that validate on
+    their own. The salvaged formula is logically *weaker* than the original
+    intent, which is why callers tag it as a degraded, low-confidence
+    extraction. Returns ``""`` when nothing salvageable references ``ret``.
+    """
+    try:
+        tree = ast.parse(postcondition, mode="eval").body
+    except Exception:
+        return ""
+    conjuncts = _split_top_level_conjuncts(tree)
+    if len(conjuncts) <= 1:
+        return ""
+    kept: list[str] = []
+    for conjunct in conjuncts:
+        try:
+            text = ast.unparse(conjunct)
+        except Exception:
+            continue
+        if is_valid(text):
+            kept.append(text)
+    kept = [text for text in kept if _RET_TOKEN.search(text)] or kept
+    if not kept or not any(_RET_TOKEN.search(text) for text in kept):
+        return ""
+    if len(kept) == 1:
+        return kept[0]
+    joined = kept[0]
+    for text in kept[1:]:
+        joined = f"And({joined}, {text})"
+    return joined
 
 
 def normalize_formula(expr: str) -> str:

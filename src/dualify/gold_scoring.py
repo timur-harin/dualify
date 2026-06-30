@@ -10,6 +10,7 @@ import yaml  # type: ignore[import-untyped]
 
 from dualify.formula_parser import normalize_formula
 from dualify.phases.p03_smt_checking import CaseSpec, check_equivalence
+from dualify.relation import contract_relation
 from dualify.types import ExtractionResult
 
 DEFAULT_GOLD_DIR = Path(__file__).resolve().parents[2] / "benchmark" / "lifted"
@@ -25,6 +26,7 @@ class GoldContract:
     return_type: str
     domain_constraints: list[str]
     postcondition: str
+    safe_id: str = ""
 
 
 @dataclass
@@ -36,6 +38,8 @@ class GoldScoreResult:
     post_exact: bool
     contract_equivalent: bool
     reason: str
+    pre_relation: str = ""
+    post_relation: str = ""
     skipped: bool = False
     skip_reason: str = ""
 
@@ -99,7 +103,14 @@ def _load_arg_types(record: dict[str, Any]) -> dict[str, str]:
 
 
 def load_gold_benchmark(gold_dir: Path = DEFAULT_GOLD_DIR) -> dict[str, GoldContract]:
-    """Load gold contracts keyed by ``qualname``."""
+    """Load gold contracts keyed by ``benchmark_id``.
+
+    Keying by ``benchmark_id`` (which is globally unique) rather than
+    ``qualname`` is essential: five function names (e.g. ``double``, ``swap``,
+    ``next_departure``) recur across the PEP316/icontract/correct-vs-buggy
+    variants. Keying by qualname silently collapsed those collisions and
+    dropped 5 of the 40 records.
+    """
     contracts: dict[str, GoldContract] = {}
     if not gold_dir.is_dir():
         return contracts
@@ -112,8 +123,9 @@ def load_gold_benchmark(gold_dir: Path = DEFAULT_GOLD_DIR) -> dict[str, GoldCont
             continue
         pre, post = _gold_formulas(record)
         arg_types = _load_arg_types(record)
-        contracts[qualname] = GoldContract(
-            benchmark_id=str(record.get("benchmark_id", qualname)),
+        benchmark_id = str(record.get("benchmark_id", qualname))
+        contracts[benchmark_id] = GoldContract(
+            benchmark_id=benchmark_id,
             qualname=qualname,
             in_fragment=bool(record.get("in_fragment", True)),
             args=_signature_arg_names(str(record.get("signature", ""))),
@@ -121,17 +133,26 @@ def load_gold_benchmark(gold_dir: Path = DEFAULT_GOLD_DIR) -> dict[str, GoldCont
             return_type=str(record.get("return_type", "")),
             domain_constraints=pre,
             postcondition=post,
+            safe_id=path.stem,
         )
     return contracts
 
 
 def build_gold_lookup(contracts: dict[str, GoldContract]) -> dict[str, GoldContract]:
-    """Map benchmark tails and short names to gold contracts."""
+    """Map safe-ids, benchmark-ids, and (best-effort) short names to contracts.
+
+    ``safe_id`` (the gold YAML file stem) and ``benchmark_id`` are unique and
+    always win. Short-name/qualname keys are ambiguous across variants, so they
+    are only filled via ``setdefault`` and must never override a unique key.
+    """
     lookup: dict[str, GoldContract] = {}
     for contract in contracts.values():
-        lookup[contract.qualname] = contract
+        if contract.safe_id:
+            lookup[contract.safe_id] = contract
         lookup[contract.benchmark_id] = contract
+    for contract in contracts.values():
         tail = contract.benchmark_id.split("::")[-1]
+        lookup.setdefault(contract.qualname, contract)
         lookup.setdefault(tail, contract)
         if "." in contract.qualname:
             lookup.setdefault(contract.qualname.split(".")[-1], contract)
@@ -142,13 +163,20 @@ def lookup_gold_contract(
     benchmark_id: str,
     contracts: dict[str, GoldContract],
     lookup: dict[str, GoldContract] | None = None,
+    *,
+    source_file: str = "",
 ) -> GoldContract | None:
     index = lookup if lookup is not None else build_gold_lookup(contracts)
+    # Prefer the unambiguous file-stem match (eval `.py` stem == gold YAML stem).
+    if source_file:
+        stem = Path(source_file).stem
+        if stem in index:
+            return index[stem]
+    if benchmark_id in index:
+        return index[benchmark_id]
     tail = benchmark_id.split("::")[-1]
     if tail in index:
         return index[tail]
-    if benchmark_id in index:
-        return index[benchmark_id]
     for key, contract in index.items():
         if key.endswith(f".{tail}") or key.endswith(f"::{tail}"):
             return contract
@@ -197,7 +225,9 @@ def score_extraction_against_gold(
     pre_exact = pre_exact_match(extraction.domain_constraints, gold.domain_constraints)
     post_exact = post_exact_match(extraction.postcondition, gold.postcondition)
 
-    smt = check_equivalence(case_spec, _extraction_from_gold(gold), extraction)
+    gold_extraction = _extraction_from_gold(gold)
+    smt = check_equivalence(case_spec, gold_extraction, extraction)
+    relation = contract_relation(case_spec, gold_extraction, extraction)
     return GoldScoreResult(
         qualname=gold.qualname,
         gold_benchmark_id=gold.benchmark_id,
@@ -206,6 +236,8 @@ def score_extraction_against_gold(
         post_exact=post_exact,
         contract_equivalent=smt.equivalent,
         reason=smt.reason,
+        pre_relation=relation["pre"],
+        post_relation=relation["post"],
     )
 
 
@@ -216,8 +248,11 @@ def score_case_against_gold(
     code_extraction: ExtractionResult,
     gold_by_qualname: dict[str, GoldContract],
     gold_lookup: dict[str, GoldContract] | None = None,
+    source_file: str = "",
 ) -> dict[str, Any] | None:
-    gold = lookup_gold_contract(benchmark_id, gold_by_qualname, gold_lookup)
+    gold = lookup_gold_contract(
+        benchmark_id, gold_by_qualname, gold_lookup, source_file=source_file
+    )
     if gold is None:
         return None
     case_spec = _case_spec_for_gold(benchmark_id, gold)
@@ -244,6 +279,10 @@ def summarize_gold_scores(case_gold_scores: list[dict[str, Any] | None]) -> dict
     spec_parse = code_parse = 0
     reasons_spec: dict[str, int] = {}
     reasons_code: dict[str, int] = {}
+    spec_pre_rel: dict[str, int] = {}
+    spec_post_rel: dict[str, int] = {}
+    code_pre_rel: dict[str, int] = {}
+    code_post_rel: dict[str, int] = {}
 
     for entry in case_gold_scores:
         if entry is None:
@@ -276,6 +315,16 @@ def summarize_gold_scores(case_gold_scores: list[dict[str, Any] | None]) -> dict
         if cr == "formula_parse_error":
             code_parse += 1
 
+        def _bump(table: dict[str, int], value: Any) -> None:
+            if value:
+                key = str(value)
+                table[key] = table.get(key, 0) + 1
+
+        _bump(spec_pre_rel, spec.get("pre_relation"))
+        _bump(spec_post_rel, spec.get("post_relation"))
+        _bump(code_pre_rel, code.get("pre_relation"))
+        _bump(code_post_rel, code.get("post_relation"))
+
     return {
         "scorable_cases": scorable,
         "skipped_no_gold": skipped_no_gold,
@@ -290,6 +339,10 @@ def summarize_gold_scores(case_gold_scores: list[dict[str, Any] | None]) -> dict
         "code_parse_errors": code_parse,
         "spec_reason_distribution": reasons_spec,
         "code_reason_distribution": reasons_code,
+        "spec_pre_relation_distribution": spec_pre_rel,
+        "spec_post_relation_distribution": spec_post_rel,
+        "code_pre_relation_distribution": code_pre_rel,
+        "code_post_relation_distribution": code_post_rel,
     }
 
 
@@ -335,6 +388,7 @@ def score_run_results(
             code_extraction=code_ex,
             gold_by_qualname=gold_by_qualname,
             gold_lookup=gold_lookup,
+            source_file=str(case.get("file", "")),
         )
         gold_entries.append(gold_entry)
         if gold_entry is not None:

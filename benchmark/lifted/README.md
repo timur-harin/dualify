@@ -21,15 +21,34 @@ AI-seeded drafts awaiting human review and will land in a later revision.
 | Dimension | Breakdown (of the 40) |
 |---|---|
 | Source corpus | 23 `python_by_contract`, 17 `crosshair_examples` |
-| Reference contract expressible in fragment (`in_fragment`) | 36 true, 4 false |
+| Reference contract expressible in fragment (`in_fragment`) | 40 true, 0 false |
 | Correct vs. bug-injected implementation | 38 correct, 2 incorrect |
-| Flagged `needs_attention` (reviewer wants a second look) | 13 |
+| Flagged `needs_attention` (reviewer wants a second look) | 8 |
 
-`in_fragment: false` is a legitimate *negative* label: the reviewer confirmed
-that the function's real contract cannot be faithfully expressed in the Dualify
-fragment (e.g. it needs `min`, multiset subtraction, or `Optional`/`None`
-semantics). Those records carry a best-effort `reference_post` for context but
-set `reference_normalized: null`.
+**All 40 records are `in_fragment: true`.** Four records (`gcd`, `decode`,
+`smallest_two`, `matches`) were previously labeled `in_fragment: false` because
+their *full* informal intent needs constructs outside the fragment (GCD
+maximality, a 7-segment lookup table, `Optional`/`None` second-smallest
+semantics, anagram/edit-distance matching). Each now carries a **sound,
+in-fragment, weaker-than-intent reference** — the same "weaker-but-checkable"
+philosophy already used for `average` — and the part that is intentionally not
+encoded is documented in the record's `profile`/`notes`. This gives a single
+clean denominator of 40 for gold scoring.
+
+### Bug-injected (should-disagree) records
+
+Two records carry a deliberately incorrect implementation (`benchmark_id`
+contains `incorrect`): `next_departure` (wrong modulo) and `count_flips`
+(unhandled empty directions). Their `reference_pre`/`reference_post` describe
+the **correct** contract, so these are ground-truth **should-disagree** cases:
+a faithful code-channel extraction should *not* match the reference. They are
+used as the positive class for inconsistency-detection baselines (LLM-as-judge
+and the no-SMT baseline).
+
+> Uniqueness note: five function names recur across variants (`double`, `swap`,
+> `even_fibb`, `perimiter_length`, `next_departure`). Records are keyed and
+> looked up by the unique `benchmark_id` (and the YAML file stem, which equals
+> the matching `lifted_auto_eval` `.py` stem), never by bare `qualname`.
 
 ## Provenance
 
@@ -53,9 +72,10 @@ rules). The pipeline per candidate:
 
 1. **Filter** — drop candidates whose `informal_spec` is junk
    (`fmt: on`, empty, < 10 chars) or that are CrossHair bug-detection examples.
-2. **Seed** (`seed_drafts.py`) — prepopulate `informal_spec` (formal directives
-   stripped), and lift `reference_pre` / `reference_post` from the corpus
-   contract, rewriting `__return__`/`result` → `ret`, `implies` → `Implies`.
+2. **Seed** (`dataset_lift.py`, via the editor's prepopulation) — prepopulate
+   `informal_spec` (formal directives stripped), and lift `reference_pre` /
+   `reference_post` from the corpus contract, rewriting `__return__`/`result` →
+   `ret`, `implies` → `Implies`.
    `in_fragment` is set automatically from `formula_parser.validate_formula`.
 3. **AI review** (`_review_workflow.js` + `apply_reviews.py`) — an agent rewrites
    out-of-fragment formulas into the fragment where possible and records what it

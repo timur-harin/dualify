@@ -11,6 +11,7 @@ from pathlib import Path
 
 from dualify.discovery import discover_python_cases, discover_repo_cases
 from dualify.fallbacks import get_fallback_extraction
+from dualify.fingerprint import compute_fingerprint
 from dualify.formula_parser import normalize_formula
 from dualify.gold_scoring import (
     load_gold_benchmark,
@@ -224,6 +225,7 @@ def _run_cases(
             informal_spec=informal_spec,
             return_type=return_type,
             extra_context=extra_context,
+            arg_types=case.arg_types,
         )
         spec_logic = type(spec_logic)(
             **_normalize_extraction(case_spec, spec_logic.postcondition, asdict(spec_logic))
@@ -246,6 +248,7 @@ def _run_cases(
             function_source=function_source,
             return_type=return_type,
             extra_context=extra_context,
+            arg_types=case.arg_types,
         )
         code_logic = type(code_logic)(
             **_normalize_extraction(case_spec, code_logic.postcondition, asdict(code_logic))
@@ -272,9 +275,20 @@ def _run_cases(
             diagnostics["code_weak_postcondition"] = code_weak
             diagnostics["spec_postcondition"] = spec_logic.postcondition
             diagnostics["code_postcondition"] = code_logic.postcondition
+            # A weak/vacuous postcondition (`ret == ret` / `True`) makes any Z3
+            # "equivalent" verdict semantically empty: two channels that both
+            # collapsed to a tautology trivially agree without describing the
+            # function. Counting that as a genuine cross-check agreement
+            # inflated the headline equivalence rate (half of the reported
+            # equivalences in earlier runs were such vacuous cases). Demote it
+            # to a flagged, low-confidence *non-equivalent* outcome that routes
+            # to investigate_instrumentation, and never let it reach the
+            # genuine-equivalent numerator.
+            if smt_result.equivalent:
+                diagnostics["demoted_from_equivalent"] = True
             smt_result = SmtResult(
                 benchmark_id=smt_result.benchmark_id,
-                equivalent=smt_result.equivalent,
+                equivalent=False,
                 reason="low_confidence_parse" if smt_result.equivalent else smt_result.reason,
                 counterexample=smt_result.counterexample,
                 diagnostics=diagnostics,
@@ -301,6 +315,7 @@ def _run_cases(
                 "return_type": return_type,
                 "informal_spec": informal_spec,
                 "extra_context": extra_context,
+                "fingerprint": compute_fingerprint(case),
                 "spec_to_logic": spec_payload,
                 "code_to_logic": code_payload,
                 "smt_checking": asdict(smt_result),
@@ -312,6 +327,7 @@ def _run_cases(
                 spec_extraction=spec_logic,
                 code_extraction=code_logic,
                 gold_by_qualname=gold_by_qualname,
+                source_file=case.file,
             )
             if gold_entry is not None:
                 case_result["gold_scoring"] = gold_entry
@@ -331,7 +347,27 @@ def _build_report(
     extra_fields: dict[str, object] | None = None,
 ) -> dict:
     run_stamp = _utc_timestamp_for_filename()
+    # After the low-confidence demotion in `_run_cases`, `equivalent` is True
+    # only for genuine (non-vacuous) cross-check agreements, so this count is
+    # the honest headline number.
     equivalent_count = sum(1 for result in case_results if result["smt_checking"]["equivalent"])
+
+    def _reason_head(result: dict) -> str:
+        reason = result["smt_checking"].get("reason", "")
+        return reason.split(":", 1)[0] if isinstance(reason, str) else str(reason)
+
+    low_confidence_count = sum(
+        1
+        for result in case_results
+        if (result["smt_checking"].get("diagnostics") or {}).get("parse_low_confidence")
+    )
+    solver_unknown_count = sum(
+        1 for result in case_results if _reason_head(result) == "solver_unknown"
+    )
+    parse_error_count = sum(
+        1 for result in case_results if _reason_head(result) == "formula_parse_error"
+    )
+    total_cases = len(case_results)
     run_health = summarize_run(case_results)
     gold_entries = [result.get("gold_scoring") for result in case_results]
     gold_summary = summarize_gold_scores(gold_entries)
@@ -342,14 +378,19 @@ def _build_report(
         "model": model,
         "base_url": base_url,
         "summary": {
-            "total_cases": len(case_results),
+            "total_cases": total_cases,
             "gold_scoring": gold_summary,
             "cross_check": {
+                # `equivalent_cases` counts only genuine (non-vacuous) agreements.
                 "equivalent_cases": equivalent_count,
-                "non_equivalent_cases": len(case_results) - equivalent_count,
+                "non_equivalent_cases": total_cases - equivalent_count,
+                "genuine_equivalent_cases": equivalent_count,
+                "low_confidence_cases": low_confidence_count,
+                "solver_unknown_cases": solver_unknown_count,
+                "parse_error_cases": parse_error_count,
             },
             "equivalent_cases": equivalent_count,
-            "non_equivalent_cases": len(case_results) - equivalent_count,
+            "non_equivalent_cases": total_cases - equivalent_count,
             "spec_fallback_count": fallback_spec_count,
             "code_fallback_count": fallback_code_count,
             **run_health,
@@ -368,11 +409,21 @@ def run_experiment(
     provider: str = "ollama",
     api_key: str = "",
     client_override: LLMClient | None = None,
+    output_dir: Path | None = None,
+    targets: list[str] | None = None,
+    target_regexes: list[str] | None = None,
+    max_cases: int | None = None,
 ) -> dict:
     benchmark_dir = ROOT / "benchmark" / benchmark_name
     if not benchmark_dir.exists():
         raise FileNotFoundError(f"Benchmark directory not found: {benchmark_dir}")
-    cases = discover_python_cases(benchmark_dir=benchmark_dir, root_dir=ROOT)
+    cases = _filter_cases(
+        discover_python_cases(benchmark_dir=benchmark_dir, root_dir=ROOT),
+        targets=targets or [],
+        target_regexes=target_regexes or [],
+    )
+    if max_cases is not None:
+        cases = cases[:max_cases]
 
     if client_override is not None:
         client = client_override
@@ -394,11 +445,20 @@ def run_experiment(
         case_results=case_results,
         fallback_spec_count=fallback_spec_count,
         fallback_code_count=fallback_code_count,
-        extra_fields={"benchmark": benchmark_name},
+        extra_fields={
+            "benchmark": benchmark_name,
+            "selection": {
+                "targets": targets or [],
+                "target_regexes": target_regexes or [],
+                "max_cases": max_cases,
+                "selected_cases": [case.benchmark_id for case in cases],
+            },
+        },
     )
 
     run_stamp = report["run_id"].split(f"{benchmark_name}_", maxsplit=1)[1]
-    output_path = ROOT / "results" / f"{benchmark_name}_{run_stamp}.json"
+    out_root = output_dir if output_dir is not None else ROOT / "results"
+    output_path = out_root / f"{benchmark_name}_{run_stamp}.json"
     write_json(output_path, report)
     return report
 

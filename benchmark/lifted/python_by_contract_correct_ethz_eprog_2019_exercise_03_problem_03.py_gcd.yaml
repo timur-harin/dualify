@@ -11,24 +11,24 @@ informal_spec_raw: Compute the greatest common divisor (GCD) between ``x`` and `
 function_source: "def gcd(x: int, y: int) -> int:\n    \"\"\"Compute the greatest\
   \ common divisor (GCD) between ``x`` and ``y``.\"\"\"\n    if x >= y and x % y ==\
   \ 0:\n        return y\n\n    return gcd(y, x % y)"
-profile: 'In scope: arithmetic mapping from two positive integers to their greatest
-  common divisor. Out of scope: behavior on zero or negative inputs, recursion depth.
-  Observable: the returned integer is a positive common divisor of both arguments
-  (the maximality clause is not expressible in the fragment).'
-in_fragment: false
+profile: 'In scope: the returned integer is a positive common divisor of both arguments.
+  Out of scope: the maximality clause (that ret is the GREATEST common divisor), behavior
+  on zero or negative inputs, and recursion depth. Observable: the returned integer.'
+in_fragment: true
 reference_pre:
 - x > 0
 - y > 0
 reference_post: And(ret > 0, x % ret == 0, y % ret == 0)
 notes: 'ai-review: Draft used `math_gcd(x, y)`, which is a user-defined helper call
-  and not in the Dualify fragment. Rewrote the postcondition to express the common-divisor
+  and not in the Dualify fragment. The postcondition expresses the common-divisor
   part of GCD (ret > 0 and ret divides both x and y). The maximality clause ("ret
-  is the greatest such divisor") would require an unbounded ForAll over the integers,
-  which the fragment only permits over a Length-indexed collection — so it is genuinely
-  out of fragment. Marked in_fragment=false because the postcondition is therefore
-  weaker than the true GCD specification.
+  is the greatest such divisor") needs an unbounded ForAll over the integers and is
+  therefore out of fragment.
 
-  apply_reviews: agent flagged needs_attention=True.'
-needs_attention: true
+  in_fragment=true: this is a SOUND, in-fragment, weaker-than-intent reference (the
+  same weaker-but-checkable philosophy used for `average`): it captures the
+  common-divisor guarantee that Dualify can actually verify, and the profile records
+  that maximality is intentionally not encoded.'
+needs_attention: false
 status: confirmed
 reference_normalized: null

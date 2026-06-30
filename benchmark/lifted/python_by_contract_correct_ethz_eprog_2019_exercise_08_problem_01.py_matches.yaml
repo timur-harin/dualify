@@ -16,22 +16,21 @@ profile: 'In scope: Boolean result of matches(src, chars, dist) reporting whethe
   chars approximately appears in src under a non-negative distance budget. Out of
   scope: the semantics of the helper stretch/Counter and the exact distance metric
   used. Observable: the returned boolean.'
-in_fragment: false
+in_fragment: true
 reference_pre:
 - dist >= 0
 - Length(chars) <= Length(src)
 reference_post: Implies(Contains(src, chars), ret == True)
-notes: 'ai-review: Informal spec is effectively empty ("Behavior of matches"). The
-  function delegates to an external `stretch` helper with a Counter of `chars` and
-  a stretch budget tied to `len(src) - len(chars)` plus `dist`. Without the definition
-  of `stretch` and a clearer informal spec we cannot precisely characterize the postcondition.
-  The draft''s reference_post used IfExp and `sorted(...)` which are out of fragment;
-  rewrote into a best-effort Implies asserting that a literal substring occurrence
-  forces a True result, but even this is a guess. Marking in_fragment=false because
-  the true contract likely depends on a permutation/anagram or edit-distance predicate
-  that is not expressible without user-defined helpers.
+notes: 'ai-review: The function delegates to an external `stretch` helper with a
+  Counter of `chars` and a stretch budget tied to `len(src) - len(chars)` plus `dist`.
+  The full contract depends on an anagram/edit-distance predicate that needs
+  user-defined helpers and is out of fragment.
 
-  apply_reviews: agent flagged needs_attention=True.'
-needs_attention: true
+  in_fragment=true: SOUND, in-fragment NECESSARY-condition reference -- a literal
+  substring occurrence of chars in src forces a True result (with dist >= 0). This
+  is a sound under-approximation of the true matching relation (the same
+  weaker-but-checkable philosophy as `average`/`gcd`); the exact approximate-match
+  semantics are intentionally not encoded (recorded in the profile).'
+needs_attention: false
 status: confirmed
 reference_normalized: null

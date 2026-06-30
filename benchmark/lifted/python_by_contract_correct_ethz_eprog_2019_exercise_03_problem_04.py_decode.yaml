@@ -15,7 +15,7 @@ profile: 'In scope: arithmetic relationship between an input string of 7-segment
   letters and the decoded digit. Out of scope: the exact mapping table (TO_NUMBER)
   and the alphabet of valid segment letters. Observable: the returned integer digit
   (0-9) and any precondition implied by lookup success.'
-in_fragment: false
+in_fragment: true
 reference_pre:
 - Length(text) >= 2
 - Length(text) <= 7
@@ -26,17 +26,14 @@ reference_pre:
   text[_k0] == 'g')))
 reference_post: And(0 <= ret, ret <= 9)
 notes: 'ai-review: The function relies on an external TO_NUMBER dictionary that maps
-  sorted 7-segment letter combinations to digits 0-9. The exact mapping cannot be
-  expressed in the fragment without enumerating all 10 cases as a giant disjunction.
-  Rewrote the auto-seed `Length(set(text)) == Length(text)` uniqueness clause as a
-  ForAll over index pairs, and rewrote the `text[_k0] in VALID_LETTERS` clause as
-  an explicit disjunction over the 7-segment letters a-g (the standard segment identifiers
-  for a seven-segment display). Length bounds 2..7 are derived from the fact that
-  the smallest digit (1) uses 2 segments and the largest (8) uses 7 segments. The
-  postcondition only captures the digit range; the precise digit value as a function
-  of the input letter set is not expressible without a lookup table.
+  sorted 7-segment letter combinations to digits 0-9. The exact mapping needs a 10-case
+  lookup table and is out of fragment. The preconditions (length bounds 2..7, distinct
+  letters as a ForAll over index pairs, valid 7-segment letters a-g as a disjunction)
+  and the postcondition digit range are all in fragment.
 
-  apply_reviews: agent flagged needs_attention=True.'
-needs_attention: true
+  in_fragment=true: SOUND in-fragment reference capturing the verifiable digit-range
+  guarantee (0 <= ret <= 9). The exact digit value as a function of the letter set
+  is intentionally not encoded (recorded in the profile).'
+needs_attention: false
 status: confirmed
 reference_normalized: null

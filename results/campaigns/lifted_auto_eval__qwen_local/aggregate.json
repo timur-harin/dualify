@@ -1,0 +1,304 @@
+{
+  "label": "qwen_local",
+  "model": "Qwen/Qwen3-Coder-Next-FP8",
+  "benchmark": "lifted_auto_eval",
+  "n_runs": 7,
+  "aggregate": {
+    "n_runs": 7,
+    "total_cases": {
+      "mean": 40.0,
+      "median": 40.0,
+      "std": 0.0,
+      "min": 40.0,
+      "max": 40.0,
+      "n": 7,
+      "values": [
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0
+      ]
+    },
+    "cross_check": {
+      "equivalent_cases": {
+        "mean": 10.571428571428571,
+        "median": 11.0,
+        "std": 1.178030178747903,
+        "min": 9.0,
+        "max": 12.0,
+        "n": 7,
+        "values": [
+          11.0,
+          10.0,
+          9.0,
+          9.0,
+          12.0,
+          12.0,
+          11.0
+        ]
+      },
+      "genuine_equivalent_cases": {
+        "mean": 10.571428571428571,
+        "median": 11.0,
+        "std": 1.178030178747903,
+        "min": 9.0,
+        "max": 12.0,
+        "n": 7,
+        "values": [
+          11.0,
+          10.0,
+          9.0,
+          9.0,
+          12.0,
+          12.0,
+          11.0
+        ]
+      },
+      "low_confidence_cases": {
+        "mean": 26.571428571428573,
+        "median": 27.0,
+        "std": 0.4948716593053935,
+        "min": 26.0,
+        "max": 27.0,
+        "n": 7,
+        "values": [
+          26.0,
+          27.0,
+          27.0,
+          27.0,
+          26.0,
+          26.0,
+          27.0
+        ]
+      },
+      "solver_unknown_cases": {
+        "mean": 0.42857142857142855,
+        "median": 0.0,
+        "std": 0.4948716593053935,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 7,
+        "values": [
+          0.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      },
+      "parse_error_cases": {
+        "mean": 0.5714285714285714,
+        "median": 0.0,
+        "std": 0.7284313590846836,
+        "min": 0.0,
+        "max": 2.0,
+        "n": 7,
+        "values": [
+          1.0,
+          2.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "non_equivalent_cases": {
+        "mean": 29.428571428571427,
+        "median": 29.0,
+        "std": 1.178030178747903,
+        "min": 28.0,
+        "max": 31.0,
+        "n": 7,
+        "values": [
+          29.0,
+          30.0,
+          31.0,
+          31.0,
+          28.0,
+          28.0,
+          29.0
+        ]
+      }
+    },
+    "gold_scoring": {
+      "scorable_cases": {
+        "mean": 40.0,
+        "median": 40.0,
+        "std": 0.0,
+        "min": 40.0,
+        "max": 40.0,
+        "n": 7,
+        "values": [
+          40.0,
+          40.0,
+          40.0,
+          40.0,
+          40.0,
+          40.0,
+          40.0
+        ]
+      },
+      "spec_pre_exact": {
+        "mean": 9.0,
+        "median": 9.0,
+        "std": 0.0,
+        "min": 9.0,
+        "max": 9.0,
+        "n": 7,
+        "values": [
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0,
+          9.0
+        ]
+      },
+      "spec_post_exact": {
+        "mean": 3.0,
+        "median": 3.0,
+        "std": 0.0,
+        "min": 3.0,
+        "max": 3.0,
+        "n": 7,
+        "values": [
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0
+        ]
+      },
+      "spec_contract_equivalent": {
+        "mean": 3.0,
+        "median": 3.0,
+        "std": 0.0,
+        "min": 3.0,
+        "max": 3.0,
+        "n": 7,
+        "values": [
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0
+        ]
+      },
+      "code_pre_exact": {
+        "mean": 5.571428571428571,
+        "median": 5.0,
+        "std": 0.7284313590846836,
+        "min": 5.0,
+        "max": 7.0,
+        "n": 7,
+        "values": [
+          7.0,
+          6.0,
+          6.0,
+          5.0,
+          5.0,
+          5.0,
+          5.0
+        ]
+      },
+      "code_post_exact": {
+        "mean": 4.0,
+        "median": 4.0,
+        "std": 0.0,
+        "min": 4.0,
+        "max": 4.0,
+        "n": 7,
+        "values": [
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0
+        ]
+      },
+      "code_contract_equivalent": {
+        "mean": 4.0,
+        "median": 4.0,
+        "std": 0.0,
+        "min": 4.0,
+        "max": 4.0,
+        "n": 7,
+        "values": [
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0
+        ]
+      },
+      "spec_parse_errors": {
+        "mean": 0.2857142857142857,
+        "median": 0.0,
+        "std": 0.45175395145262565,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 7,
+        "values": [
+          0.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0
+        ]
+      },
+      "code_parse_errors": {
+        "mean": 0.2857142857142857,
+        "median": 0.0,
+        "std": 0.45175395145262565,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 7,
+        "values": [
+          1.0,
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "run_ids": [
+      "lifted_auto_eval_2026_06_30_06_40_54",
+      "lifted_auto_eval_2026_06_30_06_46_58",
+      "lifted_auto_eval_2026_06_30_06_54_03",
+      "lifted_auto_eval_2026_06_30_07_00_51",
+      "lifted_auto_eval_2026_06_30_07_07_59",
+      "lifted_auto_eval_2026_06_30_07_14_27",
+      "lifted_auto_eval_2026_06_30_07_20_56"
+    ],
+    "models": [
+      "Qwen/Qwen3-Coder-Next-FP8"
+    ]
+  },
+  "stability_genuine_equivalent": {
+    "n_runs": 7,
+    "total_cases": 40,
+    "always": 6,
+    "never": 28,
+    "unstable": 6
+  }
+}

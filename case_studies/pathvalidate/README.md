@@ -1,7 +1,8 @@
-# Pathvalidate × Dualify — case study artifact
+# Anonymized input-validation × Dualify — case study artifact
 
 External OSS pilot for operator-as-orchestrator (ICSE §5.3).  
-**Repo:** [thombashi/pathvalidate](https://github.com/thombashi/pathvalidate) @ `1ca0a50fce51d5b5bd633457a72abf74dbe3112d`
+The repository name, upstream URL, and fork URL are withheld in the double-blind
+artifact. The de-anonymized release can restore them after review.
 
 ## Layout
 
@@ -15,15 +16,15 @@ External OSS pilot for operator-as-orchestrator (ICSE §5.3).
 | `operator_log.jsonl` | Per-function operator decision + rationale |
 | `operator_run.log` | Console capture |
 | `triage.csv` | TP / FP / UN adjudication |
-| `patches/pathvalidate-doc-alignment.patch` | Doc + regression tests applied to `repos/pathvalidate/` |
+| `patches/pathvalidate-doc-alignment.patch` | Doc + regression tests applied to the anonymized OSS checkout |
 | `NARRATIVE.md` | Deep-dive for paper box |
 
 ## Reproduce baseline scan
 
 ```bash
 cd /path/to/dualify
-git clone https://github.com/thombashi/pathvalidate.git repos/pathvalidate
-cd repos/pathvalidate && git checkout 1ca0a50fce51d5b5bd633457a72abf74dbe3112d
+git clone <anonymized-upstream-url> repos/oss-input-validation
+cd repos/oss-input-validation && git checkout <pinned-commit>
 
 poetry run python case_studies/pathvalidate/run_operator_loop.py \
   --base-url http://10.100.30.241:8801 \
@@ -32,10 +33,10 @@ poetry run python case_studies/pathvalidate/run_operator_loop.py \
   --fresh-transcript
 ```
 
-## Apply documented fixes (local fork)
+## Apply documented fixes (local checkout)
 
 ```bash
-cd repos/pathvalidate
+cd repos/oss-input-validation
 git apply ../../case_studies/pathvalidate/patches/pathvalidate-doc-alignment.patch
 PYTHONPATH=. poetry run pytest test/test_dualify_case_study.py -q
 ```
@@ -61,6 +62,6 @@ True interactive CLI (human at terminal):
 poetry run dualify-run \
   --provider openai --base-url http://10.100.30.241:8801 --api-key API_KEY \
   --model Qwen/Qwen3-Coder-Next-FP8 \
-  --repo-path ./repos/pathvalidate \
+  --repo-path ./repos/oss-input-validation \
   --target-regex '_filename.py::validate_filename'
 ```

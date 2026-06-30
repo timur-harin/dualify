@@ -1,5 +1,6 @@
 import json
 import os
+import time
 from dataclasses import dataclass
 from typing import Protocol
 
@@ -60,6 +61,9 @@ class OpenAICompatibleClient:
     base_url: str
     api_key: str = ""
     timeout_sec: int = 60
+    max_retries: int = 6
+    backoff_base_sec: float = 2.0
+    max_backoff_sec: float = 60.0
 
     def _headers(self) -> dict[str, str]:
         headers = {"Content-Type": "application/json"}
@@ -97,8 +101,56 @@ class OpenAICompatibleClient:
             raise ValueError("Completion response text is not a string")
         return text
 
+    def _post_with_retry(self, url: str, payload: dict) -> requests.Response:
+        """POST with exponential backoff on rate limits / transient server errors.
+
+        Cloud OpenAI-compatible providers (Groq, SambaNova) rate-limit with HTTP
+        429 and occasionally return 5xx. Without backoff these surface as
+        exceptions that the extraction phases swallow into degraded ``ret == ret``
+        outputs, silently corrupting cross-model results. Retrying honors any
+        ``Retry-After`` header and otherwise backs off exponentially.
+        """
+        last_exc: Exception | None = None
+        for attempt in range(self.max_retries):
+            try:
+                response = requests.post(
+                    url,
+                    json=payload,
+                    headers=self._headers(),
+                    timeout=self.timeout_sec,
+                )
+            except requests.RequestException as exc:
+                last_exc = exc
+                time.sleep(self.backoff_base_sec * (2**attempt))
+                continue
+            if response.status_code in (429, 500, 502, 503, 504):
+                retry_after = response.headers.get("Retry-After")
+                default_delay = self.backoff_base_sec * (2**attempt)
+                try:
+                    delay = float(retry_after) if retry_after else default_delay
+                except ValueError:
+                    delay = default_delay
+                time.sleep(min(delay, self.max_backoff_sec))
+                continue
+            return response
+        if last_exc is not None:
+            raise last_exc
+        # Exhausted retries on HTTP error statuses; return the last response so
+        # raise_for_status() surfaces the real status to the caller.
+        return response
+
+    def _prefers_chat_mode(self) -> bool:
+        """Local vLLM/Ollama gateways usually support chat+json; Groq/SambaNova often do not."""
+        override = os.environ.get("DUALIFY_OPENAI_USE_CHAT")
+        if override is not None:
+            return override == "1"
+        host = self.base_url.lower()
+        if "groq.com" in host or "sambanova.ai" in host:
+            return False
+        return True
+
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict:
-        prefer_chat = os.environ.get("DUALIFY_OPENAI_USE_CHAT", "1") == "1"
+        prefer_chat = self._prefers_chat_mode()
         attempts = [True, False] if prefer_chat else [False, True]
         last_exc: Exception | None = None
 
@@ -127,12 +179,7 @@ class OpenAICompatibleClient:
                     "temperature": temperature,
                 }
             try:
-                response = requests.post(
-                    url,
-                    json=payload,
-                    headers=self._headers(),
-                    timeout=self.timeout_sec,
-                )
+                response = self._post_with_retry(url, payload)
                 response.raise_for_status()
                 body = response.json()
                 choices = body.get("choices", [])
@@ -191,9 +238,17 @@ def create_llm_client(
                 "Provider 'openai' requires an API key. "
                 "Set DUALIFY_API_KEY or GROQ_API_KEY in .env, or pass --api-key."
             )
+        client_kwargs: dict[str, object] = {}
+        if "groq.com" in normalized_base_url or "sambanova.ai" in normalized_base_url:
+            # Cloud providers rate-limit aggressively; keep retries bounded so a
+            # campaign run fails fast instead of sleeping for minutes per call.
+            client_kwargs["max_retries"] = 3
+            client_kwargs["backoff_base_sec"] = 0.5
+            client_kwargs["max_backoff_sec"] = 8.0
         return OpenAICompatibleClient(
             model=model,
             base_url=normalized_base_url,
             api_key=api_key.strip(),
+            **client_kwargs,
         )
     raise ValueError(f"Unsupported provider: {provider}")
