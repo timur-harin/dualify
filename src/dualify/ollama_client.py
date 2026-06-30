@@ -145,9 +145,7 @@ class OpenAICompatibleClient:
         if override is not None:
             return override == "1"
         host = self.base_url.lower()
-        if "groq.com" in host or "sambanova.ai" in host:
-            return False
-        return True
+        return not ("groq.com" in host or "sambanova.ai" in host)
 
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict:
         prefer_chat = self._prefers_chat_mode()
