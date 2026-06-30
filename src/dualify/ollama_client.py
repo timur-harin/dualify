@@ -236,17 +236,20 @@ def create_llm_client(
                 "Provider 'openai' requires an API key. "
                 "Set DUALIFY_API_KEY or GROQ_API_KEY in .env, or pass --api-key."
             )
-        client_kwargs: dict[str, object] = {}
         if "groq.com" in normalized_base_url or "sambanova.ai" in normalized_base_url:
             # Cloud providers rate-limit aggressively; keep retries bounded so a
             # campaign run fails fast instead of sleeping for minutes per call.
-            client_kwargs["max_retries"] = 3
-            client_kwargs["backoff_base_sec"] = 0.5
-            client_kwargs["max_backoff_sec"] = 8.0
+            return OpenAICompatibleClient(
+                model=model,
+                base_url=normalized_base_url,
+                api_key=api_key.strip(),
+                max_retries=3,
+                backoff_base_sec=0.5,
+                max_backoff_sec=8.0,
+            )
         return OpenAICompatibleClient(
             model=model,
             base_url=normalized_base_url,
             api_key=api_key.strip(),
-            **client_kwargs,
         )
     raise ValueError(f"Unsupported provider: {provider}")
