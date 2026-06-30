@@ -1,4 +1,4 @@
-# Expert review bundle — ICSE 2027 gold benchmark evaluation
+# Expert review bundle — gold benchmark evaluation
 
 Frozen copies of artifacts cited in the paper evaluation (§5–6).
 
@@ -33,8 +33,4 @@ These runs predate gold scoring in the JSON summary; use `smt_checking.equivalen
 
 ## Regenerate figures (optional)
 
-From repo root, with `results/lifted_auto_eval_2026_06_17_07_45_58.json` present:
-
-```bash
-cd conferences/icse-2027 && ./scripts/generate_figures.py
-```
+Figures are generated from the companion paper submodule under `conferences/` (see that repo’s `scripts/generate_figures.py`).

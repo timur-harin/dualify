@@ -1,6 +1,6 @@
 # Anonymized input-validation × Dualify — case study artifact
 
-External OSS pilot for operator-as-orchestrator (ICSE §5.3).  
+External OSS pilot for operator-as-orchestrator (companion paper case-study section).  
 The repository name, upstream URL, and fork URL are withheld in the double-blind
 artifact. The de-anonymized release can restore them after review.
 
