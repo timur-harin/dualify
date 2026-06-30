@@ -7,9 +7,9 @@ whether they are consistent -- no formula extraction, no Z3. We score it as an
 inconsistency detector against ground-truth labels and contrast it with
 Dualify's Z3 cross-check on the same cases.
 
-Ground truth: the two bug-injected gold records (`count_flips`, `next_departure`
-under an `incorrect` path) are the should-DISAGREE positives; the other 38
-correct implementations should AGREE with their spec.
+Ground truth: records marked ``buggy: true`` in ``benchmark/<name>/manifest.json``
+when present, otherwise legacy detection via ``incorrect`` in the path. Positives
+are should-DISAGREE; correct implementations should AGREE with their spec.
 
 Detection framing (positive class = "inconsistent / disagree"):
   TP  predicted disagree, truly buggy        (bug caught)
@@ -22,7 +22,7 @@ Usage:
     PYTHONPATH=src python scripts/run_baseline_judge.py \
         --provider openai --base-url http://10.100.30.241:8802 --api-key API_KEY \
         --model "Qwen/Qwen3-Coder-Next-FP8" --runs 7 --label qwen_local \
-        --dualify-campaign results/campaigns/lifted_auto_eval__qwen_local
+        --dualify-campaign results/campaigns/lifted_inconsistency__qwen_local
 """
 
 from __future__ import annotations
@@ -60,7 +60,24 @@ Implementation:
 """
 
 
-def _is_buggy(case: BenchmarkCase) -> bool:
+def _load_buggy_labels(benchmark_dir: Path, cases: list[BenchmarkCase]) -> dict[str, bool]:
+    manifest_path = benchmark_dir / "manifest.json"
+    if manifest_path.is_file():
+        data = json.loads(manifest_path.read_text())
+        by_stem = {entry["stem"]: bool(entry["buggy"]) for entry in data.get("cases", [])}
+        labels: dict[str, bool] = {}
+        for case in cases:
+            stem = Path(case.file).stem
+            key = f"{case.file}::{case.benchmark_id}"
+            if stem in by_stem:
+                labels[key] = by_stem[stem]
+            else:
+                labels[key] = _is_buggy_legacy(case)
+        return labels
+    return {f"{c.file}::{c.benchmark_id}": _is_buggy_legacy(c) for c in cases}
+
+
+def _is_buggy_legacy(case: BenchmarkCase) -> bool:
     return "incorrect" in case.file or "incorrect" in case.benchmark_id
 
 
@@ -103,10 +120,10 @@ def _dualify_predictions(campaign_dir: Path, benchmark: str) -> list[dict[str, b
     """Per-run map: benchmark_key -> agree (genuine cross-check equivalent)."""
     preds: list[dict[str, bool]] = []
     for run_dir in sorted(campaign_dir.glob("run_*")):
-        reports = list(run_dir.glob(f"{benchmark}_*.json"))
+        reports = sorted(run_dir.glob(f"{benchmark}_*.json"), key=lambda p: p.stat().st_mtime)
         if not reports:
             continue
-        data = json.loads(reports[0].read_text())
+        data = json.loads(reports[-1].read_text())
         run_pred: dict[str, bool] = {}
         for case in data.get("results", []):
             key = f"{case.get('file')}::{case.get('benchmark_id')}"
@@ -128,8 +145,9 @@ def main() -> None:
     parser.add_argument("--replay-dir", default="")
     args = parser.parse_args()
 
-    cases = discover_python_cases(ROOT / "benchmark" / args.benchmark, ROOT)
-    buggy = {f"{c.file}::{c.benchmark_id}": _is_buggy(c) for c in cases}
+    benchmark_dir = ROOT / "benchmark" / args.benchmark
+    cases = discover_python_cases(benchmark_dir, ROOT)
+    buggy = _load_buggy_labels(benchmark_dir, cases)
     out_dir = ROOT / "results" / "baselines" / f"{args.benchmark}__{args.label}"
     out_dir.mkdir(parents=True, exist_ok=True)
 

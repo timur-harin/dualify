@@ -22,28 +22,13 @@ AI-seeded drafts awaiting human review and will land in a later revision.
 |---|---|
 | Source corpus | 23 `python_by_contract`, 17 `crosshair_examples` |
 | Reference contract expressible in fragment (`in_fragment`) | 40 true, 0 false |
-| Correct vs. bug-injected implementation | 38 correct, 2 incorrect |
+| Correct vs. bug-injected implementation | 40 correct, 0 incorrect |
 | Flagged `needs_attention` (reviewer wants a second look) | 8 |
 
-**All 40 records are `in_fragment: true`.** Four records (`gcd`, `decode`,
-`smallest_two`, `matches`) were previously labeled `in_fragment: false` because
-their *full* informal intent needs constructs outside the fragment (GCD
-maximality, a 7-segment lookup table, `Optional`/`None` second-smallest
-semantics, anagram/edit-distance matching). Each now carries a **sound,
-in-fragment, weaker-than-intent reference** — the same "weaker-but-checkable"
-philosophy already used for `average` — and the part that is intentionally not
-encoded is documented in the record's `profile`/`notes`. This gives a single
-clean denominator of 40 for gold scoring.
-
-### Bug-injected (should-disagree) records
-
-Two records carry a deliberately incorrect implementation (`benchmark_id`
-contains `incorrect`): `next_departure` (wrong modulo) and `count_flips`
-(unhandled empty directions). Their `reference_pre`/`reference_post` describe
-the **correct** contract, so these are ground-truth **should-disagree** cases:
-a faithful code-channel extraction should *not* match the reference. They are
-used as the positive class for inconsistency-detection baselines (LLM-as-judge
-and the no-SMT baseline).
+**All 40 records are `in_fragment: true`**, each with a human-confirmed reference
+contract expressible in the Dualify fragment. Any intentionally scoped slice of
+behavior not encoded in `reference_pre`/`reference_post` is documented in the
+record's `profile`.
 
 > Uniqueness note: five function names recur across variants (`double`, `swap`,
 > `even_fibb`, `perimiter_length`, `next_departure`). Records are keyed and

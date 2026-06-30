@@ -1,0 +1,321 @@
+{
+  "benchmark": "lifted_inconsistency",
+  "description": "Forked inconsistency-detection suite for RQ4 (10 buggy / 30 correct).",
+  "parent_gold_benchmark": "benchmark/lifted",
+  "parent_gold_eval": "benchmark/lifted_auto_eval",
+  "n_cases": 40,
+  "n_buggy": 10,
+  "n_correct": 30,
+  "cases": [
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_arith.py__assert_double_swap_does_nothing",
+      "qualname": "_assert_double_swap_does_nothing",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::arith.py::_assert_double_swap_does_nothing",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_arith.py__assert_double_swap_does_nothing"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_arith.py_double",
+      "qualname": "double",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::arith.py::double",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_arith.py_double"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_arith.py_perimiter_length",
+      "qualname": "perimiter_length",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::arith.py::perimiter_length",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_arith.py_perimiter_length"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_arith.py_swap",
+      "qualname": "swap",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::arith.py::swap",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_arith.py_swap"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_chess.py_ChessPiece_can_move_to",
+      "qualname": "ChessPiece.can_move_to",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::chess.py::ChessPiece::can_move_to",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_chess.py_ChessPiece_can_move_to"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_numpy_examples.py_unit_normalize",
+      "qualname": "unit_normalize",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::numpy_examples.py::unit_normalize",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_numpy_examples.py_unit_normalize"
+    },
+    {
+      "stem": "crosshair_examples_PEP316_correct_code_showcase.py_even_fibb",
+      "qualname": "even_fibb",
+      "benchmark_id": "crosshair_examples::PEP316::correct_code::showcase.py::even_fibb",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_PEP316_correct_code_showcase.py_even_fibb"
+    },
+    {
+      "stem": "crosshair_examples_deal_correct_code_average.py_average",
+      "qualname": "average",
+      "benchmark_id": "crosshair_examples::deal::correct_code::average.py::average",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_deal_correct_code_average.py_average"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_arith.py_double",
+      "qualname": "double",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::arith.py::double",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_arith.py_double"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_arith.py_perimiter_length",
+      "qualname": "perimiter_length",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::arith.py::perimiter_length",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_arith.py_perimiter_length"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_arith.py_swap",
+      "qualname": "swap",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::arith.py::swap",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_arith.py_swap"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_compute_grade",
+      "qualname": "compute_grade",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::compute_grade",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_compute_grade"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_csv_first_column",
+      "qualname": "csv_first_column",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::csv_first_column",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_csv_first_column"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_duplicate_list",
+      "qualname": "duplicate_list",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::duplicate_list",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_duplicate_list"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_even_fibb",
+      "qualname": "even_fibb",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::even_fibb",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_even_fibb"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_zip_exact",
+      "qualname": "zip_exact",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::zip_exact",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_zip_exact"
+    },
+    {
+      "stem": "crosshair_examples_icontract_correct_code_showcase.py_zipped_pairs",
+      "qualname": "zipped_pairs",
+      "benchmark_id": "crosshair_examples::icontract::correct_code::showcase.py::zipped_pairs",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "crosshair_examples_icontract_correct_code_showcase.py_zipped_pairs"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_11_seating_system.py_list_neighbourhood",
+      "qualname": "list_neighbourhood",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_11_seating_system.py::list_neighbourhood",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_11_seating_system.py_list_neighbourhood"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_13_shuttle_search.py_find_departure",
+      "qualname": "find_departure",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_13_shuttle_search.py::find_departure",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_13_shuttle_search.py_find_departure"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_13_shuttle_search.py_next_departure",
+      "qualname": "next_departure",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_13_shuttle_search.py::next_departure",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_13_shuttle_search.py_next_departure"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_17_conway_cubes.py_count_active",
+      "qualname": "count_active",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_17_conway_cubes.py::count_active",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_17_conway_cubes.py_count_active"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_18_operation_order.py_extract_expression",
+      "qualname": "extract_expression",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_18_operation_order.py::extract_expression",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_18_operation_order.py_extract_expression"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_1_report_repair.py_find_pair_with_sum",
+      "qualname": "find_pair_with_sum",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_1_report_repair.py::find_pair_with_sum",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_1_report_repair.py_find_pair_with_sum"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_20_jurassic_jigsaw.py_reverse_side",
+      "qualname": "reverse_side",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_20_jurassic_jigsaw.py::reverse_side",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_20_jurassic_jigsaw.py_reverse_side"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_22_crab_combat.py_compute_score",
+      "qualname": "compute_score",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_22_crab_combat.py::compute_score",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_22_crab_combat.py_compute_score"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_25_combo_breaker.py_transform",
+      "qualname": "transform",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_25_combo_breaker.py::transform",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_25_combo_breaker.py_transform"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_2_password_philosophy.py_verify",
+      "qualname": "verify",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_2_password_philosophy.py::verify",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_2_password_philosophy.py_verify"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_3_toboggan_trajectory.py_count_trees",
+      "qualname": "count_trees",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_3_toboggan_trajectory.py::count_trees",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_3_toboggan_trajectory.py_count_trees"
+    },
+    {
+      "stem": "python_by_contract_correct_aoc2020_day_5_binary_boarding.py_determine_column",
+      "qualname": "determine_column",
+      "benchmark_id": "python_by_contract::correct::aoc2020::day_5_binary_boarding.py::determine_column",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_aoc2020_day_5_binary_boarding.py_determine_column"
+    },
+    {
+      "stem": "python_by_contract_correct_ethz_eprog_2019_exercise_03_problem_01.py_compute",
+      "qualname": "compute",
+      "benchmark_id": "python_by_contract::correct::ethz_eprog_2019::exercise_03::problem_01.py::compute",
+      "buggy": false,
+      "forked_from": "lifted_auto_eval",
+      "gold_stem": "python_by_contract_correct_ethz_eprog_2019_exercise_03_problem_01.py_compute"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_13_shuttle_search_divide_by_zero_bug.py_next_departure",
+      "qualname": "next_departure",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_13_shuttle_search::divide_by_zero_bug.py::next_departure",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_13_shuttle_search_wrong_mod.py_next_departure",
+      "qualname": "next_departure",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_13_shuttle_search::wrong_mod.py::next_departure",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_14_docking_data_one_off_mistake.py_parse_mask",
+      "qualname": "parse_mask",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_14_docking_data::one_off_mistake.py::parse_mask",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_1_report_repair_pair_cannot_be_the_same_number.py_find_pair_with_sum",
+      "qualname": "find_pair_with_sum",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_1_report_repair::pair_cannot_be_the_same_number.py::find_pair_with_sum",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_24_lobby_layout_missed_to_handle_empty_directions_in_plan.py_count_flips",
+      "qualname": "count_flips",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_24_lobby_layout::missed_to_handle_empty_directions_in_plan.py::count_flips",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_aoc2020_day_24_lobby_layout_stringify_directions_missed_to_handle_empty_directions.py_parse_line",
+      "qualname": "parse_line",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::aoc2020::day_24_lobby_layout::stringify_directions_missed_to_handle_empty_directions.py::parse_line",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_ethz_eprog_2019_exercise_04_problem_02_tolerance_needs_to_match_machine_precision.py_approximate_sqrt",
+      "qualname": "approximate_sqrt",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::ethz_eprog_2019::exercise_04::problem_02::tolerance_needs_to_match_machine_precision.py::approximate_sqrt",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_ethz_eprog_2019_exercise_05_problem_03_binary_search_wrong.py_bin_index",
+      "qualname": "bin_index",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::ethz_eprog_2019::exercise_05::problem_03::binary_search_wrong.py::bin_index",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_ethz_eprog_2019_exercise_08_problem_05_got_half_grid_size_wrong.py_simulate",
+      "qualname": "simulate",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::ethz_eprog_2019::exercise_08::problem_05::got_half_grid_size_wrong.py::simulate",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    },
+    {
+      "stem": "python_by_contract_incorrect_from_recorded_ethz_eprog_2019_exercise_12_problem_03_forgot_to_check_for_nan_when_comparing_interpret_and_compile_and_execute.py_compile_and_execute",
+      "qualname": "compile_and_execute",
+      "benchmark_id": "python_by_contract::incorrect_from_recorded::ethz_eprog_2019::exercise_12::problem_03::forgot_to_check_for_nan_when_comparing_interpret_and_compile_and_execute.py::compile_and_execute",
+      "buggy": true,
+      "forked_from": "corpus_incorrect"
+    }
+  ]
+}

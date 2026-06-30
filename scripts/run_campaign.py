@@ -28,10 +28,15 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from dualify.aggregate import aggregate_runs, stable_cases  # noqa: E402
+from dualify.cloud_providers import profile_for_base_url  # noqa: E402
 from dualify.io_utils import write_json  # noqa: E402
 from dualify.ollama_client import LLMClient, create_llm_client  # noqa: E402
 from dualify.runner import run_experiment  # noqa: E402
-from dualify.transcript import RecordingLLMClient, ReplayLLMClient  # noqa: E402
+from dualify.transcript import (  # noqa: E402
+    RecordingLLMClient,
+    ReplayLLMClient,
+    ResumingLLMClient,
+)
 
 
 @dataclass
@@ -55,16 +60,31 @@ class ThrottledLLMClient:
 
 
 def _maybe_throttle(client: LLMClient, base_url: str) -> LLMClient:
-    host = base_url.lower()
-    if "groq.com" in host:
-        return ThrottledLLMClient(inner=client, min_interval_sec=2.0)
-    if "sambanova.ai" in host:
-        return ThrottledLLMClient(inner=client, min_interval_sec=3.0)
+    profile = profile_for_base_url(base_url)
+    if profile is not None:
+        print(
+            f"[campaign] provider={profile.name} rpm={profile.rpm} "
+            f"min_interval={profile.min_interval_sec}s timeout={profile.timeout_sec}s "
+            f"retries={profile.max_retries}",
+            file=sys.stderr,
+        )
+        return ThrottledLLMClient(inner=client, min_interval_sec=profile.min_interval_sec)
     return client
 
 
 def _slug(model: str) -> str:
     return "".join(c if c.isalnum() else "_" for c in model).strip("_")
+
+
+def _transcript_record_count(path: Path) -> int:
+    if not path.is_file():
+        return 0
+    count = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        stripped = line.strip()
+        if stripped and "transcript_metadata" not in stripped:
+            count += 1
+    return count
 
 
 def main() -> None:
@@ -83,6 +103,11 @@ def main() -> None:
         "--replay-dir",
         default="",
         help="If set, replay each run from <dir>/run_NN/transcript.jsonl instead of the live API.",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Continue each run from existing run_NN/transcript.jsonl (replay cached LLM calls, append the rest).",
     )
     args = parser.parse_args()
 
@@ -107,13 +132,21 @@ def main() -> None:
                 api_key=args.api_key,
             )
             live = _maybe_throttle(live, args.base_url)
-            client = RecordingLLMClient(
-                inner=live,
-                transcript_path=transcript,
-                model=args.model,
-                base_url=args.base_url,
-                provider=args.provider,
-            )
+            cached = _transcript_record_count(transcript) if args.resume else 0
+            if args.resume and cached > 0:
+                client = ResumingLLMClient.from_path(inner=live, path=transcript.resolve())
+                print(
+                    f"[campaign] resume: {cached} cached LLM call(s) in {transcript.name}",
+                    file=sys.stderr,
+                )
+            else:
+                client = RecordingLLMClient(
+                    inner=live,
+                    transcript_path=transcript,
+                    model=args.model,
+                    base_url=args.base_url,
+                    provider=args.provider,
+                )
 
         print(f"[campaign] run {i}/{args.runs} -> {run_dir}", file=sys.stderr)
         report = run_experiment(
@@ -128,7 +161,7 @@ def main() -> None:
             target_regexes=args.target_regex,
             max_cases=args.max_cases,
         )
-        if isinstance(client, RecordingLLMClient):
+        if isinstance(client, RecordingLLMClient | ResumingLLMClient):
             client.close()
         reports.append(report)
         cc = report["summary"]["cross_check"]

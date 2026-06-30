@@ -1,0 +1,309 @@
+{
+  "label": "qwen_local",
+  "model": "Qwen/Qwen3-Coder-Next-FP8",
+  "benchmark": "lifted_inconsistency",
+  "n_runs": 7,
+  "selection": {
+    "targets": [],
+    "target_regexes": [],
+    "max_cases": null
+  },
+  "aggregate": {
+    "n_runs": 7,
+    "total_cases": {
+      "mean": 40.0,
+      "median": 40.0,
+      "std": 0.0,
+      "min": 40.0,
+      "max": 40.0,
+      "n": 7,
+      "values": [
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0,
+        40.0
+      ]
+    },
+    "cross_check": {
+      "equivalent_cases": {
+        "mean": 9.857142857142858,
+        "median": 10.0,
+        "std": 0.832993127835043,
+        "min": 8.0,
+        "max": 11.0,
+        "n": 7,
+        "values": [
+          11.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          8.0
+        ]
+      },
+      "genuine_equivalent_cases": {
+        "mean": 9.857142857142858,
+        "median": 10.0,
+        "std": 0.832993127835043,
+        "min": 8.0,
+        "max": 11.0,
+        "n": 7,
+        "values": [
+          11.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          10.0,
+          8.0
+        ]
+      },
+      "low_confidence_cases": {
+        "mean": 25.571428571428573,
+        "median": 25.0,
+        "std": 1.0497813183356477,
+        "min": 25.0,
+        "max": 28.0,
+        "n": 7,
+        "values": [
+          25.0,
+          25.0,
+          26.0,
+          25.0,
+          25.0,
+          25.0,
+          28.0
+        ]
+      },
+      "solver_unknown_cases": {
+        "mean": 0.42857142857142855,
+        "median": 0.0,
+        "std": 0.4948716593053935,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 7,
+        "values": [
+          1.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          1.0,
+          1.0
+        ]
+      },
+      "parse_error_cases": {
+        "mean": 1.5714285714285714,
+        "median": 2.0,
+        "std": 0.4948716593053935,
+        "min": 1.0,
+        "max": 2.0,
+        "n": 7,
+        "values": [
+          1.0,
+          2.0,
+          2.0,
+          1.0,
+          2.0,
+          1.0,
+          2.0
+        ]
+      },
+      "non_equivalent_cases": {
+        "mean": 30.142857142857142,
+        "median": 30.0,
+        "std": 0.832993127835043,
+        "min": 29.0,
+        "max": 32.0,
+        "n": 7,
+        "values": [
+          29.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          30.0,
+          32.0
+        ]
+      }
+    },
+    "gold_scoring": {
+      "scorable_cases": {
+        "mean": 34.0,
+        "median": 34.0,
+        "std": 0.0,
+        "min": 34.0,
+        "max": 34.0,
+        "n": 7,
+        "values": [
+          34.0,
+          34.0,
+          34.0,
+          34.0,
+          34.0,
+          34.0,
+          34.0
+        ]
+      },
+      "spec_pre_exact": {
+        "mean": 11.0,
+        "median": 11.0,
+        "std": 0.0,
+        "min": 11.0,
+        "max": 11.0,
+        "n": 7,
+        "values": [
+          11.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0,
+          11.0
+        ]
+      },
+      "spec_post_exact": {
+        "mean": 2.0,
+        "median": 2.0,
+        "std": 0.0,
+        "min": 2.0,
+        "max": 2.0,
+        "n": 7,
+        "values": [
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0,
+          2.0
+        ]
+      },
+      "spec_contract_equivalent": {
+        "mean": 3.0,
+        "median": 3.0,
+        "std": 0.0,
+        "min": 3.0,
+        "max": 3.0,
+        "n": 7,
+        "values": [
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0
+        ]
+      },
+      "code_pre_exact": {
+        "mean": 6.142857142857143,
+        "median": 6.0,
+        "std": 0.6388765649999399,
+        "min": 5.0,
+        "max": 7.0,
+        "n": 7,
+        "values": [
+          6.0,
+          6.0,
+          6.0,
+          7.0,
+          5.0,
+          6.0,
+          7.0
+        ]
+      },
+      "code_post_exact": {
+        "mean": 3.0,
+        "median": 3.0,
+        "std": 0.0,
+        "min": 3.0,
+        "max": 3.0,
+        "n": 7,
+        "values": [
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0,
+          3.0
+        ]
+      },
+      "code_contract_equivalent": {
+        "mean": 4.0,
+        "median": 4.0,
+        "std": 0.0,
+        "min": 4.0,
+        "max": 4.0,
+        "n": 7,
+        "values": [
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0,
+          4.0
+        ]
+      },
+      "spec_parse_errors": {
+        "mean": 0.7142857142857143,
+        "median": 1.0,
+        "std": 0.45175395145262565,
+        "min": 0.0,
+        "max": 1.0,
+        "n": 7,
+        "values": [
+          0.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          1.0,
+          0.0
+        ]
+      },
+      "code_parse_errors": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "min": 0.0,
+        "max": 0.0,
+        "n": 7,
+        "values": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "run_ids": [
+      "lifted_inconsistency_2026_06_30_16_53_17",
+      "lifted_inconsistency_2026_06_30_16_59_38",
+      "lifted_inconsistency_2026_06_30_17_05_32",
+      "lifted_inconsistency_2026_06_30_17_11_14",
+      "lifted_inconsistency_2026_06_30_17_17_06",
+      "lifted_inconsistency_2026_06_30_17_22_53",
+      "lifted_inconsistency_2026_06_30_17_28_54"
+    ],
+    "models": [
+      "Qwen/Qwen3-Coder-Next-FP8"
+    ]
+  },
+  "stability_genuine_equivalent": {
+    "n_runs": 7,
+    "total_cases": 40,
+    "always": 5,
+    "never": 28,
+    "unstable": 7
+  }
+}

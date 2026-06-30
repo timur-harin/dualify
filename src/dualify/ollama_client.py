@@ -6,6 +6,8 @@ from typing import Protocol
 
 import requests
 
+from dualify.cloud_providers import profile_for_base_url
+
 
 class LLMClient(Protocol):
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict: ...
@@ -145,7 +147,9 @@ class OpenAICompatibleClient:
         if override is not None:
             return override == "1"
         host = self.base_url.lower()
-        return not ("groq.com" in host or "sambanova.ai" in host)
+        return not (
+            "groq.com" in host or "sambanova.ai" in host or "openrouter.ai" in host
+        )
 
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict:
         prefer_chat = self._prefers_chat_mode()
@@ -236,16 +240,21 @@ def create_llm_client(
                 "Provider 'openai' requires an API key. "
                 "Set DUALIFY_API_KEY or GROQ_API_KEY in .env, or pass --api-key."
             )
-        if "groq.com" in normalized_base_url or "sambanova.ai" in normalized_base_url:
-            # Cloud providers rate-limit aggressively; keep retries bounded so a
-            # campaign run fails fast instead of sleeping for minutes per call.
+        if (
+            "groq.com" in normalized_base_url
+            or "sambanova.ai" in normalized_base_url
+            or "openrouter.ai" in normalized_base_url
+        ):
+            profile = profile_for_base_url(normalized_base_url)
+            assert profile is not None
             return OpenAICompatibleClient(
                 model=model,
                 base_url=normalized_base_url,
                 api_key=api_key.strip(),
-                max_retries=3,
-                backoff_base_sec=0.5,
-                max_backoff_sec=8.0,
+                timeout_sec=profile.timeout_sec,
+                max_retries=profile.max_retries,
+                backoff_base_sec=profile.backoff_base_sec,
+                max_backoff_sec=profile.max_backoff_sec,
             )
         return OpenAICompatibleClient(
             model=model,

@@ -1,0 +1,34 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_10_adapter_array.py::compute_result
+qualname: compute_result
+file: ''
+signature: 'compute_result(histo: HistogramOfDeltas) -> int'
+arg_types:
+  histo: HistogramOfDeltas
+return_type: int
+informal_spec: |
+  Analyze the histogram of jolt differences.
+
+  Return the product of the respective counts of 1-jolt and 3-jolt differences.
+informal_spec_raw: |
+  Analyze the histogram of jolt differences.
+
+  :return: the product of the respective counts of 1s and 3s differences
+function_source: "def compute_result(histo: HistogramOfDeltas) -> int:\n    \"\"\
+  \"Analyze the histogram of jolt differences.\n\n    :return: the product of the\
+  \ respective counts of 1s and 3s differences\n    \"\"\"\n    delta_1s = histo[1]\
+  \ if 1 in histo else 0\n    delta_3s = histo[3] if 3 in histo else 0\n\n    return\
+  \ delta_1s * delta_3s"
+profile: 'In scope: the returned integer is non-negative (a product of two counts).
+  Out of scope: the HistogramOfDeltas map semantics, dictionary lookup on histo[1]
+  and histo[3], and the exact product formula. Observable: ret >= 0.'
+in_fragment: true
+reference_pre: []
+reference_post: ret >= 0
+notes: 'Added with parse when removing bug-injected gold records. The corpus postcondition
+  is only result >= 0; the exact product-of-counts formula depends on the HistogramOfDeltas
+  helper type and is intentionally not encoded.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: ret >= 0

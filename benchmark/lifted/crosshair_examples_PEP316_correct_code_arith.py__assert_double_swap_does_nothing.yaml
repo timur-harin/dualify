@@ -1,0 +1,25 @@
+benchmark_id: crosshair_examples::PEP316::correct_code::arith.py::_assert_double_swap_does_nothing
+qualname: _assert_double_swap_does_nothing
+file: ''
+signature: '_assert_double_swap_does_nothing(things: Tuple[int, int]) -> Tuple[int,
+  int]'
+arg_types:
+  things: Tuple[int, int]
+return_type: Tuple[int, int]
+informal_spec: Return the input tuple unchanged after applying swap twice.
+informal_spec_raw: 'post: _ == things'
+function_source: "def _assert_double_swap_does_nothing(things: Tuple[int, int]) ->\
+  \ Tuple[int, int]:\n    \"\"\"\n    post: _ == things\n    \"\"\"\n    once = (things[1],\
+  \ things[0])\n    return (once[1], once[0])"
+profile: 'In scope: identity of a pair after double swap. Out of scope: swap implementation
+  details. Observable: returned tuple equals input.'
+in_fragment: true
+reference_pre: []
+reference_post: And(ret[0] == things[0], ret[1] == things[1])
+notes: 'manual-add: full identity post via tuple slots; depends on swap helper in
+  the same module.'
+reference_normalized:
+  pre: []
+  post: And(ret[0] == things[0], ret[1] == things[1])
+status: confirmed
+needs_attention: false

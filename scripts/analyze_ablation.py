@@ -10,8 +10,7 @@ using Dualify's extractions:
 * dual       : do p01 and p02 agree under Z3 cross-check?                   (NO oracle)
 
 The point of bidirectional extraction is the last column: it flags spec-code
-disagreements with no gold oracle at all. We also report, on the bug-injected
-cases, which configuration surfaces the injected fault.
+disagreements with no gold oracle at all.
 
 Usage:
     PYTHONPATH=src python scripts/analyze_ablation.py \
@@ -34,9 +33,9 @@ from dualify.io_utils import write_json  # noqa: E402
 def _run_reports(campaign_dir: Path, benchmark: str) -> list[dict]:
     reports = []
     for run_dir in sorted(campaign_dir.glob("run_*")):
-        found = list(run_dir.glob(f"{benchmark}_*.json"))
+        found = sorted(run_dir.glob(f"{benchmark}_*.json"), key=lambda p: p.stat().st_mtime)
         if found:
-            reports.append(json.loads(found[0].read_text()))
+            reports.append(json.loads(found[-1].read_text()))
     return reports
 
 
