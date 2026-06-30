@@ -1,21 +1,22 @@
-# Deep-dive: `is_valid_filename` max_len semantics
+# Deep-dive: boolean filename validator `max_len` semantics
 
 ## Context
 
-Dualify scanned six pathvalidate entry points. Automated cross-check flagged
-`is_valid_filename` with `formula_parse_error` (LLM post used `Contains` on a
+Dualify scanned six entry points in an anonymized OSS input-validation package.
+Automated cross-check flagged the boolean filename validator with
+`formula_parse_error` (LLM post used `Contains` on a
 non-sequence parameter). The operator judge classified this as **UN** (tool
 limit) and proceeded with **manual doc review** — the intended workflow when
 extraction is weak but the mismatch hypothesis remains plausible.
 
 ## Observed doc/code gap (TP)
 
-`validate_filename` defaults `max_len=255`.  
-`is_valid_filename` passes `max_len=-1` when the argument is `None`, which
+The strict filename validator defaults `max_len=255`.  
+The boolean filename validator passes `max_len=-1` when the argument is `None`, which
 selects the **platform** byte limit (e.g. 4096 on Linux) — not 255.
 
-The original `is_valid_filename` docstring only listed `filename` and
-`platform`, so readers assuming parity with `validate_filename` would mis-test
+The original boolean validator docstring only listed `filename` and
+`platform`, so readers assuming parity with the strict validator would mis-test
 long names.
 
 ## Witness (executable)
@@ -29,7 +30,7 @@ is_valid_filename(long_name, platform="Linux")  # True
 ## Operator actions
 
 1. **investigate_instrumentation** (automated judge on weak Z3 outcome)
-2. **refine_spec** (manual): expand `is_valid_filename` Args in docstring
+2. **refine_spec** (manual): expand boolean validator Args in docstring
 3. **add_test_case** (manual): `test/test_dualify_case_study.py`
 
 ## Secondary TP: `sanitize_*` Raises section

@@ -10,6 +10,10 @@ Formula rules (must be SMT-compatible):
 
 Common mistakes to fix:
 - postcondition must be ONE boolean formula over args and ret.
+- postcondition MUST mention `ret`. If you wrote the returned value or a bare property, bind it:
+  write `ret == a * b` (not `a * b`) and `ret == (x > 0)` (not `x > 0`).
+- `Implies` takes EXACTLY two arguments: `Implies(hypothesis, conclusion)`. For several
+  hypotheses use `Implies(And(h1, h2, h3), conclusion)`, never `Implies(h1, h2, h3, conclusion)`.
 - Never set ret to a quantifier: `ret == ForAll(...)` / `ret == Exists(...)` is wrong when ret is
   int, float, str, list, or tuple. Put ForAll/Exists inside And/Or/Implies instead.
 - Never pass a quantifier to Concat or other value operators:

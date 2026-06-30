@@ -1,5 +1,45 @@
-from dualify.formula_parser import normalize_formula, validate_formula
+from dualify.formula_parser import (
+    ensure_ret_reference,
+    normalize_formula,
+    salvage_valid_conjuncts,
+    validate_formula,
+)
 from dualify.phases.p03_smt_checking import _canonicalize_expression
+
+
+def test_ensure_ret_reference_wraps_value_expression() -> None:
+    assert ensure_ret_reference("a * b + c") == "ret == (a * b + c)"
+    assert ensure_ret_reference("x > 0") == "ret == (x > 0)"
+
+
+def test_ensure_ret_reference_leaves_ret_formulas_untouched() -> None:
+    assert ensure_ret_reference("ret == a + b") == "ret == a + b"
+    assert ensure_ret_reference("And(ret > 0, ret < x)") == "And(ret > 0, ret < x)"
+
+
+def test_ensure_ret_reference_skips_bare_boolean_literals() -> None:
+    # Leave weak literals alone so they keep being flagged as degraded.
+    assert ensure_ret_reference("True") == "True"
+    assert ensure_ret_reference("") == ""
+
+
+def test_salvage_keeps_valid_conjuncts() -> None:
+    allowed = {"ret", "x", "a"}
+
+    def is_valid(expr: str) -> bool:
+        return not validate_formula(expr, allowed)
+
+    # The second conjunct uses an unknown identifier; the others are clean.
+    post = "And(ret > 0, And(bogus_call(zz) > 1, ret < x))"
+    salvaged = salvage_valid_conjuncts(post, is_valid)
+    assert "ret > 0" in salvaged
+    assert "ret < x" in salvaged
+    assert "bogus_call" not in salvaged
+
+
+def test_salvage_returns_empty_when_single_conjunct() -> None:
+    salvaged = salvage_valid_conjuncts("ret == foo(bar(baz))", lambda _e: False)
+    assert salvaged == ""
 
 
 def test_canonicalizes_infix_and() -> None:

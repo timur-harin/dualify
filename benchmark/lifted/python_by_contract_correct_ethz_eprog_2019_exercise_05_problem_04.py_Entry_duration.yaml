@@ -1,0 +1,26 @@
+benchmark_id: python_by_contract::correct::ethz_eprog_2019::exercise_05::problem_04.py::Entry::duration
+qualname: Entry.duration
+file: ''
+signature: 'duration(self_start: int, self_end: int) -> int'
+arg_types:
+  self_start: int
+  self_end: int
+return_type: int
+informal_spec: Compute the duration of the stay.
+informal_spec_raw: Compute the duration of the stay.
+function_source: "def duration(self) -> int:\n        \"\"\"Compute the duration of\
+  \ the stay.\"\"\"\n        return self.end - self.start + 1"
+profile: 'In scope: inclusive day count from start/end timestamps on an Entry. Out
+  of scope: parsing booking records, room metadata. Observable: returned duration integer.'
+in_fragment: true
+reference_pre:
+- self_end >= self_start
+reference_post: ret == self_end - self_start + 1
+notes: 'manual-add: flattened self.start/self.end to self_start/self_end for fragment
+  hygiene (same pattern as ChessPiece.can_move_to).'
+reference_normalized:
+  pre:
+  - self_end >= self_start
+  post: ret == self_end - self_start + 1
+status: confirmed
+needs_attention: false

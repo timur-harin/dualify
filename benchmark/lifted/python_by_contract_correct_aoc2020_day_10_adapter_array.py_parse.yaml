@@ -1,0 +1,34 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_10_adapter_array.py::parse
+qualname: parse
+file: ''
+signature: 'parse(lines: Lines) -> List[int]'
+arg_types:
+  lines: Lines
+return_type: List[int]
+informal_spec: |
+  Parse the specification of the adapters given as ``lines``.
+
+  Return a list of corresponding adapter jolt values.
+informal_spec_raw: |
+  Parse the specification of the adapters given as ``lines``.
+
+  :return: List of corresponding number of adapter jolts
+function_source: "def parse(lines: Lines) -> List[int]:\n    \"\"\"\n    Parse the\
+  \ specification of the adapters given as ``lines``.\n\n    :return: List of corresponding\
+  \ number of adapter jolts\n    \"\"\"\n    return [int(line) for line in lines]"
+profile: 'In scope: the returned list has one integer per input line, preserving input
+  order. Out of scope: per-line digit-string validation (the icontract regex guard)
+  and parsing failures on malformed lines. Observable: Length(ret) and element-wise
+  correspondence with lines.'
+in_fragment: true
+reference_pre: []
+reference_post: Length(ret) == Length(lines)
+notes: 'Replaces the former bug-injected count_flips slot in the gold release. The
+  corpus postcondition is only len(lines) == len(result); the regex precondition is
+  intentionally omitted from the in-fragment reference and recorded here as out of
+  scope.'
+needs_attention: false
+status: confirmed
+reference_normalized:
+  pre: []
+  post: Length(ret) == Length(lines)

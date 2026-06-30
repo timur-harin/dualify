@@ -1,0 +1,81 @@
+{
+  "campaign": "/Users/timur/develop/dualify/results/campaigns/lifted_auto_eval__qwen_local",
+  "benchmark": "lifted_auto_eval",
+  "n_runs": 7,
+  "total_cases": 40.0,
+  "spec_only_matches_gold": {
+    "mean": 3.0,
+    "median": 3.0,
+    "std": 0.0,
+    "min": 3.0,
+    "max": 3.0,
+    "n": 7,
+    "values": [
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0,
+      3.0
+    ]
+  },
+  "code_only_matches_gold": {
+    "mean": 5.0,
+    "median": 5.0,
+    "std": 0.0,
+    "min": 5.0,
+    "max": 5.0,
+    "n": 7,
+    "values": [
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0,
+      5.0
+    ]
+  },
+  "dual_cross_check_equivalent": {
+    "mean": 11.571428571428571,
+    "median": 12.0,
+    "std": 1.0497813183356477,
+    "min": 10.0,
+    "max": 13.0,
+    "n": 7,
+    "values": [
+      12.0,
+      10.0,
+      13.0,
+      12.0,
+      10.0,
+      12.0,
+      12.0
+    ]
+  },
+  "dual_flagged_without_oracle": {
+    "mean": 28.428571428571427,
+    "median": 28.0,
+    "std": 1.0497813183356477,
+    "min": 27.0,
+    "max": 30.0,
+    "n": 7,
+    "values": [
+      28.0,
+      30.0,
+      27.0,
+      28.0,
+      30.0,
+      28.0,
+      28.0
+    ]
+  },
+  "bug_injected_detection": {
+    "spec_only": 0,
+    "code_only": 0,
+    "dual": 0,
+    "total_buggy": 0
+  },
+  "note": "spec-only and code-only require the gold oracle to find anything; the dual cross-check flags spec-code disagreements with no oracle (dual_flagged_without_oracle)."
+}

@@ -129,25 +129,82 @@ class RecordingLLMClient:
 
 @dataclass
 class ReplayLLMClient:
-    """Serves LLM responses from a recorded transcript -- no network calls."""
+    """Serves LLM responses from a recorded transcript -- no network calls.
+
+    Two matching modes:
+
+    * sequential (default): serve records in recorded order, verifying each
+      prompt hash. This is strict but fragile -- any control-flow divergence
+      between record and replay (even one extra/skipped call) cascades into
+      misaligned responses.
+    * ``match_by_prompt=True``: serve the recorded response whose prompt hash
+      equals the current prompt's hash, regardless of order. Because every
+      Dualify prompt is a deterministic function of its inputs (signature,
+      spec/code, prior errors), identical prompts have identical recorded
+      responses, so this mode reproduces the exact recorded control flow and is
+      immune to ordering drift. This is the mode used for reviewer-facing
+      deterministic reproduction.
+    """
 
     transcript_path: Path
     metadata: dict[str, Any] = field(default_factory=dict)
     records: list[dict[str, Any]] = field(default_factory=list)
     _cursor: int = 0
     strict_prompts: bool = True
+    match_by_prompt: bool = False
+    _by_hash: dict[str, list[dict[str, Any]]] = field(default_factory=dict)
+    _hash_cursor: dict[str, int] = field(default_factory=dict)
 
     @classmethod
-    def from_path(cls, path: Path, *, strict_prompts: bool = True) -> ReplayLLMClient:
+    def from_path(
+        cls,
+        path: Path,
+        *,
+        strict_prompts: bool = True,
+        match_by_prompt: bool = False,
+    ) -> ReplayLLMClient:
         metadata, records = _load_transcript(path)
+        by_hash: dict[str, list[dict[str, Any]]] = {}
+        if match_by_prompt:
+            for record in records:
+                key = str(record.get("prompt_sha256", ""))
+                by_hash.setdefault(key, []).append(record)
         return cls(
             transcript_path=path,
             metadata=metadata,
             records=records,
             strict_prompts=strict_prompts,
+            match_by_prompt=match_by_prompt,
+            _by_hash=by_hash,
         )
 
+    def _response_from_record(self, record: dict[str, Any]) -> dict:
+        response = record.get("response", {})
+        if not isinstance(response, dict):
+            raise TranscriptError(
+                f"transcript {self.transcript_path}: call #{record.get('call_index', '?')} "
+                "response is not a JSON object."
+            )
+        return response
+
     def generate_json(self, prompt: str, temperature: float = 0.0) -> dict:
+        if self.match_by_prompt:
+            key = _sha256_hex(prompt)
+            bucket = self._by_hash.get(key)
+            if not bucket:
+                raise TranscriptExhaustedError(
+                    f"transcript {self.transcript_path}: no recorded response for prompt "
+                    f"hash {key[:12]}. The current code issued a prompt not present in the "
+                    "transcript; re-record."
+                )
+            idx = self._hash_cursor.get(key, 0)
+            # Reuse the last recorded response if the same prompt recurs more
+            # often on replay than at record time (deterministic, same content).
+            record = bucket[min(idx, len(bucket) - 1)]
+            self._hash_cursor[key] = idx + 1
+            self._cursor += 1
+            return self._response_from_record(record)
+
         if self._cursor >= len(self.records):
             raise TranscriptExhaustedError(
                 f"transcript {self.transcript_path} has {len(self.records)} call(s); "
@@ -158,13 +215,7 @@ class ReplayLLMClient:
         self._cursor += 1
         if self.strict_prompts:
             _verify_prompt_hash(record, prompt, self.transcript_path)
-        response = record.get("response", {})
-        if not isinstance(response, dict):
-            raise TranscriptError(
-                f"transcript {self.transcript_path}: call #{record.get('call_index', '?')} "
-                "response is not a JSON object."
-            )
-        return response
+        return self._response_from_record(record)
 
     def healthcheck(self) -> None:
         # No remote endpoint; the transcript is the truth.

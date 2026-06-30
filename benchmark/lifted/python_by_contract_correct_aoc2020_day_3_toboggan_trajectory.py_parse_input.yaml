@@ -1,0 +1,30 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_3_toboggan_trajectory.py::parse_input
+qualname: parse_input
+file: ''
+signature: 'parse_input(lines: List[str]) -> Tuple[int, int, str]'
+arg_types:
+  lines: List[str]
+return_type: Tuple[int, int, str]
+informal_spec: Parse the input map given as ``lines`` into width, height, and the
+  flattened map string.
+informal_spec_raw: Parse the input map given as ``lines``.
+function_source: "def parse_input(lines: Sequence[InputLine]) -> Tuple[int, int, str]:\n\
+  \    \"\"\"Parse the input map given as ``lines``.\"\"\"\n    width: int = len(lines[0])\n\
+  \    height: int = len(lines)\n    return width, height, \"\".join(lines)"
+profile: 'In scope: map width (first row length), height (row count), and flattened
+  string length. Out of scope: per-cell character content of the join (needs quantifiers).
+  Observable: ret[0], ret[1], Length(ret[2]).'
+in_fragment: true
+reference_pre:
+- Length(lines) > 0
+reference_post: And(ret[0] == Length(lines[0]), ret[1] == Length(lines), Length(ret[2])
+  == Length(lines[0]) * Length(lines))
+notes: 'manual-add: full quantifier-free contract for dimensions and join length;
+  character-level join equality intentionally out of scope.'
+reference_normalized:
+  pre:
+  - Length(lines) > 0
+  post: And(ret[0] == Length(lines[0]), ret[1] == Length(lines), Length(ret[2]) ==
+    Length(lines[0]) * Length(lines))
+status: confirmed
+needs_attention: false

@@ -1,0 +1,40 @@
+benchmark_id: python_by_contract::correct::aoc2020::day_5_binary_boarding.py::apply
+qualname: apply
+file: ''
+signature: 'apply(first: int, last: int, directive: str) -> Tuple[int, int]'
+arg_types:
+  first: int
+  last: int
+  directive: str
+return_type: Tuple[int, int]
+informal_spec: Apply the ``directive`` given the range as ``[first, last]`` (inclusive).
+  Return the new ``(first, last)`` bounds after one binary-partition step.
+informal_spec_raw: Apply the ``directive`` given the range as ``[first, last]`` (inclusive).
+function_source: "def apply(first: int, last: int, directive: str) -> Tuple[int, int]:\n\
+  \    \"\"\"\n    Apply the ``directive`` given the range as ``[first, last]``\
+  \ (inclusive).\n\n    :return: new first, new last\n    \"\"\"\n    half = int((last\
+  \ - first + 1) / 2)\n\n    if directive in \"FL\":\n        return first, last -\
+  \ half\n\n    elif directive in \"BR\":\n        return first + half, last\n\n \
+  \   else:\n        raise NotImplementedError(directive)"
+profile: 'In scope: one binary-search partition step on an inclusive integer range
+  for directives F/L (lower half) or B/R (upper half). Out of scope: invalid directives,
+  string boarding-pass decoding. Observable: returned (first, last) tuple.'
+in_fragment: true
+reference_pre:
+- And(first <= last, Or(directive == "F", directive == "L", directive == "B", directive
+  == "R"))
+reference_post: And(Implies(Or(directive == "F", directive == "L"), And(ret[0] == first,
+  ret[1] == last - floor((last - first + 1) / 2))), Implies(Or(directive == "B",
+  directive == "R"), And(ret[0] == first + floor((last - first + 1) / 2), ret[1]
+  == last)))
+notes: 'manual-add: full quantifier-free reference for one boarding-pass partition
+  step; sibling determine_row/column/id cases cover full decode.'
+reference_normalized:
+  pre:
+  - And(first <= last, Or(directive == "F", directive == "L", directive == "B", directive
+    == "R"))
+  post: And(Implies(Or(directive == "F", directive == "L"), And(ret[0] == first, ret[1]
+    == last - floor((last - first + 1) / 2))), Implies(Or(directive == "B", directive
+    == "R"), And(ret[0] == first + floor((last - first + 1) / 2), ret[1] == last)))
+status: confirmed
+needs_attention: false

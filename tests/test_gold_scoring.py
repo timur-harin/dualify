@@ -17,10 +17,23 @@ from dualify.types import ExtractionResult
 GOLD_DIR = Path(__file__).resolve().parents[1] / "benchmark" / "lifted"
 
 
-def test_load_gold_benchmark_has_swap() -> None:
+SWAP_ICONTRACT_ID = "crosshair_examples::icontract::correct_code::arith.py::swap"
+SWAP_PEP316_ID = "crosshair_examples::PEP316::correct_code::arith.py::swap"
+
+
+def test_load_gold_benchmark_keys_by_benchmark_id() -> None:
     gold = load_gold_benchmark(GOLD_DIR)
-    assert "swap" in gold
-    assert gold["swap"].postcondition.startswith("And(")
+    assert SWAP_ICONTRACT_ID in gold
+    assert gold[SWAP_ICONTRACT_ID].postcondition.startswith("And(")
+
+
+def test_load_gold_benchmark_does_not_collapse_name_collisions() -> None:
+    # `swap` (and double/even_fibb/next_departure/perimiter_length) recur across
+    # variants. Keying by benchmark_id must keep all 40 records distinct.
+    gold = load_gold_benchmark(GOLD_DIR)
+    assert len(gold) == 40
+    assert SWAP_ICONTRACT_ID in gold and SWAP_PEP316_ID in gold
+    assert all(g.in_fragment for g in gold.values())
 
 
 def test_pre_and_post_exact_match_normalizes() -> None:
@@ -48,7 +61,7 @@ def test_score_swap_extraction_against_gold() -> None:
 
     result = score_extraction_against_gold(
         case_spec=case_spec,
-        gold=gold["swap"],
+        gold=gold[SWAP_ICONTRACT_ID],
         extraction=extraction,
     )
     assert result.pre_exact
@@ -102,6 +115,27 @@ def test_score_case_against_gold_unknown_qualname() -> None:
         )
         is None
     )
+
+
+def test_lookup_disambiguates_by_source_file_stem() -> None:
+    gold = load_gold_benchmark(GOLD_DIR)
+    lookup = build_gold_lookup(gold)
+    pep = lookup_gold_contract(
+        "swap",
+        gold,
+        lookup,
+        source_file="benchmark/lifted_auto_eval/"
+        "crosshair_examples_PEP316_correct_code_arith.py_swap.py",
+    )
+    ic = lookup_gold_contract(
+        "swap",
+        gold,
+        lookup,
+        source_file="benchmark/lifted_auto_eval/"
+        "crosshair_examples_icontract_correct_code_arith.py_swap.py",
+    )
+    assert pep is not None and pep.benchmark_id == SWAP_PEP316_ID
+    assert ic is not None and ic.benchmark_id == SWAP_ICONTRACT_ID
 
 
 def test_lookup_chess_piece_can_move_to() -> None:

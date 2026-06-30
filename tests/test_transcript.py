@@ -37,6 +37,44 @@ def _read_jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
 
 
+def test_match_by_prompt_serves_out_of_order(tmp_path: Path) -> None:
+    """Hash-keyed replay reproduces responses regardless of call order."""
+    transcript = tmp_path / "run.jsonl"
+    fake = FakeLLMClient([{"r": "A"}, {"r": "B"}, {"r": "C"}])
+    recorder = RecordingLLMClient(
+        inner=fake,
+        transcript_path=transcript,
+        model="m",
+        base_url="b",
+        provider="openai",
+    )
+    recorder.generate_json("prompt-A")
+    recorder.generate_json("prompt-B")
+    recorder.generate_json("prompt-C")
+    recorder.close()
+
+    replay = ReplayLLMClient.from_path(transcript, match_by_prompt=True)
+    # Issue in a *different* order than recorded -- sequential mode would
+    # misalign, hash-keyed mode must still return the right response.
+    assert replay.generate_json("prompt-C") == {"r": "C"}
+    assert replay.generate_json("prompt-A") == {"r": "A"}
+    assert replay.generate_json("prompt-B") == {"r": "B"}
+
+
+def test_match_by_prompt_raises_on_unknown_prompt(tmp_path: Path) -> None:
+    transcript = tmp_path / "run.jsonl"
+    fake = FakeLLMClient([{"r": "A"}])
+    recorder = RecordingLLMClient(
+        inner=fake, transcript_path=transcript, model="m", base_url="b", provider="openai"
+    )
+    recorder.generate_json("prompt-A")
+    recorder.close()
+
+    replay = ReplayLLMClient.from_path(transcript, match_by_prompt=True)
+    with pytest.raises(TranscriptExhaustedError):
+        replay.generate_json("never-recorded-prompt")
+
+
 def test_recording_writes_metadata_header_and_per_call_records(tmp_path: Path) -> None:
     transcript = tmp_path / "run.jsonl"
     fake = FakeLLMClient([{"answer": 1}, {"answer": 2}])
