@@ -113,6 +113,7 @@ class OpenAICompatibleClient:
         ``Retry-After`` header and otherwise backs off exponentially.
         """
         last_exc: Exception | None = None
+        last_response: requests.Response | None = None
         for attempt in range(self.max_retries):
             try:
                 response = requests.post(
@@ -123,8 +124,15 @@ class OpenAICompatibleClient:
                 )
             except requests.RequestException as exc:
                 last_exc = exc
-                time.sleep(self.backoff_base_sec * (2**attempt))
+                delay = min(self.backoff_base_sec * (2**attempt), self.max_backoff_sec)
+                print(
+                    f"[dualify-llm] request error (attempt {attempt + 1}/{self.max_retries}): "
+                    f"{exc}; sleeping {delay:.1f}s",
+                    flush=True,
+                )
+                time.sleep(delay)
                 continue
+            last_response = response
             if response.status_code in (429, 500, 502, 503, 504):
                 retry_after = response.headers.get("Retry-After")
                 default_delay = self.backoff_base_sec * (2**attempt)
@@ -132,14 +140,20 @@ class OpenAICompatibleClient:
                     delay = float(retry_after) if retry_after else default_delay
                 except ValueError:
                     delay = default_delay
-                time.sleep(min(delay, self.max_backoff_sec))
+                delay = min(max(delay, self.backoff_base_sec), self.max_backoff_sec)
+                print(
+                    f"[dualify-llm] HTTP {response.status_code} (attempt {attempt + 1}/"
+                    f"{self.max_retries}); sleeping {delay:.1f}s",
+                    flush=True,
+                )
+                time.sleep(delay)
                 continue
             return response
         if last_exc is not None:
             raise last_exc
-        # Exhausted retries on HTTP error statuses; return the last response so
-        # raise_for_status() surfaces the real status to the caller.
-        return response
+        if last_response is not None:
+            return last_response
+        raise RuntimeError("POST failed with no response")
 
     def _prefers_chat_mode(self) -> bool:
         """Local vLLM/Ollama gateways usually support chat+json; Groq/SambaNova often do not."""

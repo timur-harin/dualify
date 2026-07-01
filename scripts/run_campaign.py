@@ -59,9 +59,12 @@ class ThrottledLLMClient:
         self.inner.healthcheck()
 
 
-def _maybe_throttle(client: LLMClient, base_url: str) -> LLMClient:
+def _maybe_throttle(client: LLMClient, base_url: str, *, no_throttle: bool = False) -> LLMClient:
+    if no_throttle:
+        print("[campaign] throttling disabled (--no-throttle)", file=sys.stderr)
+        return client
     profile = profile_for_base_url(base_url)
-    if profile is not None:
+    if profile is not None and profile.min_interval_sec > 0:
         print(
             f"[campaign] provider={profile.name} rpm={profile.rpm} "
             f"min_interval={profile.min_interval_sec}s timeout={profile.timeout_sec}s "
@@ -87,11 +90,79 @@ def _transcript_record_count(path: Path) -> int:
     return count
 
 
+def _count_degraded_posts(report: dict) -> tuple[int, int]:
+    """Return (degraded_ret_ret_count, total_postconditions)."""
+    degraded = 0
+    total = 0
+    for case in report.get("results", []):
+        for channel in ("spec_to_logic", "code_to_logic"):
+            payload = case.get(channel, {})
+            if not payload:
+                continue
+            total += 1
+            post = str(payload.get("postcondition", "")).strip()
+            if post in {"ret == ret", "ret==ret"} or payload.get("degraded"):
+                degraded += 1
+    return degraded, total
+
+
+def _expected_min_llm_calls(n_cases: int) -> int:
+    # Each case needs at least spec + code extraction; repairs add more.
+    return max(2, n_cases * 2)
+
+
+def _validate_run(
+    report: dict,
+    transcript_path: Path,
+    *,
+    partial_ok: bool,
+) -> tuple[bool, str]:
+    n_cases = len(report.get("results", []))
+    if n_cases == 0:
+        return False, "report has zero cases"
+
+    llm_calls = _transcript_record_count(transcript_path)
+    min_calls = _expected_min_llm_calls(n_cases)
+    if llm_calls < min_calls:
+        msg = f"transcript has {llm_calls} LLM call(s), need >= {min_calls} for {n_cases} cases"
+        if partial_ok and llm_calls > 0:
+            return False, f"partial: {msg} (resume to continue)"
+        return False, msg
+
+    degraded, total = _count_degraded_posts(report)
+    if total and degraded / total > 0.85:
+        msg = f"too many degraded extractions ({degraded}/{total} channels are ret==ret/degraded)"
+        if partial_ok and llm_calls < min_calls:
+            return False, f"partial: {msg}"
+        return False, msg
+
+    return True, f"ok: {llm_calls} LLM calls, {degraded}/{total} degraded channels"
+
+
+def _fresh_run_dir(run_dir: Path, benchmark: str) -> None:
+    for pattern in ("transcript.jsonl", f"{benchmark}_*.json"):
+        for path in run_dir.glob(pattern):
+            path.unlink()
+
+
+def _api_key_from_env() -> str:
+    for name in (
+        "DUALIFY_API_KEY",
+        "GROQ_API_KEY",
+        "OPENROUTER_API_KEY",
+        "SAMBANOVA_API_KEY",
+    ):
+        value = os.environ.get(name, "").strip()
+        if value:
+            return value
+    return ""
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--provider", default="openai")
     parser.add_argument("--base-url", default="")
-    parser.add_argument("--api-key", default=os.environ.get("DUALIFY_API_KEY", ""))
+    parser.add_argument("--api-key", default=_api_key_from_env())
     parser.add_argument("--model", required=True)
     parser.add_argument("--benchmark", default="lifted_auto_eval")
     parser.add_argument("--runs", type=int, default=7)
@@ -107,9 +178,28 @@ def main() -> None:
     parser.add_argument(
         "--resume",
         action="store_true",
-        help="Continue each run from existing run_NN/transcript.jsonl (replay cached LLM calls, append the rest).",
+        help="Continue from existing run_NN/transcript.jsonl (cached calls + live append).",
+    )
+    parser.add_argument(
+        "--fresh",
+        action="store_true",
+        help="Delete existing transcript and report JSON in each run dir before starting.",
+    )
+    parser.add_argument(
+        "--no-throttle",
+        action="store_true",
+        help="Disable inter-call pacing (paid OpenRouter; use when credits allow full RPM).",
+    )
+    parser.add_argument(
+        "--partial-ok",
+        action="store_true",
+        help="Exit 0 when transcript incomplete but growing (multi-day RPD limits).",
     )
     args = parser.parse_args()
+
+    if not args.api_key and not args.replay_dir:
+        print("[campaign] error: no API key in env", file=sys.stderr)
+        sys.exit(2)
 
     label = args.label or _slug(args.model)
     out_dir = ROOT / "results" / "campaigns" / f"{args.benchmark}__{label}"
@@ -121,6 +211,9 @@ def main() -> None:
         run_dir.mkdir(parents=True, exist_ok=True)
         transcript = run_dir / "transcript.jsonl"
 
+        if args.fresh:
+            _fresh_run_dir(run_dir, args.benchmark)
+
         if args.replay_dir:
             replay_path = Path(args.replay_dir) / f"run_{i:02d}" / "transcript.jsonl"
             client = ReplayLLMClient.from_path(replay_path.resolve())
@@ -131,7 +224,7 @@ def main() -> None:
                 base_url=args.base_url,
                 api_key=args.api_key,
             )
-            live = _maybe_throttle(live, args.base_url)
+            live = _maybe_throttle(live, args.base_url, no_throttle=args.no_throttle)
             cached = _transcript_record_count(transcript) if args.resume else 0
             if args.resume and cached > 0:
                 client = ResumingLLMClient.from_path(inner=live, path=transcript.resolve())
@@ -171,6 +264,22 @@ def main() -> None:
             f"parse_err={cc['parse_error_cases']}",
             file=sys.stderr,
         )
+        ok, detail = _validate_run(report, transcript, partial_ok=args.partial_ok)
+        llm_calls = _transcript_record_count(transcript)
+        print(
+            f"[campaign] run {i} validation: {'PASS' if ok else 'FAIL'} — {detail} "
+            f"(transcript={llm_calls} calls)",
+            file=sys.stderr,
+        )
+        if not ok:
+            if args.partial_ok and detail.startswith("partial:"):
+                print(
+                    "[campaign] partial run saved; re-invoke with --resume to continue",
+                    file=sys.stderr,
+                )
+                sys.exit(0)
+            print(f"[campaign] aborting: {detail}", file=sys.stderr)
+            sys.exit(1)
 
     aggregate = {
         "label": label,

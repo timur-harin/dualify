@@ -22,15 +22,17 @@ class CloudProviderProfile:
 
 
 # Groq: llama-3.3-70b-versatile — 30 RPM, 1,000 RPD (free tier).
+# Use a conservative interval: extraction prompts are large and can trip TPM
+# limits even when RPM headroom remains.
 GROQ = CloudProviderProfile(
     name="groq",
     rpm=30,
     rpd=1000,
-    min_interval_sec=2.1,
+    min_interval_sec=10.0,
     timeout_sec=120,
-    max_retries=6,
+    max_retries=12,
     backoff_base_sec=2.0,
-    max_backoff_sec=60.0,
+    max_backoff_sec=120.0,
 )
 
 # SambaNova: gemma-4-31B-it — 20 RPM, 20 RPD, 200K TPD (free tier).
@@ -40,21 +42,33 @@ SAMBANOVA = CloudProviderProfile(
     rpd=20,
     min_interval_sec=3.2,
     timeout_sec=180,
-    max_retries=8,
-    backoff_base_sec=3.0,
-    max_backoff_sec=90.0,
+    max_retries=16,
+    backoff_base_sec=5.0,
+    max_backoff_sec=300.0,
 )
 
-# OpenRouter free ``:free`` models — 20 RPM, 200 RPD (default free tier).
-OPENROUTER_FREE = CloudProviderProfile(
+# OpenRouter paid routes — conservative pacing; no daily free-tier cap.
+OPENROUTER = CloudProviderProfile(
     name="openrouter",
+    rpm=60,
+    rpd=None,
+    min_interval_sec=0.0,
+    timeout_sec=180,
+    max_retries=12,
+    backoff_base_sec=3.0,
+    max_backoff_sec=120.0,
+)
+
+# Legacy alias for free ``:free`` models (20 RPM, 200 RPD per model).
+OPENROUTER_FREE = CloudProviderProfile(
+    name="openrouter_free",
     rpm=20,
     rpd=200,
-    min_interval_sec=3.2,
+    min_interval_sec=4.5,
     timeout_sec=180,
-    max_retries=8,
+    max_retries=12,
     backoff_base_sec=3.0,
-    max_backoff_sec=90.0,
+    max_backoff_sec=180.0,
 )
 
 
@@ -65,5 +79,5 @@ def profile_for_base_url(base_url: str) -> CloudProviderProfile | None:
     if "sambanova.ai" in host:
         return SAMBANOVA
     if "openrouter.ai" in host:
-        return OPENROUTER_FREE
+        return OPENROUTER
     return None
