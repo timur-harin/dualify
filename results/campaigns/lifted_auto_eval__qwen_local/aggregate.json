@@ -80,9 +80,9 @@
         ]
       },
       "solver_unknown_cases": {
-        "mean": 0.2857142857142857,
+        "mean": 0.42857142857142855,
         "median": 0.0,
-        "std": 0.45175395145262565,
+        "std": 0.4948716593053935,
         "min": 0.0,
         "max": 1.0,
         "n": 7,
@@ -92,7 +92,7 @@
           0.0,
           0.0,
           0.0,
-          0.0,
+          1.0,
           0.0
         ]
       },
@@ -292,11 +292,12 @@
       "lifted_auto_eval_2026_06_30_20_20_46",
       "lifted_auto_eval_2026_06_30_20_27_00",
       "lifted_auto_eval_2026_06_30_20_33_10",
-      "lifted_auto_eval_2026_06_30_20_39_10",
+      "lifted_auto_eval_2026_07_01_11_54_05",
       "lifted_auto_eval_2026_06_30_20_45_36"
     ],
     "models": [
-      "Qwen/Qwen3-Coder-Next-FP8"
+      "Qwen/Qwen3-Coder-Next-FP8",
+      "replay"
     ]
   },
   "stability_genuine_equivalent": {

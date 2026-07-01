@@ -95,7 +95,7 @@ def main() -> int:
 
     total = float(reports[0].get("summary", {}).get("total_cases", 0))
     out = {
-        "campaign": str(campaign),
+        "campaign": str(campaign.relative_to(ROOT)),
         "benchmark": benchmark,
         "n_runs": len(reports),
         "total_cases": total,

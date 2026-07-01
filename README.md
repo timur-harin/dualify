@@ -236,8 +236,24 @@ Hand-curated records live in `benchmark/lifted/` (one YAML per function).
 Editor tooling: `tools/gold_editor/` (Streamlit + lift scripts). See
 [`benchmark/lifted/README.md`](benchmark/lifted/README.md) for schema and scoring axes.
 
-Frozen reviewer bundle (primary paper run + gold copies):
+Frozen reviewer bundle (legacy single-run copy):
 `results/expert-review-gold-benchmark/`.
+
+## ICSE 2027 anonymous replication package
+
+For double-blind supplementary upload, build the anonymous bundle from the
+paper submodule:
+
+```bash
+cd conferences/icse-2027
+bash scripts/build_replication_snapshot.sh --zip
+```
+
+Output: `supplementary/dualify/` (~35 MB) and optional
+`supplementary/dualify-replication.zip` for upload (600 MB limit).
+Reviewers start at `supplementary/dualify/README.md` — offline RQ1–RQ7
+reproduction with no API keys.
+
 
 ## Development
 

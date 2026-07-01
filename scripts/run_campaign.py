@@ -216,7 +216,7 @@ def main() -> None:
 
         if args.replay_dir:
             replay_path = Path(args.replay_dir) / f"run_{i:02d}" / "transcript.jsonl"
-            client = ReplayLLMClient.from_path(replay_path.resolve())
+            client = ReplayLLMClient.from_path(replay_path.resolve(), match_by_prompt=True)
         else:
             live = create_llm_client(
                 provider=args.provider,
