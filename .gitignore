@@ -39,3 +39,9 @@ benchmark/repos/
 # Setup: ./scripts/setup_conference_submodules.sh
 conferences/
 
+
+# Local editor / agent config (never commit)
+.cursor/
+
+# Local clone scratch area
+repos/
